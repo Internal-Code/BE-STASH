@@ -13,8 +13,11 @@ from api.database import (
     databaseModel
 )
 from api.routes import (
-    databaseInsert,
-    initialization
+    initialization,
+    createSchema,
+    updateCategorySchema,
+    deleteCategorySchema,
+    getSchema
 )
 
 app = FastAPI()
@@ -58,4 +61,7 @@ app.add_middleware(
 )
 
 app.include_router(initialization.router)
-app.include_router(databaseInsert.router)
+app.include_router(createSchema.router)
+app.include_router(updateCategorySchema.router)
+app.include_router(deleteCategorySchema.router)
+app.include_router(getSchema.router)
