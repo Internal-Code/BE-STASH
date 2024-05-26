@@ -11,7 +11,7 @@ async def root():
 
 router.add_api_route(
     methods=["GET"],
-    path="/api/v1/", 
+    path="/", 
     response_model=ResponseGeneral,
     endpoint=root
 )

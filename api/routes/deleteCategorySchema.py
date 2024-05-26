@@ -1,6 +1,6 @@
 from loguru import logger
 from fastapi import APIRouter, status
-from api.utils.database.general import checkCategoryAvaibility
+from api.utils.database.general import filterMonthYearCategory
 from api.models.response import ResponseDefault
 from api.utils.requestFormat import DeleteCategorySchema
 from api.database.databaseConnection import database_connection
@@ -11,7 +11,7 @@ router = APIRouter(tags=["schema"])
 async def updateCategorySchema(schema: DeleteCategorySchema) -> ResponseDefault:
     
     response = ResponseDefault()
-    isAvailable = await checkCategoryAvaibility(
+    isAvailable = await filterMonthYearCategory(
         month=schema.month,
         year=schema.year,
         category=schema.category
@@ -44,7 +44,7 @@ async def updateCategorySchema(schema: DeleteCategorySchema) -> ResponseDefault:
 
 router.add_api_route(
     methods=["DELETE"],
-    path="/api/v1/delete_category", 
+    path="/delete_category", 
     response_model=ResponseDefault,
     endpoint=updateCategorySchema
 )

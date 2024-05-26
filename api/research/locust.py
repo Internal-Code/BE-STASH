@@ -5,6 +5,6 @@ class MyUser(HttpUser):
 
     @task
     def insert_data(self):
-        self.client.post("/create_category", json={"category": "test_category"})
+        self.client.get("/get_category")
 
 # lodust -f path/of/locust --host=http://localhost:8000/api/v1 (root endpoint)

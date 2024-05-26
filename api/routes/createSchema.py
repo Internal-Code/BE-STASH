@@ -1,6 +1,6 @@
 from loguru import logger
 from fastapi import APIRouter, status
-from api.utils.database.general import createCategoryFormat, checkCategoryAvaibility
+from api.utils.database.general import createCategoryFormat, filterMonthYearCategory
 from api.models.response import ResponseDefault
 from api.utils.requestFormat import MoneySpendSchema
 from api.database.databaseConnection import database_connection
@@ -11,7 +11,7 @@ router = APIRouter(tags=["schema"])
 async def createSchema(schema: MoneySpendSchema) -> ResponseDefault:
     
     response = ResponseDefault()
-    isAvailable = await checkCategoryAvaibility(
+    isAvailable = await filterMonthYearCategory(
         month=schema.month,
         year=schema.year,
         category=schema.category
@@ -47,7 +47,7 @@ async def createSchema(schema: MoneySpendSchema) -> ResponseDefault:
 
 router.add_api_route(
     methods=["POST"],
-    path="/api/v1/create_schema", 
+    path="/create_schema", 
     response_model=ResponseDefault,
     endpoint=createSchema
 )

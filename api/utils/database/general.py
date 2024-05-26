@@ -27,56 +27,75 @@ def createCategoryFormat(
         "budget": budget
     }
 
-async def queryCheckCategory(
-    category: str = None,
-    month: int = localTime().month,
-    year: int = localTime().year
-) -> CursorResult | None:
+async def filterSpesificCategory(category: str) -> bool:
+
+    res = False
+
     try:
         async with database_connection().connect() as session:
-            logger.info("Connected PostgreSQL to perform category availability validation.")
-
-            if category != None:
-                logger.info("Filter with category.")
-                query = select(money_spend_schema)\
-                .where(money_spend_schema.c.month == month)\
-                .where(money_spend_schema.c.year == year)\
-                .where(money_spend_schema.c.category == category)
-                result = await session.execute(query)
-                checked = result.scalar_one_or_none()
+            logger.info("Connected PostgreSQL to perform filter spesific category")
+            query = select(money_spend_schema).where(money_spend_schema.c.category == category)
+            result = await session.execute(query)
+            checked = result.scalar_one_or_none()
+            if checked:
+                res = True
             else:
-                logger.info("Filter without category.")
-                query = select(money_spend_schema)\
-                .where(money_spend_schema.c.month == month)\
-                .where(money_spend_schema.c.year == year)
-                result = await session.execute(query)
-                checked = result.fetchone()
+                res = False
     except Exception as E:
-        logger.error(f"Error while query check category availability: {E}.")
-        checked = None
+        res = False
+        logger.error(f"Error while filtering spesific category availability: {E}.")
+    return res
 
-    return checked
 
-async def checkCategoryAvaibility(
-    category: str = None,
+async def filterMonthYearCategory(
+    category: str,
     month: int = localTime().month,
     year: int = localTime().year
 ) -> bool:
+    
+    res = False
 
     try:
-    
-        checked = await queryCheckCategory(category, month, year)
-        
-        if checked and category != None:
-            result = True
-            logger.warning(f"Category {category} already created on table {money_spend_schema.name}.")
-        elif checked and category == None:
-            result = True
-        else:
-            result = False
-            logger.info(f"Category {category} not found on table {money_spend_schema.name}.")
+        async with database_connection().connect() as session:
+            logger.info("Connected PostgreSQL to perform category availability validation.")
+            logger.info("Filter with category.")
+            query = select(money_spend_schema)\
+                .where(money_spend_schema.c.month == month)\
+                .where(money_spend_schema.c.year == year)\
+                .where(money_spend_schema.c.category == category)
+            result = await session.execute(query)
+            checked = result.scalar_one_or_none()
+            if checked:
+                res = True
+            else:
+                res = False
     except Exception as E:
-        result = False
-        logger.error(f"Error while checking category availability: {E}.")
+        res = False
+        logger.error(f"Error while filtering spesific category availability: {E}.")
+    return res
+        
+
+async def filterMonthYear(
+    month: int = localTime().month,
+    year: int = localTime().year
+) -> bool:
     
-    return result
+    res = False
+
+    try:
+        async with database_connection().connect() as session:
+            logger.info("Connected PostgreSQL to perform category availability validation.")
+            logger.info("Filter with category.")
+            query = select(money_spend_schema)\
+                .where(money_spend_schema.c.month == month)\
+                .where(money_spend_schema.c.year == year)
+            result = await session.execute(query)
+            checked = result.fetchone()
+            if checked:
+                res = True
+            else:
+                res = False
+    except Exception as E:
+        res = False
+        logger.error(f"Error while filtering spesific category availability: {E}.")
+    return res
