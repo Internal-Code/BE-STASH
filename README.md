@@ -8,7 +8,7 @@ Create personal financial record and predict your own spending style.
 # Start services
 sh setup.sh
 
-*note: access via IP:[[8000/docs](http://localhost:8000/api/v1/docs)](http://localhost:8000/api/v1/docs)
+*note: access via IP:8000/api/v1/docs or localhost:8000/api/v1/docs
 ```
 
 # Contributors
