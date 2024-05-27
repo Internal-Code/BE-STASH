@@ -1,0 +1,27 @@
+services:
+  postgre_sql:
+    container_name: postgres_container
+    image: postgres:16.3-alpine
+    restart: always
+    environment: 
+      - POSTGRES_USER=${LOCAL_POSTGRESQL_USER}
+      - POSTGRES_PASSWORD=${LOCAL_POSTGRESQL_PASSWORD}
+      - POSTGRES_DB=${LOCAL_POSTGRESQL_DATABASE}
+    ports:
+      - "${LOCAL_POSTGRESQL_PORT}:5432"
+    volumes:
+      - postgre_sql:/var/lib/postgresql/data
+  
+  pg_admin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4:8
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${DOCKER_COMPOSE_PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${DOCKER_COMPOSE_PGADMIN_PASSWORD}
+      - PGADMIN_LISTEN_PORT=5050
+    ports:
+      - "${DOCKER_COMPOSE_PGADMIN_PORT}:5050"
+
+volumes:
+  postgre_sql:
