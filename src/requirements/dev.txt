@@ -31,3 +31,6 @@ ruff==0.4.10
 # forecasting tools
 numpy==1.23.5
 prophet==1.1.5
+
+#utils
+uuid7==0.1.0

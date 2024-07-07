@@ -22,8 +22,8 @@ user = Table(
     Column('created_at', DateTime(timezone=True), nullable=False),
     Column('updated_at', DateTime(timezone=True), nullable=True),
     Column('username', String(255), nullable=False, unique=True),
-    Column('first_name', String(255), nullable=False, unique=True),
-    Column('last_name', String(255), nullable=False, unique=True),
+    Column('first_name', String(255), nullable=False, unique=False),
+    Column('last_name', String(255), nullable=False, unique=False),
     Column('email', String(255), nullable=False, unique=True),
     Column('password', String(255), nullable=False),
     Column('is_disabled', Boolean, nullable=False)

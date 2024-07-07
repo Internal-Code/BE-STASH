@@ -69,20 +69,20 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> dic
         )
         username = payload.get('sub')
         user_id = payload.get('id')
-        if username is None or id is None:
+        if username is None or user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Basic"},
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
             )
         return {
-            'username':username,
+            'username': username,
             'id': user_id
         }
     except JWTError as e:
         logging.error(f"JWTError: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )

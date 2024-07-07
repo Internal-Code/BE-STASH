@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
+from fastapi.openapi.models import OAuthFlowPassword
 from src.auth.routers.account_management import access_token, register_account
 from src.database.models import async_main
 from src.database import (
@@ -25,6 +27,10 @@ from src.auth.routers.account_management import (
 )
 
 app = FastAPI(root_path="/api/v1")
+app.openapi_scheme = {
+    "type": "oauth2",
+    "flows": OAuthFlowsModel(password=OAuthFlowPassword(tokenUrl="auth/token"))
+}
 
 @app.on_event("startup")
 async def startup():
