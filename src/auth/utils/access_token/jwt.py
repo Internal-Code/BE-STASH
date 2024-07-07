@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import EmailStr
 from sqlalchemy.engine.row import Row
 from sqlalchemy import select
 from src.auth.routers.dependencies import logging

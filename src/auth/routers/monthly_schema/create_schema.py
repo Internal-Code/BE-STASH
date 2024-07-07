@@ -1,5 +1,6 @@
+from typing import Annotated
 from src.auth.routers.dependencies import logging
-from src.auth.utils.access_token.jwt import get_current_user, oauth2_scheme
+from src.auth.utils.access_token.jwt import get_current_user
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.database.general import create_category_format, filter_month_year_category
 from src.auth.schema.response import ResponseDefault
@@ -9,7 +10,7 @@ from src.database.models import money_spend_schema
 
 router = APIRouter(tags=["schema"])
 
-async def create_schema(schema: MoneySpendSchema, token: str = Depends(oauth2_scheme)) -> ResponseDefault:
+async def create_schema(schema: MoneySpendSchema, user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     """
         Create a schema with all the information:
 
@@ -20,9 +21,9 @@ async def create_schema(schema: MoneySpendSchema, token: str = Depends(oauth2_sc
     """
 
     response = ResponseDefault()
-    user = get_current_user(token)
-    print(user)
     try:
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
         isAvailable = await filter_month_year_category(
             month=schema.month,
             year=schema.year,
