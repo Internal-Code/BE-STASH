@@ -1,5 +1,5 @@
 from src.auth.routers.dependencies import logging
-from src.auth.routers.account_management.access_token import get_current_user
+from src.auth.utils.access_token.jwt import get_current_user
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.database.general import create_category_format, filter_month_year_category
 from src.auth.schema.response import ResponseDefault
@@ -20,7 +20,6 @@ async def create_schema(schema: MoneySpendSchema, user: dict = Depends(get_curre
         - **budget**: This specifies the planned amount of money allocated for the category within the specified month and year. The budget represents your spending limit for that particular category during that time frame.
     """
     
-    print(user)
     response = ResponseDefault()
     try:
         isAvailable = await filter_month_year_category(

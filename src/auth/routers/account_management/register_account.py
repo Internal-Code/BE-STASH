@@ -62,7 +62,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                 await session.commit()
                 logging.info(f"Created new account.")
             except Exception as E:
-                logging.error(f"Error while creating category inside transaction: {E}.")
+                logging.error(f"Error while creating account: {E}.")
                 await session.rollback()
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during transaction: {E}.")
             finally:
