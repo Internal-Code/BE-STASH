@@ -1,0 +1,33 @@
+# fastapi server
+fastapi==0.111.0
+
+# asynchronous ORM postgre sql
+asyncpg==0.29.0
+SQLAlchemy==2.0.30
+
+# pydantic serializer
+pydantic==2.7.1
+
+# .env stuff
+python-dotenv==1.0.1
+
+# fastapi visual server
+uvicorn==0.29.0
+
+# timezone stuff
+pytz==2024.1
+
+# unit testing
+pytest==8.2.1
+pytest-asyncio==0.23.7
+pytest-cov==5.0.0
+
+# performance testing tools
+locust==2.28.0
+
+# python code formatter
+ruff==0.4.10
+
+# forecasting tools
+numpy==1.23.5
+prophet==1.1.5
