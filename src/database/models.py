@@ -1,3 +1,5 @@
+from uuid_extensions import uuid7
+from sqlalchemy.dialects.postgresql import UUID
 from src.database.connection import database_connection
 from sqlalchemy import (
     MetaData, 
@@ -16,11 +18,12 @@ user = Table(
     'user', 
     meta, 
     Column('id', Integer, primary_key=True, autoincrement=True), 
+    Column('user_uuid', UUID(as_uuid=True), default=uuid7, unique=True, nullable=False),
     Column('created_at', DateTime(timezone=True), nullable=False),
     Column('updated_at', DateTime(timezone=True), nullable=True),
     Column('username', String(255), nullable=False, unique=True),
-    Column('first_name', String(255), nullable=False, unique=True),
-    Column('last_name', String(255), nullable=False, unique=True),
+    Column('first_name', String(255), nullable=False, unique=False),
+    Column('last_name', String(255), nullable=False, unique=False),
     Column('email', String(255), nullable=False, unique=True),
     Column('password', String(255), nullable=False),
     Column('is_disabled', Boolean, nullable=False)

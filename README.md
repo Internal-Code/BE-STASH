@@ -17,7 +17,7 @@ src\
 ├── requirements\           # Dependencies project root directory.
 │   ├── dev.txt             # Sample of development dependencies requirements.
 ├── tests\                  # Unit testing root directory.
-│   ├── monthly_schema\ # Stored of list unit testing on montly_schema router.
+│   ├── monthly_schema\     # Stored of list unit testing on montly_schema router.
 main.py                     # Stored of main backend application.
 secret.py                   # Stored of all secret on .env
 ```

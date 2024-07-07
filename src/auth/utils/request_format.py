@@ -51,13 +51,3 @@ class CreateUser(BaseModel):
     email: EmailStr
     password: str
     is_disabled: bool = False
-    
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    
-class TokenData(BaseModel):
-    username: str | None = None
-
-class HashedPassword(CreateUser):
-    hashed_password: str

@@ -1,3 +1,4 @@
+from uuid_extensions import uuid7
 from pydantic import EmailStr
 from pytz import timezone
 from src.auth.routers.dependencies import logging
@@ -56,6 +57,7 @@ def register_account_format(
     updated_at: datetime = None
 ) -> dict:
     return {
+        'user_uuid': uuid7(),
         "created_at": local_time(),
         "updated_at": updated_at,
         "first_name": first_name,
