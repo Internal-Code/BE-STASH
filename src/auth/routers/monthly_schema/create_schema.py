@@ -1,7 +1,8 @@
+from uuid import UUID
 from typing import Annotated
+from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.routers.dependencies import logging
 from src.auth.utils.access_token.jwt import get_current_user
-from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.database.general import create_category_format, filter_month_year_category
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import MoneySpendSchema
@@ -10,7 +11,7 @@ from src.database.models import money_spend_schema
 
 router = APIRouter(tags=["schema"])
 
-async def create_schema(schema: MoneySpendSchema, user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def create_schema(schema: Annotated[MoneySpendSchema, Depends()], user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     """
         Create a schema with all the information:
 
@@ -22,17 +23,18 @@ async def create_schema(schema: MoneySpendSchema, user: Annotated[dict, Depends(
 
     response = ResponseDefault()
     try:
-        if user is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
-        isAvailable = await filter_month_year_category(
+        is_available = await filter_month_year_category(
+            user_uuid=UUID(user['user_uuid']),
             month=schema.month,
             year=schema.year,
             category=schema.category
         )
-        if isAvailable:
+        if is_available:
+            logging.info(f"User: {user['user_uuid']} already have category {schema.category} in {schema.month}/{schema.year}.")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Category {schema.category} already saved.")
 
-        preparedData = create_category_format(
+        prepared_data = create_category_format(
+            user_uuid=UUID(user['user_uuid']),
             month=schema.month, 
             year=schema.year, 
             category=schema.category, 
@@ -42,7 +44,7 @@ async def create_schema(schema: MoneySpendSchema, user: Annotated[dict, Depends(
         logging.info("Endpoint create category.")
         async with database_connection().connect() as session:
             try:
-                query = money_spend_schema.insert().values(preparedData)
+                query = money_spend_schema.insert().values(prepared_data)
                 await session.execute(query)
                 await session.commit()
                 logging.info(f"Created new category: {schema.category}.")

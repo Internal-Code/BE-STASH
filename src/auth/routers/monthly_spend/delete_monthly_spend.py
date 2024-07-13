@@ -1,14 +1,17 @@
-from src.auth.routers.dependencies import logging
+from uuid import UUID
+from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.database.general import create_spending_format, filter_daily_spending
+from src.auth.utils.access_token.jwt import get_current_user
+from src.auth.routers.dependencies import logging
+from src.auth.utils.database.general import filter_daily_spending
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateSpend
 from src.database.connection import database_connection
-from src.database.models import money_spend, money_spend_schema
+from src.database.models import money_spend
 
 router = APIRouter(tags=["spend"])
 
-async def create_spend(schema: CreateSpend = Depends()) -> ResponseDefault:
+async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
     """
         Delete spesific money spend data with all the information:
@@ -25,6 +28,7 @@ async def create_spend(schema: CreateSpend = Depends()) -> ResponseDefault:
     try:
             
         is_available = await filter_daily_spending(
+            user_uuid=UUID(user['user_uuid']),
             amount=schema.amount,
             description=schema.description,
             category=schema.category,
@@ -41,13 +45,16 @@ async def create_spend(schema: CreateSpend = Depends()) -> ResponseDefault:
             async with session.begin():
                 try:
                     logging.info(f"Deleting daily spending record.")
-                    create_spend = money_spend.delete()\
-                        .where(money_spend.c.spend_day == schema.spend_day)\
-                        .where(money_spend.c.spend_month == schema.spend_month)\
-                        .where(money_spend.c.spend_year == schema.spend_year)\
-                        .where(money_spend.c.category == schema.category)\
-                        .where(money_spend.c.description == schema.description)\
-                        .where(money_spend.c.amount == schema.amount)
+                    create_spend = money_spend.delete().where(
+                        money_spend.c.id==is_available.id,
+                        money_spend.c.spend_day == is_available.spend_day,
+                        money_spend.c.spend_month == is_available.spend_month,
+                        money_spend.c.spend_year == is_available.spend_year,
+                        money_spend.c.category == is_available.category,
+                        money_spend.c.description == is_available.description,
+                        money_spend.c.amount == is_available.amount,
+                        money_spend.c.user_uuid == UUID(user['user_uuid'])
+                    )
                     await session.execute(create_spend)
                     logging.info("Deleted a daily spend record.")
                     response.message = "Delete daily spend data success."

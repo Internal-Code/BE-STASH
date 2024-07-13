@@ -1,11 +1,11 @@
-from fastapi import APIRouter, HTTPException, status
 from src.database.models import user
 from src.auth.routers.dependencies import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
-from src.auth.utils.database.general import filter_registered_user, register_account_format, local_time
+from src.auth.utils.database.general import filter_registered_user, register_account_format
 from src.database.connection import database_connection
 from src.auth.utils.access_token.jwt import get_password_hash
+from fastapi import APIRouter, HTTPException, status, Depends
 
 
 router = APIRouter(
@@ -13,7 +13,7 @@ router = APIRouter(
     prefix='/auth'
 )
 
-async def register_user(schema: CreateUser) -> ResponseDefault:
+async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
     
     """
         Create a schema with all the information:

@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+source ../bin/activate
+
 echo "Installing missing dependencies"
 pip install -r src/requirements/dev.txt --quiet
 

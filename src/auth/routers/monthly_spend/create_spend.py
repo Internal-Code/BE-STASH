@@ -1,5 +1,8 @@
-from src.auth.routers.dependencies import logging
+from typing import Annotated
+from uuid import UUID
 from fastapi import APIRouter, HTTPException, status, Depends
+from src.auth.utils.access_token.jwt import get_current_user
+from src.auth.routers.dependencies import logging
 from src.auth.utils.database.general import create_spending_format, filter_month_year_category, create_category_format
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateSpend
@@ -8,7 +11,7 @@ from src.database.models import money_spend, money_spend_schema
 
 router = APIRouter(tags=["spend"])
 
-async def create_spend(schema: CreateSpend = Depends()) -> ResponseDefault:
+async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
     """
         Create a money spend data with all the information:
@@ -25,12 +28,14 @@ async def create_spend(schema: CreateSpend = Depends()) -> ResponseDefault:
     try:
             
         is_available = await filter_month_year_category(
+            user_uuid=UUID(user['user_uuid']),
             month=schema.spend_month,
             year=schema.spend_year,
             category=schema.category
         )
         
         prepared_spend = create_spending_format(
+            user_uuid=UUID(user['user_uuid']),
             category=schema.category,
             description=schema.description,
             amount=schema.amount,
@@ -47,6 +52,7 @@ async def create_spend(schema: CreateSpend = Depends()) -> ResponseDefault:
                         logging.info(f"Inserting data into table {money_spend.name} and {money_spend_schema.name}")
                         
                         prepared_category = create_category_format(
+                            user_uuid=UUID(user['user_uuid']),
                             month=schema.spend_month,
                             year=schema.spend_year,
                             category=schema.category

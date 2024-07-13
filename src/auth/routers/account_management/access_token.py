@@ -26,6 +26,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> R
         token = await create_access_token(
             username=user.username, 
             user_id=user.id, 
+            user_uuid=str(user.user_uuid),
             expires_delta=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED))
         )
         response.access_token=token
