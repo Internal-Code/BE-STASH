@@ -22,28 +22,24 @@ main.py                     # Stored of main backend application.
 secret.py                   # Stored of all secret on .env
 ```
 ### How do I get set up? ###
-This project is developed with python v3.10.12
+This project is developed with python v3.10.12, you need to install docker and poetry in order to utilize this project.
 
-* Create virtual environment (assuming you have installed anaconda)
+* Change configuration for installing venv inside the project.
 ```
-conda create -n venv_name python==3.10.12
-```
-
-* Activate virtual environment
-```
-source bin/activate (Linux OS based)
-```
-or
-```
-conda activate venv_name (Windows OS based)
+poetry config virtualenvs.in-project true
 ```
 
-* Run backend server application
+* Create virtual environment and install all dependencies.
 ```
-sh run_server.sh
+poetry install --no-root
 ```
 
-* Access backend server via swagger
+* Run backend server application.
+```
+./run_server.sh
+```
+
+* Access backend server via swagger.
 ```
 http://localhost:8000/api/v1/docs
 ```

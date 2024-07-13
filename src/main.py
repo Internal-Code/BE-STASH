@@ -3,11 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.models import OAuthFlowPassword
 from src.auth.routers.account_management import access_token, register_account
+from src.database.connection import database_connection
 from src.database.models import async_main
-from src.database import (
-    connection,
-    models
-)
 from src.auth.routers.monthly_schema import (
     create_schema,
     delete_category_schema,
@@ -38,7 +35,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    await connection().dispose()
+    await database_connection().dispose()
 
 app.add_middleware(
     CORSMiddleware,
