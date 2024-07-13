@@ -1,4 +1,6 @@
+from sqlalchemy.engine.row import Row
 from uuid_extensions import uuid7
+from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
 from src.auth.routers.dependencies import logging
@@ -13,6 +15,7 @@ def local_time(zone: str = "Asia/Jakarta") -> datetime:
 
 def create_category_format(
     category: str, 
+    user_uuid: uuid7,
     month: int = local_time().month, 
     year: int = local_time().year, 
     budget: int = 0,
@@ -21,6 +24,7 @@ def create_category_format(
     return {
         "created_at": local_time(),
         "updated_at": updated_at,
+        "user_uuid": user_uuid,
         "month": month,
         "year": year,
         "category": category,
@@ -28,6 +32,7 @@ def create_category_format(
     }
     
 def create_spending_format(
+    user_uuid: uuid7,
     category: str,
     description: str,
     amount: int = 0,
@@ -39,6 +44,7 @@ def create_spending_format(
     return {
         "created_at": local_time(),
         "updated_at": updated_at,
+        "user_uuid": user_uuid,
         "spend_day": spend_day,
         "spend_month": spend_month,
         "spend_year": spend_year,
@@ -78,7 +84,7 @@ async def filter_spesific_category(category: str) -> bool:
                 logging.info("Connected PostgreSQL to perform filter spesific category")
                 query = select(money_spend_schema).where(money_spend_schema.c.category == category)
                 result = await session.execute(query)
-                checked = result.scalar_one_or_none()
+                checked = result.fetchone()
                 if checked:
                     res = True
             except Exception as E:
@@ -94,6 +100,7 @@ async def filter_spesific_category(category: str) -> bool:
 
 
 async def filter_month_year_category(
+    user_uuid: uuid7,
     category: str,
     month: int = local_time().month,
     year: int = local_time().year
@@ -105,12 +112,16 @@ async def filter_month_year_category(
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with category, month and year.")
-                query = select(money_spend_schema)\
-                    .where(money_spend_schema.c.month == month)\
-                    .where(money_spend_schema.c.year == year)\
-                    .where(money_spend_schema.c.category == category)
+                query = select(money_spend_schema).where(
+                    and_(
+                        money_spend_schema.c.user_uuid==user_uuid,
+                        money_spend_schema.c.month == month,
+                        money_spend_schema.c.year == year,
+                        money_spend_schema.c.category == category
+                    )
+                )
                 result = await session.execute(query)
-                checked = result.scalar_one_or_none()
+                checked = result.fetchone()
                 if checked:
                     res = True
             except Exception as E:
@@ -125,41 +136,48 @@ async def filter_month_year_category(
     return res
         
 async def filter_daily_spending(
+    user_uuid: uuid7,
     amount:int,
     category: str,
     description: str,
     spend_day:int = local_time().day,
     spend_month:int = local_time().month,
     spend_year:int = local_time().year
-) -> bool:
+) -> Row|None:
     
-    res = False
+    res = None
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(money_spend)\
-                    .where(money_spend.c.spend_day == spend_day)\
-                    .where(money_spend.c.spend_month == spend_month)\
-                    .where(money_spend.c.spend_year == spend_year)\
-                    .where(money_spend.c.amount == amount)\
-                    .where(money_spend.c.description == description)\
-                    .where(money_spend.c.category == category)
+                query = select(money_spend).where(
+                    and_(
+                        money_spend.c.spend_day == spend_day,
+                        money_spend.c.spend_month == spend_month,
+                        money_spend.c.spend_year == spend_year,
+                        money_spend.c.amount == amount,
+                        money_spend.c.description == description,
+                        money_spend.c.category == category,
+                        money_spend.c.user_uuid == user_uuid
+                    )
+                ).order_by(money_spend.c.created_at.desc())
                 result = await session.execute(query)
-                checked = result.fetchone()
-                if checked:
-                    res = True
+                latest_record = result.fetchone()
+                if latest_record:
+                    res = latest_record
+                    print(res)
             except Exception as E:
                 logging.error(f"Error during filtering spesific daily spend {spend_day}/{spend_month}/{spend_year} {category}/{description}/{amount}: {E}.")
                 await session.rollback()
-                res = False
+                res = None
             finally:
                 await session.close()
     except Exception as E:
-        res = False
+        res = None
         logging.error(f"Error after filtering spesific daily spending: {E}.")
     return res
 
 async def filter_month_year(
+    user_uuid: uuid7,
     month: int = local_time().month,
     year: int = local_time().year
 ) -> bool:
@@ -170,9 +188,13 @@ async def filter_month_year(
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with month and year.")
-                query = select(money_spend_schema)\
-                    .where(money_spend_schema.c.month == month)\
-                    .where(money_spend_schema.c.year == year)
+                query = select(money_spend_schema).where(
+                    and_(
+                        money_spend_schema.c.month == month,
+                        money_spend_schema.c.year == year,
+                        money_spend_schema.c.user_uuid == user_uuid,
+                    )   
+                )
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:

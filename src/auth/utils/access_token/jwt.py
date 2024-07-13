@@ -1,6 +1,9 @@
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import timedelta
+from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import EmailStr
 from sqlalchemy.engine.row import Row
 from sqlalchemy import select
 from src.auth.routers.dependencies import logging
@@ -8,11 +11,6 @@ from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
 from src.database.models import user
 from src.secret import ACCESS_TOKEN_SECRET_KEY, ACCESS_TOKEN_ALGORITHM
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import timedelta
-from typing import Annotated
-
 
 password_content = CryptContext(schemes=['bcrypt'])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -46,11 +44,13 @@ async def authenticate_user(username: str, password: str) -> Row | None:
 async def create_access_token(
     username: str, 
     user_id: int, 
+    user_uuid: str, 
     expires_delta: timedelta
 ) -> str:
     encode = {
         'sub': username,
         'id': user_id,
+        'user_uuid': user_uuid
     }
     expires = local_time() + expires_delta
     encode.update({'exp': expires})
@@ -70,6 +70,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> dic
         )
         username = payload.get('sub')
         user_id = payload.get('id')
+        user_uuid = payload.get('user_uuid')
         if username is None or user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -78,7 +79,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> dic
             )
         return {
             'username': username,
-            'id': user_id
+            'id': user_id,
+            'user_uuid': user_uuid
         }
     except JWTError as e:
         logging.error(f"JWTError: {e}")

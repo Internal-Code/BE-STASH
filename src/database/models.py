@@ -35,6 +35,7 @@ money_spend = Table(
     Column('id', Integer, primary_key=True, autoincrement=True), 
     Column('created_at', DateTime(timezone=True), nullable=False),
     Column('updated_at', DateTime(timezone=True), nullable=True),
+    Column('user_uuid', UUID(as_uuid=True), default=uuid7, nullable=False),
     Column('spend_day', Integer, nullable=False),
     Column('spend_month', Integer, nullable=False),
     Column('spend_year', Integer, nullable=False),
@@ -49,9 +50,10 @@ money_spend_schema = Table(
     Column('id', Integer, primary_key=True, autoincrement=True), 
     Column('created_at', DateTime(timezone=True), nullable=False),
     Column('updated_at', DateTime(timezone=True), nullable=True),
+    Column('user_uuid', UUID(as_uuid=True), default=uuid7, nullable=False),
     Column('month', Integer, nullable=False), 
     Column('year', Integer, nullable=False), 
-    Column('category', String(255), unique=True, nullable=False),
+    Column('category', String(255), nullable=False),
     Column('budget', BigInteger, nullable=False)
 )
 
