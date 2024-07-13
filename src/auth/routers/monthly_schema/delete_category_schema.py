@@ -3,7 +3,7 @@ from typing import Annotated
 from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.routers.dependencies import logging
-from src.auth.utils.access_token.jwt import get_current_user
+from src.auth.utils.access_token.security import get_current_user
 from src.auth.utils.database.general import filter_month_year_category
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import DeleteCategorySchema

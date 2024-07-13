@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.access_token.jwt import get_current_user
+from src.auth.utils.access_token.security import get_current_user
 from src.auth.routers.dependencies import logging
 from src.auth.utils.database.general import filter_daily_spending
 from src.auth.schema.response import ResponseDefault

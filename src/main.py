@@ -2,14 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.models import OAuthFlowPassword
-from src.auth.routers.account_management import access_token, register_account
+from src.auth.routers import health_check
 from src.database.connection import database_connection
 from src.database.models import async_main
 from src.auth.routers.monthly_schema import (
     create_schema,
     delete_category_schema,
     get_schema,
-    initialization,
     update_category_schema
 )
 from src.auth.routers.monthly_spend import (
@@ -44,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(initialization.router)
+app.include_router(health_check.router)
 app.include_router(create_schema.router)
 app.include_router(update_category_schema.router)
 app.include_router(delete_category_schema.router)

@@ -4,14 +4,11 @@ from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import filter_registered_user, register_account_format
 from src.database.connection import database_connection
-from src.auth.utils.access_token.jwt import get_password_hash
+from src.auth.utils.access_token.security import get_password_hash
 from fastapi import APIRouter, HTTPException, status, Depends
 
 
-router = APIRouter(
-    tags=["account-management"],
-    prefix='/auth'
-)
+router = APIRouter(tags=["account-management"])
 
 async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
     

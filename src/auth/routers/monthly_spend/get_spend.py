@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.access_token.jwt import get_current_user
+from src.auth.utils.access_token.security import get_current_user
 from src.auth.routers.dependencies import logging
 from src.auth.utils.database.general import filter_month_year
 from src.auth.schema.response import ResponseDefault

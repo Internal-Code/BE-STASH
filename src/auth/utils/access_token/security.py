@@ -12,7 +12,7 @@ from src.database.connection import database_connection
 from src.database.models import user
 from src.secret import ACCESS_TOKEN_SECRET_KEY, ACCESS_TOKEN_ALGORITHM
 
-password_content = CryptContext(schemes=['bcrypt'])
+password_content = CryptContext(schemes=['bcrypt'], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 async def verify_password(password: str, hashed_password: str) -> str:
