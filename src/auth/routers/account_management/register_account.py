@@ -8,7 +8,7 @@ from src.auth.utils.access_token.security import get_password_hash
 from fastapi import APIRouter, HTTPException, status, Depends
 
 
-router = APIRouter(tags=["account-management"])
+router = APIRouter(tags=["account-management"], prefix='/user')
 
 async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
     

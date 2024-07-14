@@ -12,7 +12,7 @@ router = APIRouter(
     prefix='/auth'
 )
 
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> ResponseToken:
+async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> ResponseToken:
     try:
         response = ResponseToken()
         user = await authenticate_user(form_data.username, form_data.password)
@@ -24,9 +24,11 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> R
             )
         
         token = await create_access_token(
-            username=user.username, 
-            user_id=user.id, 
-            user_uuid=str(user.user_uuid),
+            data={
+                "sub":user.username, 
+                "user_id":user.id, 
+                "user_uuid":str(user.user_uuid)
+            },
             expires_delta=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED))
         )
         response.access_token=token
@@ -42,7 +44,7 @@ router.add_api_route(
     methods=["POST"],
     path="/token", 
     response_model=ResponseToken,
-    endpoint=login,
+    endpoint=login_for_access_token,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Authenticate user and return access token."
 )

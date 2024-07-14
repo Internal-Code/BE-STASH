@@ -1,3 +1,4 @@
+from uuid import UUID
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
 
@@ -51,3 +52,10 @@ class CreateUser(BaseModel):
     email: EmailStr
     password: str
     is_disabled: bool = False
+    
+class TokenData(BaseModel):
+    username: str | None = None
+    
+class UserInDB(CreateUser):
+    id: int
+    user_uuid: UUID
