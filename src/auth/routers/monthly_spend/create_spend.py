@@ -89,7 +89,7 @@ async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated
         
 router.add_api_route(
     methods=["POST"],
-    path="/create_spend", 
+    path="/create-spend", 
     response_model=ResponseDefault,
     endpoint=create_spend,
     status_code=status.HTTP_201_CREATED,

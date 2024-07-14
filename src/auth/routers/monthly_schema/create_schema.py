@@ -66,7 +66,7 @@ async def create_schema(schema: Annotated[MoneySpendSchema, Depends()], user: An
 
 router.add_api_route(
     methods=["POST"],
-    path="/create_schema", 
+    path="/create-schema", 
     response_model=ResponseDefault,
     endpoint=create_schema,
     status_code=status.HTTP_201_CREATED,

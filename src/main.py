@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.models import OAuthFlowPassword
+from src.auth.routers.account_management import detail_account
 from src.auth.routers import health_check
 from src.database.connection import database_connection
 from src.database.models import async_main
@@ -20,7 +21,7 @@ from src.auth.routers.monthly_spend import (
 from src.auth.routers.account_management import (
     register_account,
     access_token,
-    users
+    update_account
 )
 
 app = FastAPI(root_path="/api/v1")
@@ -55,4 +56,5 @@ app.include_router(update_monthly_spend.router)
 app.include_router(delete_monthly_spend.router)
 app.include_router(register_account.router)
 app.include_router(access_token.router)
-app.include_router(users.router)
+app.include_router(detail_account.router)
+app.include_router(update_account.router)

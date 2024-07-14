@@ -51,7 +51,7 @@ class CreateUser(BaseModel):
     username: str
     email: EmailStr
     password: str
-    is_disabled: bool = False
+    is_deactivated: bool = False
     
 class TokenData(BaseModel):
     username: str | None = None

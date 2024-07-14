@@ -68,7 +68,7 @@ async def update_category_schema(schema: Annotated[DeleteCategorySchema, Depends
 
 router.add_api_route(
     methods=["DELETE"],
-    path="/delete_category", 
+    path="/delete-category", 
     response_model=ResponseDefault,
     endpoint=update_category_schema,
     status_code=status.HTTP_200_OK,

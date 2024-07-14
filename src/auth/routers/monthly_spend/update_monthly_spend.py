@@ -130,7 +130,7 @@ async def update_monthly_spend(schema: Annotated[UpdateCategorySpending, Depends
 
 router.add_api_route(
     methods=["PUT"],
-    path="/update_monthly_spend", 
+    path="/update-monthly-spend", 
     response_model=ResponseDefault,
     endpoint=update_monthly_spend,
     status_code=status.HTTP_200_OK,

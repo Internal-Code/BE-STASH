@@ -4,7 +4,7 @@ from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
 from src.auth.routers.dependencies import logging
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, update
 from datetime import datetime
 from src.database.models import money_spend_schema, money_spend, user
 from src.database.connection import database_connection
@@ -59,7 +59,7 @@ def register_account_format(
     username: str,
     email: EmailStr,
     password: str,
-    is_disabled: bool=False,
+    is_deactivated: bool=False,
     updated_at: datetime = None
 ) -> dict:
     return {
@@ -71,7 +71,8 @@ def register_account_format(
         "username": username,
         "email": email,
         "password": password,
-        'is_disabled': is_disabled
+        "is_deactivated": is_deactivated,
+        "last_login": local_time()
     }
 
 async def filter_spesific_category(category: str) -> bool:
@@ -243,3 +244,27 @@ async def filter_registered_user(
         res = False
         
     return res
+
+async def update_latest_login(username: str, email: EmailStr) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                await session.execute(
+                    update(user).where(
+                        and_(
+                            user.c.username == username,
+                            user.c.email == email,
+                        )
+                    ).values(last_login=local_time())
+                )
+                await session.commit()
+                logging.info(f"Updated last_login for user {username}.")
+                return True
+            except Exception as e:
+                logging.error(f"Error during update_latest_login: {e}")
+                await session.rollback()
+                return False
+    except Exception as e:
+        logging.error(f"Error connecting to database in update_latest_login: {e}")
+    
+    return False

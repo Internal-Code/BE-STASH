@@ -64,7 +64,7 @@ async def get_spend_month(schema: Annotated[GetSchema, Depends()], user: Annotat
 
 router.add_api_route(
     methods=["GET"],
-    path="/get_spend_month", 
+    path="/get-spend-month", 
     response_model=ResponseDefault,
     endpoint=get_spend_month,
     status_code=status.HTTP_200_OK,

@@ -64,7 +64,7 @@ async def get_schema(schema: Annotated[GetSchema, Depends()], user:Annotated[dic
 
 router.add_api_route(
     methods=["GET"],
-    path="/get_category", 
+    path="/get-category", 
     response_model=ResponseDefault,
     endpoint=get_schema,
     status_code=status.HTTP_200_OK,

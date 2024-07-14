@@ -76,7 +76,7 @@ async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated
         
 router.add_api_route(
     methods=["DELETE"],
-    path="/delete_spend", 
+    path="/delete-spend", 
     response_model=ResponseDefault,
     endpoint=create_spend,
     status_code=status.HTTP_201_CREATED,

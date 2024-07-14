@@ -36,7 +36,7 @@ async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
             username=schema.username,
             email=schema.email,
             password=await get_password_hash(schema.password),
-            is_disabled=schema.is_disabled
+            is_deactivated=schema.is_deactivated
         )
 
         logging.info("Endpoint register account.")

@@ -72,7 +72,7 @@ async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/update_category", 
+    path="/update-category", 
     response_model=ResponseDefault,
     endpoint=update_category_schema,
     status_code=status.HTTP_200_OK,

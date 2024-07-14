@@ -26,7 +26,8 @@ user = Table(
     Column('last_name', String(255), nullable=False, unique=False),
     Column('email', String(255), nullable=False, unique=True),
     Column('password', String(255), nullable=False),
-    Column('is_disabled', Boolean, nullable=False)
+    Column('is_deactivated', Boolean, nullable=False),
+    Column('last_login', DateTime(timezone=True), nullable=True)
 )
 
 money_spend = Table(

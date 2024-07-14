@@ -41,7 +41,7 @@ async def get_user(username: str) -> UserInDB | None:
                         username=checked.username,
                         email=checked.email,
                         password=checked.password,
-                        is_disabled=checked.is_disabled
+                        is_deactivated=checked.is_deactivated
                     )
                     return user_data
                 else:
@@ -107,6 +107,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     return user
 
 async def get_current_active_user(current_user: Annotated[UserInDB, Depends(get_current_user)]) -> str:
-    if current_user.is_disabled:
+    if current_user.is_deactivated:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user
