@@ -3,7 +3,7 @@ from uuid_extensions import uuid7
 from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from sqlalchemy import select, or_, update
 from datetime import datetime
 from src.database.models import money_spend_schema, money_spend, user

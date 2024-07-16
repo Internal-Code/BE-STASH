@@ -1,4 +1,4 @@
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 

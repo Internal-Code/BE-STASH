@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.access_token.security import get_current_user
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.database.general import filter_daily_spending, filter_month_year_category, create_category_format
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import UpdateCategorySpending, local_time
@@ -37,7 +37,7 @@ async def update_monthly_spend(schema: Annotated[UpdateCategorySpending, Depends
     
     try:
         spending_is_available = await filter_daily_spending(
-            user_uuid=UUID(user['user_uuid']),
+            user_uuid=user.user_uuid,
             amount=schema.amount,
             description=schema.description,
             category=schema.category,
@@ -47,7 +47,7 @@ async def update_monthly_spend(schema: Annotated[UpdateCategorySpending, Depends
         )
         
         category_is_available = await filter_month_year_category(
-            user_uuid=UUID(user['user_uuid']),
+            user_uuid=user.user_uuid,
             month=schema.changed_spend_month,
             year=schema.changed_spend_year,
             category=schema.changed_category_into
@@ -62,7 +62,7 @@ async def update_monthly_spend(schema: Annotated[UpdateCategorySpending, Depends
                 try:
                     if category_is_available is False:
                         create_category = create_category_format(
-                            user_uuid=UUID(user['user_uuid']),
+                            user_uuid=user.user_uuid,
                             category=schema.changed_category_into,
                             month=schema.changed_spend_month,
                             year=schema.changed_spend_year,

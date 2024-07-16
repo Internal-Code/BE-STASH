@@ -8,7 +8,7 @@ from pydantic import EmailStr
 from sqlalchemy.engine.row import Row
 from sqlalchemy import select
 from sqlalchemy.sql import and_
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
 from src.database.models import user
@@ -32,7 +32,7 @@ async def get_user(username: str) -> UserInDB | None:
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
-                    logging.info("User found.")
+                    logging.info(f"User {username} found.")
                     user_data = UserInDB(
                         user_uuid=checked.user_uuid,
                         id=checked.id,
@@ -45,7 +45,7 @@ async def get_user(username: str) -> UserInDB | None:
                     )
                     return user_data
                 else:
-                    logging.error("User not found.")
+                    logging.error(f"User {username} not found.")
                     return None
             except Exception as E:
                 logging.error(f"Error during authenticate_user: {E}.")
@@ -97,16 +97,14 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         username = payload.get('sub')
         token_data = TokenData(username=username)
         user = await get_user(username=token_data.username)
-        if username is None:
-            raise credentials_exception
-        if user is None:
+        if username is None or user is None:
             raise credentials_exception
     except JWTError as e:
         logging.error(f"JWTError: {e}")
         raise credentials_exception
     return user
 
-async def get_current_active_user(current_user: Annotated[UserInDB, Depends(get_current_user)]) -> str:
+async def get_current_active_user(current_user: Annotated[str, Depends(get_current_user)]) -> str | dict:
     if current_user.is_deactivated:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user

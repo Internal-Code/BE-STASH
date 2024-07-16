@@ -1,5 +1,5 @@
 from src.database.models import user
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import filter_registered_user, register_account_format

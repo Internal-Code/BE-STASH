@@ -8,7 +8,7 @@ services:
       - POSTGRES_PASSWORD=${LOCAL_POSTGRESQL_PASSWORD}
       - POSTGRES_DB=${LOCAL_POSTGRESQL_DATABASE}
     ports:
-      - "${LOCAL_POSTGRESQL_PORT}:5432"
+      - 5432:5432
     volumes:
       - postgre_sql:/var/lib/postgresql/data
     networks:
@@ -24,7 +24,7 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
       - PGADMIN_LISTEN_PORT=5050
     ports:
-      - "${PGADMIN_PORT}:5050"
+      - 5050:5050
     networks:
       app_net:
         ipv4_address: 172.18.0.31
@@ -34,7 +34,7 @@ services:
     image: ollama/ollama:0.1.45 #TODO: research how to utilize ROCM on RX6800s
     restart: no #change to 'always' if model already deployed into development server
     ports:
-      - "11434:11434"
+      - 11434:11434
     volumes:
       - ollama:/var/lib/ollama/data
     group_add:

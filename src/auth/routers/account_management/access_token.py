@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from src.database.connection import database_connection
 from src.auth.utils.database.general import local_time
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseToken
 from src.secret import ACCESS_TOKEN_EXPIRED
 from src.auth.utils.access_token.security import authenticate_user, create_access_token

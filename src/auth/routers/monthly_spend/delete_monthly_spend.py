@@ -2,7 +2,7 @@ from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.access_token.security import get_current_user
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.database.general import filter_daily_spending
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateSpend
@@ -28,7 +28,7 @@ async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated
     try:
             
         is_available = await filter_daily_spending(
-            user_uuid=UUID(user['user_uuid']),
+            user_uuid=user.user_uuid,
             amount=schema.amount,
             description=schema.description,
             category=schema.category,
@@ -53,7 +53,7 @@ async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated
                         money_spend.c.category == is_available.category,
                         money_spend.c.description == is_available.description,
                         money_spend.c.amount == is_available.amount,
-                        money_spend.c.user_uuid == UUID(user['user_uuid'])
+                        money_spend.c.user_uuid == user.user_uuid
                     )
                     await session.execute(create_spend)
                     logging.info("Deleted a daily spend record.")

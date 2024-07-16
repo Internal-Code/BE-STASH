@@ -2,7 +2,7 @@ from uuid import UUID
 from typing import Annotated
 from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.access_token.security import get_current_user
 from src.auth.utils.database.general import filter_month_year_category
 from src.auth.schema.response import ResponseDefault
@@ -25,7 +25,7 @@ async def update_category_schema(schema: Annotated[DeleteCategorySchema, Depends
     response = ResponseDefault()
     try:
         isAvailable = await filter_month_year_category(
-            user_uuid=UUID(user['user_uuid']),
+            user_uuid=user.user_uuid,
             month=schema.month,
             year=schema.year,
             category=schema.category
@@ -41,7 +41,7 @@ async def update_category_schema(schema: Annotated[DeleteCategorySchema, Depends
                 try:
                     query = money_spend_schema.delete().where(
                         and_(
-                            money_spend_schema.c.user_uuid == UUID(user['user_uuid']),
+                            money_spend_schema.c.user_uuid == user.user_uuid,
                             money_spend_schema.c.month == schema.month,
                             money_spend_schema.c.year == schema.year,
                             money_spend_schema.c.category == schema.category

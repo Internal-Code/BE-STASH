@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.request_format import UserInDB
 from src.auth.utils.access_token.security import get_current_active_user
 

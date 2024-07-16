@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.access_token.security import get_current_user
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.database.general import create_spending_format, filter_month_year_category, create_category_format
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateSpend
@@ -28,14 +28,14 @@ async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated
     try:
             
         is_available = await filter_month_year_category(
-            user_uuid=UUID(user['user_uuid']),
+            user_uuid=user.user_uuid,
             month=schema.spend_month,
             year=schema.spend_year,
             category=schema.category
         )
         
         prepared_spend = create_spending_format(
-            user_uuid=UUID(user['user_uuid']),
+            user_uuid=user.user_uuid,
             category=schema.category,
             description=schema.description,
             amount=schema.amount,
@@ -52,7 +52,7 @@ async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated
                         logging.info(f"Inserting data into table {money_spend.name} and {money_spend_schema.name}")
                         
                         prepared_category = create_category_format(
-                            user_uuid=UUID(user['user_uuid']),
+                            user_uuid=user.user_uuid,
                             month=schema.spend_month,
                             year=schema.spend_year,
                             category=schema.category

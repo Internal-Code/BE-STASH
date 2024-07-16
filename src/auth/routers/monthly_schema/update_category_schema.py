@@ -1,8 +1,8 @@
 from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.access_token.security import get_current_user
-from src.auth.routers.dependencies import logging
+from src.auth.utils.access_token.security import get_current_active_user
+from src.auth.utils.logging import logging
 from src.auth.utils.database.general import filter_month_year_category, filter_spesific_category
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import UpdateCategorySchema, local_time
@@ -11,7 +11,7 @@ from src.database.models import money_spend_schema
 
 router = APIRouter(tags=["schema"])
 
-async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends()], user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends()], user:Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     
     """
         Update category information from a spesific month and year:
@@ -26,7 +26,7 @@ async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends
         month=schema.month,
         year=schema.year,
         category=schema.category,
-        user_uuid=UUID(user['user_uuid'])
+        user_uuid=user.user_uuid
     )
     checked_category = await filter_spesific_category(category=schema.changed_category_into)
     if is_available is False:
@@ -45,7 +45,7 @@ async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends
                     money_spend_schema.c.month == schema.month,
                     money_spend_schema.c.year == schema.year,
                     money_spend_schema.c.category == schema.category,
-                    money_spend_schema.c.user_uuid == user['user_uuid']
+                    money_spend_schema.c.user_uuid == user.user_uuid
                 )\
                 .values(
                     updated_at = local_time(),
@@ -57,9 +57,9 @@ async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends
                 response.message = "Update category success."
                 response.success = True
             except Exception as E:
-                logging.error(f"Error while creating category: {E}.")
+                logging.error(f"Error while updating category: {E}.")
                 await session.rollback()
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during transaction: {E}.")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during updating category: {E}.")
             finally:
                 await session.close()
     except HTTPException as E:

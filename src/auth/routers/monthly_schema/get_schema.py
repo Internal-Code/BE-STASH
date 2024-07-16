@@ -3,7 +3,7 @@ from sqlalchemy.sql import and_
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.access_token.security import get_current_user
-from src.auth.routers.dependencies import logging
+from src.auth.utils.logging import logging
 from src.auth.utils.database.general import filter_month_year
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import GetSchema
@@ -23,7 +23,7 @@ async def get_schema(schema: Annotated[GetSchema, Depends()], user:Annotated[dic
     
     response = ResponseDefault()
     is_available = await filter_month_year(
-        user_uuid=UUID(user['user_uuid']),
+        user_uuid=user.user_uuid,
         month=schema.month,
         year=schema.year
     )
@@ -37,7 +37,7 @@ async def get_schema(schema: Annotated[GetSchema, Depends()], user:Annotated[dic
             try:
                 query = money_spend_schema.select().where(
                     and_(
-                        money_spend_schema.c.user_uuid == UUID(user['user_uuid']),
+                        money_spend_schema.c.user_uuid == user.user_uuid,
                         money_spend_schema.c.month == schema.month,
                         money_spend_schema.c.year == schema.year
                     )

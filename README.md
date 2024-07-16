@@ -34,6 +34,11 @@ poetry config virtualenvs.in-project true
 poetry install --no-root
 ```
 
+* Run docker container
+```
+docker-compose up
+```
+
 * Run backend server application.
 ```
 ./run_server.sh
