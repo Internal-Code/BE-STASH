@@ -2,24 +2,32 @@ from src.database.models import user
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
-from src.auth.utils.database.general import filter_registered_user, register_account_format
+from src.auth.utils.database.general import filter_registered_user, register_account_format, check_password
 from src.database.connection import database_connection
 from src.auth.utils.access_token.security import get_password_hash
 from fastapi import APIRouter, HTTPException, status, Depends
 
 
-router = APIRouter(tags=["account-management"], prefix='/user')
+router = APIRouter(tags=["user"], prefix='/user')
 
 async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
     
     """
-        Create a schema with all the information:
+        Create a new user account with the following information:
 
-        - **month**: This refers to the specific calendar month (e.g., January, February) when the schema was created or applies to.
-        - **year**: This represents the calendar year (e.g., 2023, 2024) associated with the schema.
-        - **category**: This identifies the type of expense or area the schema pertains to. Examples of categories could be "Rent," "Groceries," "Transportation," or any other relevant groupings you define.
-        - **budget**: This specifies the planned amount of money allocated for the category within the specified month and year. The budget represents your spending limit for that particular category during that time frame.
+        - **first_name**: The first name of the user.
+        - **last_name**: The last name of the user.
+        - **username**: The username chosen by the user for logging in.
+        - **email**: The email address of the user.
+        - **password**: The password chosen by the user for account security. It must:
+            - Be at least 8 characters long.
+            - Contain at least one uppercase letter.
+            - Contain at least one lowercase letter.
+            - Contain at least one digit.
+            - Contain at least one special character.
+        - **is_deactivated**: Indicates if the account is deactivated.
     """
+
     
     response = ResponseDefault()
     try:
@@ -29,6 +37,8 @@ async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
         )
         if is_available:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Account already registered. Please create an another account.")
+        
+        await check_password(schema.password)
         
         prepared_data = register_account_format(
             first_name=schema.first_name,

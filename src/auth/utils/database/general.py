@@ -1,11 +1,13 @@
+import re
 from sqlalchemy.engine.row import Row
 from uuid_extensions import uuid7
 from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
-from src.auth.utils.logging import logging
 from sqlalchemy import select, or_, update
 from datetime import datetime
+from fastapi import HTTPException, status
+from src.auth.utils.logging import logging
 from src.database.models import money_spend_schema, money_spend, user
 from src.database.connection import database_connection
 
@@ -268,3 +270,16 @@ async def update_latest_login(username: str, email: EmailStr) -> bool:
         logging.error(f"Error connecting to database in update_latest_login: {e}")
     
     return False
+
+async def check_password(value: str) -> str:
+    if len(value) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters long.")
+    if not re.search(r'[A-Z]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one uppercase letter.")
+    if not re.search(r'[a-z]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one lowercase letter.")
+    if not re.search(r'[0-9]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one number.")
+    if not re.search(r'[\W_]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one special character.")
+    return value

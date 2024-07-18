@@ -5,7 +5,7 @@ from src.auth.utils.request_format import UserInDB
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.access_token.security import get_current_active_user
 
-router = APIRouter(tags=["account-management"], prefix='/user')
+router = APIRouter(tags=["user"], prefix='/user')
 
 async def user(current_user: Annotated[str, Depends(get_current_active_user)]) -> ResponseDefault:
     

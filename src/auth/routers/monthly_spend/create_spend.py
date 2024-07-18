@@ -11,7 +11,7 @@ from src.database.models import money_spend, money_spend_schema
 
 router = APIRouter(tags=["spend"])
 
-async def create_spend(schema: Annotated[CreateSpend, Depends()], user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def create_spend(schema: CreateSpend, user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
     """
         Create a money spend data with all the information:

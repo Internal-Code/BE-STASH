@@ -2,26 +2,31 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.models import OAuthFlowPassword
-from src.auth.routers.account_management import detail_account
 from src.auth.routers import health_check
 from src.database.connection import database_connection
 from src.database.models import async_main
 from src.auth.routers.monthly_schema import (
     create_schema,
+    list_schema,
     delete_category_schema,
-    get_schema,
     update_category_schema
 )
 from src.auth.routers.monthly_spend import (
     create_spend,
+    list_spend,
     update_monthly_spend,
-    get_spend,
     delete_monthly_spend
 )
 from src.auth.routers.account_management import (
-    register_account,
     access_token,
-    update_account
+    refresh_token
+)
+
+from src.auth.routers.user import (
+    register_account,
+    update_account,
+    deactivate_account,
+    detail_account
 )
 
 app = FastAPI(root_path="/api/v1")
@@ -49,12 +54,13 @@ app.include_router(health_check.router)
 app.include_router(create_schema.router)
 app.include_router(update_category_schema.router)
 app.include_router(delete_category_schema.router)
-app.include_router(get_schema.router)
+app.include_router(list_schema.router)
 app.include_router(create_spend.router)
-app.include_router(get_spend.router)
+app.include_router(list_spend.router)
 app.include_router(update_monthly_spend.router)
 app.include_router(delete_monthly_spend.router)
 app.include_router(register_account.router)
 app.include_router(access_token.router)
 app.include_router(detail_account.router)
 app.include_router(update_account.router)
+app.include_router(refresh_token.router)

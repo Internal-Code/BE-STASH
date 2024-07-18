@@ -4,9 +4,8 @@ from src.auth.utils.logging import logging
 from src.auth.utils.request_format import UserInDB
 from src.auth.utils.access_token.security import get_current_active_user
 
-router = APIRouter(tags=["account-management"], prefix='/user')
+router = APIRouter(tags=["user"], prefix='/user')
 
-#TODO: update account endpoint
 async def user(current_user: Annotated[UserInDB, Depends(get_current_active_user)]) -> UserInDB:
     try:
         return current_user

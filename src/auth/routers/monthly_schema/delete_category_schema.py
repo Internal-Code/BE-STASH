@@ -12,7 +12,7 @@ from src.database.models import money_spend_schema
 
 router = APIRouter(tags=["schema"])
 
-async def update_category_schema(schema: Annotated[DeleteCategorySchema, Depends()], user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def update_category_schema(schema: DeleteCategorySchema, user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
     """
         Delete a spesific category of schema:

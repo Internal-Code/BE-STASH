@@ -11,7 +11,7 @@ from src.database.models import money_spend_schema
 
 router = APIRouter(tags=["schema"])
 
-async def update_category_schema(schema: Annotated[UpdateCategorySchema, Depends()], user:Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
+async def update_category_schema(schema: UpdateCategorySchema, user:Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     
     """
         Update category information from a spesific month and year:

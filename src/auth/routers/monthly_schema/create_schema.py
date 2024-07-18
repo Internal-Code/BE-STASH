@@ -11,7 +11,7 @@ from src.database.models import money_spend_schema
 
 router = APIRouter(tags=["schema"])
 
-async def create_schema(schema: Annotated[MoneySpendSchema, Depends()], user: Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
+async def create_schema(schema: MoneySpendSchema, user: Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     """
         Create a schema with all the information:
 

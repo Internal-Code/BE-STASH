@@ -12,7 +12,7 @@ from src.database.models import money_spend, money_spend_schema
 
 router = APIRouter(tags=["spend"])
 
-async def update_monthly_spend(schema: Annotated[UpdateCategorySpending, Depends()], user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def update_monthly_spend(schema: UpdateCategorySpending, user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
     """
         Update category information for a specific month and year.
@@ -129,7 +129,7 @@ async def update_monthly_spend(schema: Annotated[UpdateCategorySpending, Depends
     return response
 
 router.add_api_route(
-    methods=["PUT"],
+    methods=["PATCH"],
     path="/update-monthly-spend", 
     response_model=ResponseDefault,
     endpoint=update_monthly_spend,

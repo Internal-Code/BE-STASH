@@ -4,16 +4,18 @@ from datetime import timedelta
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import EmailStr
 from sqlalchemy.engine.row import Row
 from sqlalchemy import select
-from sqlalchemy.sql import and_
 from src.auth.utils.logging import logging
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
 from src.database.models import user
-from src.secret import ACCESS_TOKEN_SECRET_KEY, ACCESS_TOKEN_ALGORITHM
-from src.auth.utils.request_format import TokenData, UserInDB
+from src.auth.utils.request_format import TokenData, UserInDB, DetailUser
+from src.secret import (
+    ACCESS_TOKEN_SECRET_KEY, 
+    ACCESS_TOKEN_ALGORITHM,
+    REFRESH_TOKEN_SECRET_KEY
+)
 
 password_content = CryptContext(schemes=['bcrypt'], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -32,20 +34,19 @@ async def get_user(username: str) -> UserInDB | None:
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
-                    logging.info(f"User {username} found.")
+                    logging.info(f"User {checked.username} found.")
                     user_data = UserInDB(
-                        user_uuid=checked.user_uuid,
-                        id=checked.id,
                         first_name=checked.first_name,
                         last_name=checked.last_name,
-                        username=checked.username,
                         email=checked.email,
+                        username=checked.username,
                         password=checked.password,
+                        user_uuid=checked.user_uuid,
                         is_deactivated=checked.is_deactivated
                     )
                     return user_data
                 else:
-                    logging.error(f"User {username} not found.")
+                    logging.error(f"User {checked.username} not found.")
                     return None
             except Exception as E:
                 logging.error(f"Error during authenticate_user: {E}.")
@@ -56,31 +57,34 @@ async def get_user(username: str) -> UserInDB | None:
         logging.error(f"Error after authenticate_user: {E}.")
     return None
 
-
 async def authenticate_user(username: str, password: str) -> Row | None:
     try:
         user = await get_user(username=username)
         if not user:
             return None
-        if not await verify_password(password, user.password):
+        if not await verify_password(password=password, hashed_password=user.password):
             return None
     except Exception as E:
         logging.error(f"Error after authenticate_user: {E}.")
         return None
     return user
 
-async def create_access_token(data: dict, expires_delta: timedelta) -> str:
+async def create_access_token(data: dict, access_token_expires: timedelta) -> str:
     to_encode = data.copy()
-    expires = local_time() + expires_delta
+    expires = local_time() + access_token_expires
     to_encode.update({'exp': expires})
-    encoded_jwt = jwt.encode(
-        claims=to_encode, 
-        key=ACCESS_TOKEN_SECRET_KEY, 
-        algorithm=ACCESS_TOKEN_ALGORITHM
-    )
-    return encoded_jwt
+    encoded_access_token = jwt.encode(claims=to_encode, key=ACCESS_TOKEN_SECRET_KEY)
+    return encoded_access_token
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInDB | None:
+async def create_refresh_token(data:dict, refresh_token_expires: timedelta) -> str:
+    to_encode = data.copy()
+    expires = local_time() + refresh_token_expires
+    to_encode.update({'exp': expires})
+    encoded_refresh_token = jwt.encode(claims=to_encode, key=REFRESH_TOKEN_SECRET_KEY)
+    return encoded_refresh_token
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> DetailUser | None:
+    
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -102,7 +106,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     except JWTError as e:
         logging.error(f"JWTError: {e}")
         raise credentials_exception
-    return user
+    return user.to_detail_user()
 
 async def get_current_active_user(current_user: Annotated[str, Depends(get_current_user)]) -> str | dict:
     if current_user.is_deactivated:

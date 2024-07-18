@@ -57,5 +57,22 @@ class TokenData(BaseModel):
     username: str | None = None
     
 class UserInDB(CreateUser):
-    id: int
     user_uuid: UUID
+    
+    def to_detail_user(self) -> 'DetailUser':
+        return DetailUser(
+            user_uuid=self.user_uuid,
+            first_name=self.first_name,
+            last_name=self.last_name,
+            username=self.username,
+            email=self.email,
+            is_deactivated=self.is_deactivated
+        )
+        
+class DetailUser(BaseModel):
+    user_uuid: UUID
+    first_name: str
+    last_name: str
+    username: str
+    email: EmailStr
+    is_deactivated: bool = False
