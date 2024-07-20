@@ -1,12 +1,14 @@
+import re
 from sqlalchemy.engine.row import Row
 from uuid_extensions import uuid7
 from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
-from src.auth.routers.dependencies import logging
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, update
 from datetime import datetime
-from src.database.models import money_spend_schema, money_spend, user
+from fastapi import HTTPException, status
+from src.auth.utils.logging import logging
+from src.database.models import money_spend_schemas, money_spends, users
 from src.database.connection import database_connection
 
 def local_time(zone: str = "Asia/Jakarta") -> datetime:
@@ -59,7 +61,6 @@ def register_account_format(
     username: str,
     email: EmailStr,
     password: str,
-    is_disabled: bool=False,
     updated_at: datetime = None
 ) -> dict:
     return {
@@ -71,32 +72,28 @@ def register_account_format(
         "username": username,
         "email": email,
         "password": password,
-        'is_disabled': is_disabled
+        "last_login": local_time()
     }
 
 async def filter_spesific_category(category: str) -> bool:
-
-    res = False
 
     try:
         async with database_connection().connect() as session:
             try:
                 logging.info("Connected PostgreSQL to perform filter spesific category")
-                query = select(money_spend_schema).where(money_spend_schema.c.category == category)
+                query = select(money_spend_schemas).where(money_spend_schemas.c.category == category)
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
-                    res = True
+                    return True
             except Exception as E:
                 logging.error(f"Error during filter_spesific_category: {E}.")
                 await session.rollback()
-                res = False
             finally:
                 await session.close()
     except Exception as E:
-        res = False
         logging.error(f"Error after filter_spesific_category: {E}.")
-    return res
+    return False
 
 
 async def filter_month_year_category(
@@ -106,34 +103,30 @@ async def filter_month_year_category(
     year: int = local_time().year
 ) -> bool:
     
-    res = False
-
     try:
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with category, month and year.")
-                query = select(money_spend_schema).where(
+                query = select(money_spend_schemas).where(
                     and_(
-                        money_spend_schema.c.user_uuid==user_uuid,
-                        money_spend_schema.c.month == month,
-                        money_spend_schema.c.year == year,
-                        money_spend_schema.c.category == category
+                        money_spend_schemas.c.user_uuid==user_uuid,
+                        money_spend_schemas.c.month == month,
+                        money_spend_schemas.c.year == year,
+                        money_spend_schemas.c.category == category
                     )
                 )
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
-                    res = True
+                    return True
             except Exception as E:
                 logging.error(f"Error during filter_month_year_category: {E}.")
                 await session.rollback()
-                res = False
             finally:
                 await session.close()
     except Exception as E:
-        res = False
         logging.error(f"Error after filter_month_year_category: {E}.")
-    return res
+    return False
         
 async def filter_daily_spending(
     user_uuid: uuid7,
@@ -145,36 +138,32 @@ async def filter_daily_spending(
     spend_year:int = local_time().year
 ) -> Row|None:
     
-    res = None
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(money_spend).where(
+                query = select(money_spends).where(
                     and_(
-                        money_spend.c.spend_day == spend_day,
-                        money_spend.c.spend_month == spend_month,
-                        money_spend.c.spend_year == spend_year,
-                        money_spend.c.amount == amount,
-                        money_spend.c.description == description,
-                        money_spend.c.category == category,
-                        money_spend.c.user_uuid == user_uuid
+                        money_spends.c.spend_day == spend_day,
+                        money_spends.c.spend_month == spend_month,
+                        money_spends.c.spend_year == spend_year,
+                        money_spends.c.amount == amount,
+                        money_spends.c.description == description,
+                        money_spends.c.category == category,
+                        money_spends.c.user_uuid == user_uuid
                     )
-                ).order_by(money_spend.c.created_at.desc())
+                ).order_by(money_spends.c.created_at.desc())
                 result = await session.execute(query)
                 latest_record = result.fetchone()
                 if latest_record:
-                    res = latest_record
-                    print(res)
+                    return latest_record
             except Exception as E:
                 logging.error(f"Error during filtering spesific daily spend {spend_day}/{spend_month}/{spend_year} {category}/{description}/{amount}: {E}.")
                 await session.rollback()
-                res = None
             finally:
                 await session.close()
     except Exception as E:
-        res = None
         logging.error(f"Error after filtering spesific daily spending: {E}.")
-    return res
+    return None
 
 async def filter_month_year(
     user_uuid: uuid7,
@@ -182,64 +171,128 @@ async def filter_month_year(
     year: int = local_time().year
 ) -> bool:
     
-    res = False
-
     try:
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with month and year.")
-                query = select(money_spend_schema).where(
+                query = select(money_spend_schemas).where(
                     and_(
-                        money_spend_schema.c.month == month,
-                        money_spend_schema.c.year == year,
-                        money_spend_schema.c.user_uuid == user_uuid,
+                        money_spend_schemas.c.month == month,
+                        money_spend_schemas.c.year == year,
+                        money_spend_schemas.c.user_uuid == user_uuid,
                     )   
                 )
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
-                    res = True
+                    return True
             except Exception as E:
                 logging.error(f"Error during filter_month_year category availability: {E}.")
                 await session.rollback()
-                res = False
             finally:
                 await session.close()
     except Exception as E:
-        res = False
         logging.error(f"Error after filter_month_year availability: {E}.")
-    return res
+    return False
 
-async def filter_registered_user(
-    username: str,
-    email: EmailStr   
-) -> bool:
-    
-    res = False
+async def filter_registered_user(username: str, email: EmailStr) -> bool:
     
     try:
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with username and email")
-                query = select(user).where(
+                query = select(users).where(
                     or_(
-                        user.c.username == username,
-                        user.c.email == email
+                        users.c.username == username,
+                        users.c.email == email
                     )
                 )
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
                     logging.warning(f"Account with username: {username} or email: {email} already registered. Please create an another account")
-                    res = True
+                    return True
             except Exception as E:
                 logging.error(f"Error during filter_registered_user category availability: {E}.")
                 await session.rollback()
-                res = False
             finally:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after filter_registered_user availability: {E}.")
-        res = False
-        
-    return res
+    return False
+
+async def update_latest_login(username: str, email: EmailStr) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                await session.execute(
+                    update(users).where(
+                        and_(
+                            users.c.username == username,
+                            users.c.email == email,
+                        )
+                    ).values(last_login=local_time())
+                )
+                await session.commit()
+                logging.info(f"Updated last_login for users {username}.")
+                return True
+            except Exception as e:
+                logging.error(f"Error during update_latest_login: {e}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as e:
+        logging.error(f"Error connecting to database in update_latest_login: {e}")
+    
+    return False
+
+async def check_password(value: str) -> str:
+    if len(value) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters long.")
+    if not re.search(r'[A-Z]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one uppercase letter.")
+    if not re.search(r'[a-z]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one lowercase letter.")
+    if not re.search(r'[0-9]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one number.")
+    if not re.search(r'[\W_]', value):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one special character.")
+    return value
+
+async def is_using_same_email(changed_email: EmailStr) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(users).where(users.c.email==changed_email)
+                result = await session.execute(query)
+                checked = result.fetchone()
+                if checked:
+                    return True
+            except Exception as E:
+                logging.error(f"Error while is_safe_to_update: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after is_safe_to_update: {E}")
+    
+    return False
+
+async def is_using_same_username(changed_username: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(users).where(users.c.username==changed_username)
+                result = await session.execute(query)
+                checked = result.fetchone()
+                if checked:
+                    return True
+            except Exception as E:
+                logging.error(f"Error while is_safe_to_update: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after is_safe_to_update: {E}")
+    
+    return False

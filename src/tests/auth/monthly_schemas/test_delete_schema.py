@@ -1,6 +1,6 @@
 import pytest
 import httpx
-from src.utils.generator import random_word
+from src.auth.utils.generator import random_word
 
 @pytest.mark.asyncio
 async def test_delete_schema():

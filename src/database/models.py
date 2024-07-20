@@ -14,8 +14,8 @@ from sqlalchemy import (
 
 meta = MetaData()
 
-user = Table(
-    'user', 
+users = Table(
+    'users', 
     meta, 
     Column('id', Integer, primary_key=True, autoincrement=True), 
     Column('user_uuid', UUID(as_uuid=True), default=uuid7, unique=True, nullable=False),
@@ -25,12 +25,14 @@ user = Table(
     Column('first_name', String(255), nullable=False, unique=False),
     Column('last_name', String(255), nullable=False, unique=False),
     Column('email', String(255), nullable=False, unique=True),
+    Column('verified_at', DateTime(timezone=True), nullable=True, default=None),
     Column('password', String(255), nullable=False),
-    Column('is_disabled', Boolean, nullable=False)
+    Column('is_deactivated', Boolean, nullable=False, default=False),
+    Column('last_login', DateTime(timezone=True), nullable=True)
 )
 
-money_spend = Table(
-    'money_spend', 
+money_spends = Table(
+    'money_spends', 
     meta, 
     Column('id', Integer, primary_key=True, autoincrement=True), 
     Column('created_at', DateTime(timezone=True), nullable=False),
@@ -44,8 +46,8 @@ money_spend = Table(
     Column('amount', BigInteger, nullable=False),
 )
 
-money_spend_schema = Table(
-    'money_spend_schema', 
+money_spend_schemas = Table(
+    'money_spend_schemas', 
     meta, 
     Column('id', Integer, primary_key=True, autoincrement=True), 
     Column('created_at', DateTime(timezone=True), nullable=False),

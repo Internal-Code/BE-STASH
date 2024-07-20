@@ -1,6 +1,6 @@
 import pytest
 import httpx
-from src.utils.generator import random_word, random_number
+from src.auth.utils.generator import random_word, random_number
 
 base_json = {
         "month": 9,
@@ -18,7 +18,6 @@ async def test_update_schema():
         res = await client.patch("http://localhost:8000/api/v1/update_category", json=base_json)
         assert res.json().get('success') == True
         assert res.status_code == 200
-        await client.aclose()
         
 @pytest.mark.asyncio
 async def test_validate_update_schema():
@@ -34,7 +33,6 @@ async def test_validate_update_schema():
     async with httpx.AsyncClient() as client:
         res = await client.patch("http://localhost:8000/api/v1/update_category", json=sample_data)
         assert res.status_code == 403
-        await client.aclose()
 
 @pytest.mark.asyncio        
 async def test_validate_category():
@@ -50,4 +48,3 @@ async def test_validate_category():
     async with httpx.AsyncClient() as client:
         res = await client.patch("http://localhost:8000/api/v1/update_category", json=sample_data)
         assert res.status_code == 404
-        await client.aclose()

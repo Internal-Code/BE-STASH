@@ -1,3 +1,5 @@
+from uuid import UUID
+from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
 
@@ -31,10 +33,6 @@ class DeleteCategorySchema(BaseModel):
     month: int = Field(default=local_time().month, ge=1, le=12)
     year: int = Field(default=local_time().year, ge=1000, le=9999)
     category: str
-
-class GetSchema(BaseModel):
-    month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year, ge=1000, le=9999)
     
 class CreateSpend(BaseModel):
     spend_day: int = Field(default=local_time().day, ge=1, le=31)
@@ -50,4 +48,25 @@ class CreateUser(BaseModel):
     username: str
     email: EmailStr
     password: str
-    is_disabled: bool = False
+    
+class TokenData(BaseModel):
+    username: str | None = None
+    
+class DetailUser(BaseModel):
+    first_name: str
+    last_name: str
+    username: str
+    email: EmailStr
+    
+class UserInDB(CreateUser):
+    user_uuid: UUID
+    is_deactivated: bool
+    verified_at: datetime | None
+    
+    def to_detail_user(self) -> 'DetailUser':
+        return DetailUser(
+            first_name=self.first_name,
+            last_name=self.last_name,
+            username=self.username,
+            email=self.email
+        )

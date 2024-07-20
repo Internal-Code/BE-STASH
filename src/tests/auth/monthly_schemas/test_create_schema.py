@@ -1,6 +1,6 @@
 import pytest
 import httpx
-from src.database.models import money_spend_schema
+from src.database.models import money_spend_schemas
 from src.database.connection import database_connection
 from sqlalchemy import select
 
@@ -8,7 +8,7 @@ from sqlalchemy import select
 def db_data():
     with database_connection().connect() as session:
         with session.begin():
-            res = session.execute(select(money_spend_schema))
+            res = session.execute(select(money_spend_schemas))
             col = res.keys()
             rows = res.fetchall()
             result = []
@@ -20,17 +20,6 @@ def db_data():
         session.close()
     return result
 
-# @pytest.mark.asyncio    
-# async def test_insert_create_schema(db_data):
-#     """
-#     Should create schema into table.
-#     """
-#     sample_data = db_data[0]
-#     async with httpx.AsyncClient() as client:
-#         res = await client.post("http://localhost:8000/api/v1/create_schema", json=sample_data[0])
-#         assert res.json().get('success') == True
-#         assert res.status_code == 201
-#         await client.aclose()
         
 @pytest.mark.asyncio
 async def test_validate_create_schema(db_data):
@@ -38,7 +27,6 @@ async def test_validate_create_schema(db_data):
     Should return forbidden if any same schema inside the table.
     """
     sample_data = db_data[0]
-    print(sample_data)
     async with httpx.AsyncClient() as client:
         res = await client.post("http://localhost:8000/api/v1/create_schema", json=sample_data)
         assert res.status_code == 403

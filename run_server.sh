@@ -1,8 +1,8 @@
 #!/bin/bash
-source ../bin/activate
+source .venv/bin/activate
 
 echo "Installing missing dependencies"
-pip install -r src/requirements/dev.txt --quiet
+poetry install --no-root
 
 echo "Package installation success"
 
