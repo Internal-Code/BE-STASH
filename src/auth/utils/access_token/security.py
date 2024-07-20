@@ -9,7 +9,7 @@ from sqlalchemy import select
 from src.auth.utils.logging import logging
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
-from src.database.models import user
+from src.database.models import users
 from src.auth.utils.request_format import TokenData, UserInDB, DetailUser
 from src.secret import (
     ACCESS_TOKEN_SECRET_KEY, 
@@ -30,7 +30,7 @@ async def get_user(username: str) -> UserInDB | None:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(user).where(user.c.username == username)
+                query = select(users).where(users.c.username == username)
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
@@ -61,17 +61,17 @@ async def get_user(username: str) -> UserInDB | None:
 
 async def authenticate_user(username: str, password: str) -> Row | None:
     try:
-        user = await get_user(username=username)
-        if not user:
-            logging.error(f"Authentication failed: user {username} not found.")
+        users = await get_user(username=username)
+        if not users:
+            logging.error(f"Authentication failed: users {username} not found.")
             return None
-        if not await verify_password(password=password, hashed_password=user.password):
-            logging.error(f"Authentication failed: invalid password for user {username}.")
+        if not await verify_password(password=password, hashed_password=users.password):
+            logging.error(f"Authentication failed: invalid password for users {username}.")
             return None
     except Exception as E:
         logging.error(f"Error after authenticate_user: {E}.")
         return None
-    return user
+    return users
 
 async def create_access_token(data: dict, access_token_expires: timedelta) -> str:
     to_encode = data.copy()
@@ -103,16 +103,16 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Det
         )
         username = payload.get('sub')
         token_data = TokenData(username=username)
-        user = await get_user(username=token_data.username)
+        users = await get_user(username=token_data.username)
         
-        if username is None or user is None:
+        if username is None or users is None:
             raise credentials_exception
     except JWTError as e:
         logging.error(f"JWTError: {e}")
         raise credentials_exception
-    return user
+    return users
 
 async def get_current_active_user(current_user: Annotated[str, Depends(get_current_user)]) -> str | dict:
     if current_user.is_deactivated:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive users")
     return current_user

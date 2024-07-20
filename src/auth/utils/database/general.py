@@ -8,7 +8,7 @@ from sqlalchemy import select, or_, update
 from datetime import datetime
 from fastapi import HTTPException, status
 from src.auth.utils.logging import logging
-from src.database.models import money_spend_schema, money_spend, user
+from src.database.models import money_spend_schemas, money_spends, users
 from src.database.connection import database_connection
 
 def local_time(zone: str = "Asia/Jakarta") -> datetime:
@@ -81,7 +81,7 @@ async def filter_spesific_category(category: str) -> bool:
         async with database_connection().connect() as session:
             try:
                 logging.info("Connected PostgreSQL to perform filter spesific category")
-                query = select(money_spend_schema).where(money_spend_schema.c.category == category)
+                query = select(money_spend_schemas).where(money_spend_schemas.c.category == category)
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
@@ -107,12 +107,12 @@ async def filter_month_year_category(
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with category, month and year.")
-                query = select(money_spend_schema).where(
+                query = select(money_spend_schemas).where(
                     and_(
-                        money_spend_schema.c.user_uuid==user_uuid,
-                        money_spend_schema.c.month == month,
-                        money_spend_schema.c.year == year,
-                        money_spend_schema.c.category == category
+                        money_spend_schemas.c.user_uuid==user_uuid,
+                        money_spend_schemas.c.month == month,
+                        money_spend_schemas.c.year == year,
+                        money_spend_schemas.c.category == category
                     )
                 )
                 result = await session.execute(query)
@@ -141,17 +141,17 @@ async def filter_daily_spending(
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(money_spend).where(
+                query = select(money_spends).where(
                     and_(
-                        money_spend.c.spend_day == spend_day,
-                        money_spend.c.spend_month == spend_month,
-                        money_spend.c.spend_year == spend_year,
-                        money_spend.c.amount == amount,
-                        money_spend.c.description == description,
-                        money_spend.c.category == category,
-                        money_spend.c.user_uuid == user_uuid
+                        money_spends.c.spend_day == spend_day,
+                        money_spends.c.spend_month == spend_month,
+                        money_spends.c.spend_year == spend_year,
+                        money_spends.c.amount == amount,
+                        money_spends.c.description == description,
+                        money_spends.c.category == category,
+                        money_spends.c.user_uuid == user_uuid
                     )
-                ).order_by(money_spend.c.created_at.desc())
+                ).order_by(money_spends.c.created_at.desc())
                 result = await session.execute(query)
                 latest_record = result.fetchone()
                 if latest_record:
@@ -175,11 +175,11 @@ async def filter_month_year(
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with month and year.")
-                query = select(money_spend_schema).where(
+                query = select(money_spend_schemas).where(
                     and_(
-                        money_spend_schema.c.month == month,
-                        money_spend_schema.c.year == year,
-                        money_spend_schema.c.user_uuid == user_uuid,
+                        money_spend_schemas.c.month == month,
+                        money_spend_schemas.c.year == year,
+                        money_spend_schemas.c.user_uuid == user_uuid,
                     )   
                 )
                 result = await session.execute(query)
@@ -201,10 +201,10 @@ async def filter_registered_user(username: str, email: EmailStr) -> bool:
         async with database_connection().connect() as session:
             try:
                 logging.info("Filter with username and email")
-                query = select(user).where(
+                query = select(users).where(
                     or_(
-                        user.c.username == username,
-                        user.c.email == email
+                        users.c.username == username,
+                        users.c.email == email
                     )
                 )
                 result = await session.execute(query)
@@ -226,15 +226,15 @@ async def update_latest_login(username: str, email: EmailStr) -> bool:
         async with database_connection().connect() as session:
             try:
                 await session.execute(
-                    update(user).where(
+                    update(users).where(
                         and_(
-                            user.c.username == username,
-                            user.c.email == email,
+                            users.c.username == username,
+                            users.c.email == email,
                         )
                     ).values(last_login=local_time())
                 )
                 await session.commit()
-                logging.info(f"Updated last_login for user {username}.")
+                logging.info(f"Updated last_login for users {username}.")
                 return True
             except Exception as e:
                 logging.error(f"Error during update_latest_login: {e}")
@@ -263,7 +263,7 @@ async def is_using_same_email(changed_email: EmailStr) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(user).where(user.c.email==changed_email)
+                query = select(users).where(users.c.email==changed_email)
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
@@ -282,7 +282,7 @@ async def is_using_same_username(changed_username: str) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(user).where(user.c.username==changed_username)
+                query = select(users).where(users.c.username==changed_username)
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:

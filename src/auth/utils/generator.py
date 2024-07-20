@@ -18,3 +18,22 @@ def random_word(length: int=4) -> str:
     word = ''.join(random.choice(alphabet) for _ in range(length))
     
     return word
+
+def random_password(length: int=8) -> str:
+    lower = string.ascii_lowercase
+    upper = string.ascii_uppercase
+    digits = string.digits
+    special = ''.join(c for c in string.punctuation if c not in ['"', "'"])
+    
+    password = [
+        random.choice(lower),
+        random.choice(upper),
+        random.choice(digits),
+        random.choice(special),
+    ]
+    
+    all_characters = lower + upper + digits + special
+    password += random.choices(all_characters, k=length)
+    
+    random.shuffle(password)
+    return ''.join(password)

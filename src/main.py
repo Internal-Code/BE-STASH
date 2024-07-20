@@ -5,24 +5,24 @@ from fastapi.openapi.models import OAuthFlowPassword
 from src.auth.routers import health_check
 from src.database.connection import database_connection
 from src.database.models import async_main
-from src.auth.routers.monthly_schema import (
+from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,
     delete_category_schema,
     update_category_schema
 )
-from src.auth.routers.monthly_spend import (
+from src.auth.routers.monthly_spends import (
     create_spend,
     list_spend,
     update_monthly_spend,
     delete_monthly_spend
 )
-from src.auth.routers.account_management import (
+from src.auth.routers.account_managements import (
     access_token,
     refresh_token
 )
 
-from src.auth.routers.user import (
+from src.auth.routers.users import (
     register_account,
     detail_account
 )
