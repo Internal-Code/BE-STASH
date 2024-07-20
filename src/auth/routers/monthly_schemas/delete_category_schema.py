@@ -36,31 +36,30 @@ async def update_category_schema(schema: DeleteCategorySchema, users:Annotated[d
         
         logging.info("Endpoint delete category.")
         async with database_connection().connect() as session:
-            async with session.begin():
-                try:
-                    query = money_spend_schemas.delete().where(
-                        and_(
-                            money_spend_schemas.c.user_uuid == users.user_uuid,
-                            money_spend_schemas.c.month == schema.month,
-                            money_spend_schemas.c.year == schema.year,
-                            money_spend_schemas.c.category == schema.category
-                        )
+            try:
+                query = money_spend_schemas.delete().where(
+                    and_(
+                        money_spend_schemas.c.user_uuid == users.user_uuid,
+                        money_spend_schemas.c.month == schema.month,
+                        money_spend_schemas.c.year == schema.year,
+                        money_spend_schemas.c.category == schema.category
                     )
-                    await session.execute(query)
-                    logging.info(f"Deleted category {schema.category}.")
-                    response.message = "Delete category success."
-                    response.success = True
-                except Exception as E:
-                    logging.error(f"Error while creating category: {E}.")
-                    await session.rollback()
-                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during transaction: {E}.")
-                finally:
-                    await session.commit()
-            await session.close()
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(f"Deleted category {schema.category}.")
+                response.message="Delete category success."
+                response.success=True
+            except Exception as E:
+                logging.error(f"Error during deleting category: {E}.")
+                await session.rollback()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during deleting category: {E}.")
+            finally:
+                await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Error while updating category: {E}.")
+        logging.error(f"Error after updating category: {E}.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
     
     return response

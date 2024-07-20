@@ -55,15 +55,15 @@ async def list_spending(
                 response.data = [dict(row._mapping) for row in data]
                 response.success = True
             except Exception as E:
-                logging.error(f"Error while getting spend per month inside transaction: {E}.")
+                logging.error(f"Error during getting money spend per month: {E}.")
                 await session.rollback()
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during get spend per month: {E}")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during getting money spend per month: {E}")
             finally:
                 await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Error while creating spend per month: {E}.")
+        logging.error(f"Error after getting money spend per month: {E}.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
     
     return response

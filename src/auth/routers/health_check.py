@@ -5,7 +5,6 @@ from fastapi.responses import JSONResponse
 router = APIRouter(tags=["root"])
 
 async def root():
-    
     logging.info("Endpoint Root.")
     return JSONResponse(content={"status":"Server running!"})
 

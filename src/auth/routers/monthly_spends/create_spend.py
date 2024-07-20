@@ -45,9 +45,9 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
         
         logging.info("Endpoint create spend money.")
         async with database_connection().connect() as session:
-            async with session.begin():
-                try:
-                    if not is_available:
+            try:
+                if not is_available:
+                    try:
                         logging.info(f"Inserting data into table {money_spends.name} and {money_spend_schemas.name}")
                         
                         prepared_category = create_category_format(
@@ -61,27 +61,37 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
                         create_category = money_spend_schemas.insert().values(prepared_category)
                         await session.execute(create_spend)
                         await session.execute(create_category)
+                        await session.commit()
                         logging.info("Created new spend money and schema.")
-                        response.message = "Created new spend money and schema data."
-                        response.success = True
-                    else:
+                        response.message="Created new spend money and schema data."
+                        response.success=True
+                    except Exception as E:
+                        logging.error(f"Error during creating new spend money and schema: {E}.")
+                        await session.rollback()
+                        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during creating new spend money and schema: {E}.")
+                else:
+                    try:
                         logging.info(f"Only inserting data into table {money_spends.name}")
                         create_spend = money_spends.insert().values(prepared_spend)
                         await session.execute(create_spend)
+                        await session.commit()
                         logging.info("Created new spend money.")
-                        response.message = "Created new spend money."
-                        response.success = True
-                except Exception as E:
-                    logging.error(f"Error while creating spend money inside transaction: {E}.")
-                    await session.rollback()
-                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during transaction: {E}.")
-                finally:
-                    await session.commit()
-            await session.close()
+                        response.message="Created new spend money."
+                        response.success=True
+                    except Exception as E:
+                        logging.error(f"Error during creating new spend money: {E}.")
+                        await session.rollback()
+                        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during creating new spend money: {E}.")
+            except Exception as E:
+                logging.error(f"Error during creating spend money or with adding money schema: {E}.")
+                await session.rollback()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during creating spend money or with adding money schema: {E}.")
+            finally:
+                await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Error while creating spend money: {E}.")
+        logging.error(f"Error after creating spend money: {E}.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
     
     return response

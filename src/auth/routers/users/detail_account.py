@@ -8,7 +8,6 @@ router = APIRouter(tags=["users"], prefix='/users')
 
 async def users(current_user: Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     response = ResponseDefault()
-    
     try:
         response.success=True
         response.message=f"Extracting account {current_user.username}."

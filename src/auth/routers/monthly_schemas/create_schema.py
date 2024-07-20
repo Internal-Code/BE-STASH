@@ -47,19 +47,18 @@ async def create_schema(schema: MoneySpendSchema, users: Annotated[dict, Depends
                 await session.execute(query)
                 await session.commit()
                 logging.info(f"Created new category: {schema.category}.")
+                response.message="Created new category."
+                response.success=True
             except Exception as E:
-                logging.error(f"Error while creating category inside transaction: {E}.")
+                logging.error(f"Error during creating category inside transaction: {E}.")
                 await session.rollback()
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during transaction: {E}.")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during creating new category: {E}.")
             finally:
                 await session.close()
-
-        response.message = "Created new category."
-        response.success = True
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Error while creating category: {E}.")
+        logging.error(f"Error after creating category: {E}.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
     return response
 

@@ -41,30 +41,29 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
         
         logging.info("Endpoint create spend money.")
         async with database_connection().connect() as session:
-            async with session.begin():
-                try:
-                    logging.info(f"Deleting daily spending record.")
-                    create_spend = money_spends.delete().where(
-                        money_spends.c.id==is_available.id,
-                        money_spends.c.spend_day == is_available.spend_day,
-                        money_spends.c.spend_month == is_available.spend_month,
-                        money_spends.c.spend_year == is_available.spend_year,
-                        money_spends.c.category == is_available.category,
-                        money_spends.c.description == is_available.description,
-                        money_spends.c.amount == is_available.amount,
-                        money_spends.c.user_uuid == users.user_uuid
-                    )
-                    await session.execute(create_spend)
-                    logging.info("Deleted a daily spend record.")
-                    response.message = "Delete daily spend data success."
-                    response.success = True
-                except Exception as E:
-                    logging.error(f"Error during delete daily spend money data: {E}.")
-                    await session.rollback()
-                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during transaction: {E}.")
-                finally:
-                    await session.commit()
-            await session.close()
+            try:
+                logging.info(f"Deleting daily spending record.")
+                create_spend = money_spends.delete().where(
+                    money_spends.c.id==is_available.id,
+                    money_spends.c.spend_day == is_available.spend_day,
+                    money_spends.c.spend_month == is_available.spend_month,
+                    money_spends.c.spend_year == is_available.spend_year,
+                    money_spends.c.category == is_available.category,
+                    money_spends.c.description == is_available.description,
+                    money_spends.c.amount == is_available.amount,
+                    money_spends.c.user_uuid == users.user_uuid
+                )
+                await session.execute(create_spend)
+                await session.commit()
+                logging.info("Deleted a daily spend record.")
+                response.message="Delete daily spend data success."
+                response.success=True
+            except Exception as E:
+                logging.error(f"Error during delete daily spend money data: {E}.")
+                await session.rollback()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during delete daily spend money data: {E}.")
+            finally:
+                await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:

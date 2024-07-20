@@ -51,19 +51,19 @@ async def list_schema(
                 result = await session.execute(query)
                 data = result.fetchall()
                 logging.info(f"Get category {money_spend_schemas.name} for {month}/{year}.")
-                response.message = "Get schema information success."
-                response.data = [dict(row._mapping) for row in data]
-                response.success = True
+                response.message="Get schema information success."
+                response.data=[dict(row._mapping) for row in data]
+                response.success=True
             except Exception as E:
-                logging.error(f"Error while getting category inside transaction: {E}.")
+                logging.error(f"Error during get category: {E}.")
                 await session.rollback()
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during get category: {E}")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during get category: {E}")
             finally:
                 await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Error while getting category: {E}.")
+        logging.error(f"Error after getting category: {E}.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
     
     return response

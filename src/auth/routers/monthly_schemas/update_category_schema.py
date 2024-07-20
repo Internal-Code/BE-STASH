@@ -28,6 +28,7 @@ async def update_category_schema(schema: UpdateCategorySchema, users:Annotated[d
         user_uuid=users.user_uuid
     )
     checked_category = await filter_spesific_category(category=schema.changed_category_into)
+    
     if is_available is False:
         logging.info(f"User {users.username} is not created schema in {schema.month}/{schema.year}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Category {schema.category} not found. Please create category first.")
@@ -53,18 +54,18 @@ async def update_category_schema(schema: UpdateCategorySchema, users:Annotated[d
                 await session.execute(query)
                 await session.commit()
                 logging.info(f"Updated category {schema.category} into {schema.changed_category_into}.")
-                response.message = "Update category success."
-                response.success = True
+                response.message="Update category success."
+                response.success=True
             except Exception as E:
-                logging.error(f"Error while updating category: {E}.")
+                logging.error(f"Error during updating category: {E}.")
                 await session.rollback()
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error during updating category: {E}.")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during updating category: {E}.")
             finally:
                 await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Error while updating category: {E}.")
+        logging.error(f"Error after updating category: {E}.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
     
     return response
