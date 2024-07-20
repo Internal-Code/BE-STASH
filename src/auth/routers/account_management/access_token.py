@@ -8,7 +8,7 @@ from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
 from src.auth.utils.access_token.security import authenticate_user, create_access_token, create_refresh_token
 from src.auth.utils.database.general import update_latest_login
 
-router = APIRouter(tags=["auth"], prefix='/auth')
+router = APIRouter(tags=["authorizations"], prefix='/auth')
 
 async def access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> ResponseToken:
     try:

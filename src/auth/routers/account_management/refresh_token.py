@@ -11,14 +11,19 @@ from src.secret import (
     ACCESS_TOKEN_EXPIRED
 )
 
-router = APIRouter(tags=["auth"], prefix='/auth')
+router = APIRouter(tags=["authorizations"], prefix='/auth')
 
 async def refresh_access_token(refresh_token: str) -> ResponseToken:
     
-    invalid_refresh_token = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+    invalid_refresh_token = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token.")
+    response = ResponseToken()
     
     try:
-        payload = jwt.decode(refresh_token, REFRESH_TOKEN_SECRET_KEY, algorithms=[ACCESS_TOKEN_ALGORITHM])
+        payload = jwt.decode(
+            token=refresh_token, 
+            key=REFRESH_TOKEN_SECRET_KEY, 
+            algorithms=[ACCESS_TOKEN_ALGORITHM]
+        )
         username = payload.get("sub")
         user_uuid = payload.get("user_uuid")
         if user_uuid is None or username is None:
@@ -35,10 +40,13 @@ async def refresh_access_token(refresh_token: str) -> ResponseToken:
             algorithm=ACCESS_TOKEN_ALGORITHM
         )
         
-        return ResponseToken(access_token=new_access_token, token_type="Bearer")
+        response.access_token=new_access_token
+        response.token_type="Bearer"
+        
     except JWTError as e:
         logging.error(f"JWTError: {e}")
         raise invalid_refresh_token
+    return response
 
 router.add_api_route(
     methods=["POST"],

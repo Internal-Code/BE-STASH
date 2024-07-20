@@ -7,10 +7,9 @@ from src.database.connection import database_connection
 from src.auth.utils.access_token.security import get_password_hash
 from fastapi import APIRouter, HTTPException, status, Depends
 
+router = APIRouter(tags=["users"], prefix='/users')
 
-router = APIRouter(tags=["user"], prefix='/user')
-
-async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
+async def register_user(schema: CreateUser) -> ResponseDefault:
     
     """
         Create a new user account with the following information:
@@ -25,7 +24,6 @@ async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
             - Contain at least one lowercase letter.
             - Contain at least one digit.
             - Contain at least one special character.
-        - **is_deactivated**: Indicates if the account is deactivated.
     """
 
     
@@ -45,8 +43,7 @@ async def register_user(schema: CreateUser = Depends()) -> ResponseDefault:
             last_name=schema.last_name,
             username=schema.username,
             email=schema.email,
-            password=await get_password_hash(schema.password),
-            is_deactivated=schema.is_deactivated
+            password=await get_password_hash(schema.password)
         )
 
         logging.info("Endpoint register account.")

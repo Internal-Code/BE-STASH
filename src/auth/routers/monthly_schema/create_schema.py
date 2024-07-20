@@ -9,7 +9,7 @@ from src.auth.utils.request_format import MoneySpendSchema
 from src.database.connection import database_connection
 from src.database.models import money_spend_schema
 
-router = APIRouter(tags=["schema"])
+router = APIRouter(tags=["schemas"])
 
 async def create_schema(schema: MoneySpendSchema, user: Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     """

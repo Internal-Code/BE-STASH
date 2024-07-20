@@ -9,7 +9,7 @@ from src.auth.utils.request_format import CreateSpend
 from src.database.connection import database_connection
 from src.database.models import money_spend
 
-router = APIRouter(tags=["spend"])
+router = APIRouter(tags=["spends"])
 
 async def create_spend(schema: CreateSpend, user:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     

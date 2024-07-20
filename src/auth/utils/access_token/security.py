@@ -42,27 +42,31 @@ async def get_user(username: str) -> UserInDB | None:
                         username=checked.username,
                         password=checked.password,
                         user_uuid=checked.user_uuid,
-                        is_deactivated=checked.is_deactivated
+                        is_deactivated=checked.is_deactivated,
+                        is_verified=checked.is_verified
                     )
                     return user_data
                 else:
-                    logging.error(f"User {checked.username} not found.")
+                    logging.error(f"User {username} not found.")
                     return None
             except Exception as E:
-                logging.error(f"Error during authenticate_user: {E}.")
+                logging.error(f"Error during get_user: {E}.")
                 await session.rollback()
             finally:
                 await session.close()
     except Exception as E:
-        logging.error(f"Error after authenticate_user: {E}.")
+        logging.error(f"Error after get_user: {E}.")
     return None
+
 
 async def authenticate_user(username: str, password: str) -> Row | None:
     try:
         user = await get_user(username=username)
         if not user:
+            logging.error(f"Authentication failed: user {username} not found.")
             return None
         if not await verify_password(password=password, hashed_password=user.password):
+            logging.error(f"Authentication failed: invalid password for user {username}.")
             return None
     except Exception as E:
         logging.error(f"Error after authenticate_user: {E}.")
@@ -85,7 +89,6 @@ async def create_refresh_token(data:dict, refresh_token_expires: timedelta) -> s
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> DetailUser | None:
     
-    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -101,12 +104,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Det
         username = payload.get('sub')
         token_data = TokenData(username=username)
         user = await get_user(username=token_data.username)
+        
         if username is None or user is None:
             raise credentials_exception
     except JWTError as e:
         logging.error(f"JWTError: {e}")
         raise credentials_exception
-    return user.to_detail_user()
+    return user
 
 async def get_current_active_user(current_user: Annotated[str, Depends(get_current_user)]) -> str | dict:
     if current_user.is_deactivated:

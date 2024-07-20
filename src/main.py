@@ -24,8 +24,6 @@ from src.auth.routers.account_management import (
 
 from src.auth.routers.user import (
     register_account,
-    update_account,
-    deactivate_account,
     detail_account
 )
 
@@ -62,5 +60,4 @@ app.include_router(delete_monthly_spend.router)
 app.include_router(register_account.router)
 app.include_router(access_token.router)
 app.include_router(detail_account.router)
-app.include_router(update_account.router)
 app.include_router(refresh_token.router)

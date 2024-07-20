@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Optional
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
 
@@ -32,10 +33,6 @@ class DeleteCategorySchema(BaseModel):
     month: int = Field(default=local_time().month, ge=1, le=12)
     year: int = Field(default=local_time().year, ge=1000, le=9999)
     category: str
-
-class GetSchema(BaseModel):
-    month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year, ge=1000, le=9999)
     
 class CreateSpend(BaseModel):
     spend_day: int = Field(default=local_time().day, ge=1, le=31)
@@ -51,13 +48,31 @@ class CreateUser(BaseModel):
     username: str
     email: EmailStr
     password: str
-    is_deactivated: bool = False
     
 class TokenData(BaseModel):
     username: str | None = None
     
+class DetailUser(BaseModel):
+    user_uuid: UUID
+    first_name: str
+    last_name: str
+    username: str
+    email: EmailStr
+    
+class VerifyUser(BaseModel):
+    is_deactivated: bool
+    is_verified: bool
+
+    
+class UpdatePasswordUser(BaseModel):
+    current_password: str
+    new_password: str
+    retype_new_password: str
+    
 class UserInDB(CreateUser):
     user_uuid: UUID
+    is_deactivated: bool
+    is_verified: bool
     
     def to_detail_user(self) -> 'DetailUser':
         return DetailUser(
@@ -65,14 +80,18 @@ class UserInDB(CreateUser):
             first_name=self.first_name,
             last_name=self.last_name,
             username=self.username,
-            email=self.email,
-            is_deactivated=self.is_deactivated
+            email=self.email
         )
         
-class DetailUser(BaseModel):
-    user_uuid: UUID
-    first_name: str
-    last_name: str
-    username: str
-    email: EmailStr
-    is_deactivated: bool = False
+    def to_verify_user(self) -> "VerifyUser":
+        return VerifyUser(
+            is_deactivated=self.is_deactivated,
+            is_verified=self.is_verified
+        )
+        
+    def to_update_password_user(self, password_data: UpdatePasswordUser) -> "UpdatePasswordUser":
+        return UpdatePasswordUser(
+            current_password=password_data.current_password,
+            new_password=password_data.new_password,
+            retype_new_password=password_data.retype_new_password
+        )
