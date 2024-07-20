@@ -25,7 +25,7 @@ user = Table(
     Column('first_name', String(255), nullable=False, unique=False),
     Column('last_name', String(255), nullable=False, unique=False),
     Column('email', String(255), nullable=False, unique=True),
-    Column('is_verified', Boolean, nullable=False, default=False),
+    Column('verified_at', DateTime(timezone=True), nullable=True, default=None),
     Column('password', String(255), nullable=False),
     Column('is_deactivated', Boolean, nullable=False, default=False),
     Column('last_login', DateTime(timezone=True), nullable=True)

@@ -3,7 +3,7 @@ from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from src.auth.utils.access_token.security import get_current_user
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import filter_month_year
+from src.auth.utils.database.general import filter_month_year, local_time
 from src.auth.schema.response import ResponseDefault
 from src.database.connection import database_connection
 from src.database.models import money_spend
@@ -22,6 +22,10 @@ async def list_spending(
         - **month**: This refers to the specific calendar month (e.g., January, February) when the schema was created or applies to.
         - **year**: This represents the calendar year (e.g., 2023, 2024) associated with the schema.
     """
+    
+    current_time = local_time()
+    month = month if month is not None else current_time.month
+    year = year if year is not None else current_time.year
     
     response = ResponseDefault()
     is_available = await filter_month_year(

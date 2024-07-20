@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
 
@@ -53,45 +53,20 @@ class TokenData(BaseModel):
     username: str | None = None
     
 class DetailUser(BaseModel):
-    user_uuid: UUID
     first_name: str
     last_name: str
     username: str
     email: EmailStr
     
-class VerifyUser(BaseModel):
-    is_deactivated: bool
-    is_verified: bool
-
-    
-class UpdatePasswordUser(BaseModel):
-    current_password: str
-    new_password: str
-    retype_new_password: str
-    
 class UserInDB(CreateUser):
     user_uuid: UUID
     is_deactivated: bool
-    is_verified: bool
+    verified_at: datetime | None
     
     def to_detail_user(self) -> 'DetailUser':
         return DetailUser(
-            user_uuid=self.user_uuid,
             first_name=self.first_name,
             last_name=self.last_name,
             username=self.username,
             email=self.email
-        )
-        
-    def to_verify_user(self) -> "VerifyUser":
-        return VerifyUser(
-            is_deactivated=self.is_deactivated,
-            is_verified=self.is_verified
-        )
-        
-    def to_update_password_user(self, password_data: UpdatePasswordUser) -> "UpdatePasswordUser":
-        return UpdatePasswordUser(
-            current_password=password_data.current_password,
-            new_password=password_data.new_password,
-            retype_new_password=password_data.retype_new_password
         )

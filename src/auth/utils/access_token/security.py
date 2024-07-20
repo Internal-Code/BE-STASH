@@ -43,7 +43,7 @@ async def get_user(username: str) -> UserInDB | None:
                         password=checked.password,
                         user_uuid=checked.user_uuid,
                         is_deactivated=checked.is_deactivated,
-                        is_verified=checked.is_verified
+                        verified_at=checked.verified_at
                     )
                     return user_data
                 else:

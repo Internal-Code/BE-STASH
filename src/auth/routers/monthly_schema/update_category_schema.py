@@ -29,7 +29,7 @@ async def update_category_schema(schema: UpdateCategorySchema, user:Annotated[di
     )
     checked_category = await filter_spesific_category(category=schema.changed_category_into)
     if is_available is False:
-        logging.info(f"User {user['username']} is not created schema in {schema.month}/{schema.year}.")
+        logging.info(f"User {user.username} is not created schema in {schema.month}/{schema.year}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Category {schema.category} not found. Please create category first.")
     
     if checked_category is True:

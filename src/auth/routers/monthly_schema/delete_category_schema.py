@@ -31,7 +31,7 @@ async def update_category_schema(schema: DeleteCategorySchema, user:Annotated[di
         )
 
         if isAvailable is False:
-            logging.info(f"User {user['username']} does not have the category {schema.category} in {schema.month}/{schema.year}.")
+            logging.info(f"User {user.username} does not have the category {schema.category} in {schema.month}/{schema.year}.")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Category {schema.category} not found. Please create category first.")
         
         logging.info("Endpoint delete category.")
