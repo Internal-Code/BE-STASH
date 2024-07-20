@@ -8,7 +8,7 @@ from src.auth.utils.request_format import MoneySpendSchema
 from src.database.connection import database_connection
 from src.database.models import money_spend_schemas
 
-router = APIRouter(tags=["schemas"])
+router = APIRouter(tags=["money-schemas"])
 
 async def create_schema(schema: MoneySpendSchema, users: Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     """
@@ -21,25 +21,27 @@ async def create_schema(schema: MoneySpendSchema, users: Annotated[dict, Depends
     """
     
     response = ResponseDefault()
+    
+    is_available = await filter_month_year_category(
+        user_uuid=users.user_uuid,
+        month=schema.month,
+        year=schema.year,
+        category=schema.category
+    )
+    
+    if is_available:
+        logging.info(f"User: {users.user_uuid} already have category {schema.category} in {schema.month}/{schema.year}.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Category {schema.category} already saved.")
+
+    prepared_data = create_category_format(
+        user_uuid=users.user_uuid,
+        month=schema.month, 
+        year=schema.year, 
+        category=schema.category, 
+        budget=schema.budget
+    )
+
     try:
-        is_available = await filter_month_year_category(
-            user_uuid=users.user_uuid,
-            month=schema.month,
-            year=schema.year,
-            category=schema.category
-        )
-        if is_available:
-            logging.info(f"User: {users.user_uuid} already have category {schema.category} in {schema.month}/{schema.year}.")
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Category {schema.category} already saved.")
-
-        prepared_data = create_category_format(
-            user_uuid=users.user_uuid,
-            month=schema.month, 
-            year=schema.year, 
-            category=schema.category, 
-            budget=schema.budget
-        )
-
         logging.info("Endpoint create category.")
         async with database_connection().connect() as session:
             try:

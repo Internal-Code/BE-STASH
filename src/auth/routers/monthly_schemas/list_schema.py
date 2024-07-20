@@ -8,7 +8,7 @@ from src.auth.schema.response import ResponseDefault
 from src.database.connection import database_connection
 from src.database.models import money_spend_schemas
 
-router = APIRouter(tags=["schemas"])
+router = APIRouter(tags=["money-schemas"])
 
 async def list_schema(
     users: Annotated[dict, Depends(get_current_user)],
@@ -28,11 +28,13 @@ async def list_schema(
     year = year if year is not None else current_time.year
     
     response = ResponseDefault()
+    
     is_available = await filter_month_year(
         user_uuid=users.user_uuid,
         month=month,
         year=year
     )
+    
     if is_available is False:
         logging.info(f"User {users.username} has not created a schema in {month}/{year}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {users.username} has not created a schema in {month}/{year}.")

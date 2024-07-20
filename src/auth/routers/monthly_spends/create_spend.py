@@ -8,7 +8,7 @@ from src.auth.utils.request_format import CreateSpend
 from src.database.connection import database_connection
 from src.database.models import money_spends, money_spend_schemas
 
-router = APIRouter(tags=["spends"])
+router = APIRouter(tags=["money-spends"])
 
 async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
@@ -24,29 +24,29 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
     """
     
     response = ResponseDefault()
+    
+    is_available = await filter_month_year_category(
+        user_uuid=users.user_uuid,
+        month=schema.spend_month,
+        year=schema.spend_year,
+        category=schema.category
+    )
+        
+    prepared_spend = create_spending_format(
+        user_uuid=users.user_uuid,
+        category=schema.category,
+        description=schema.description,
+        amount=schema.amount,
+        spend_day=schema.spend_day,
+        spend_month=schema.spend_month,
+        spend_year=schema.spend_year
+    )
+    
     try:
-            
-        is_available = await filter_month_year_category(
-            user_uuid=users.user_uuid,
-            month=schema.spend_month,
-            year=schema.spend_year,
-            category=schema.category
-        )
-        
-        prepared_spend = create_spending_format(
-            user_uuid=users.user_uuid,
-            category=schema.category,
-            description=schema.description,
-            amount=schema.amount,
-            spend_day=schema.spend_day,
-            spend_month=schema.spend_month,
-            spend_year=schema.spend_year
-        )
-        
         logging.info("Endpoint create spend money.")
         async with database_connection().connect() as session:
             try:
-                if not is_available:
+                if is_available is False:
                     try:
                         logging.info(f"Inserting data into table {money_spends.name} and {money_spend_schemas.name}")
                         

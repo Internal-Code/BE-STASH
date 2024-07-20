@@ -8,7 +8,7 @@ from src.auth.utils.request_format import CreateSpend
 from src.database.connection import database_connection
 from src.database.models import money_spends
 
-router = APIRouter(tags=["spends"])
+router = APIRouter(tags=["money-spends"])
 
 async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
@@ -24,21 +24,21 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
     """
     
     response = ResponseDefault()
+
+    is_available = await filter_daily_spending(
+        user_uuid=users.user_uuid,
+        amount=schema.amount,
+        description=schema.description,
+        category=schema.category,
+        spend_day=schema.spend_day,
+        spend_month=schema.spend_month,
+        spend_year=schema.spend_year
+    )
+        
+    if not is_available:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Data is not found. Ensure selected data already created on database.")
+    
     try:
-            
-        is_available = await filter_daily_spending(
-            user_uuid=users.user_uuid,
-            amount=schema.amount,
-            description=schema.description,
-            category=schema.category,
-            spend_day=schema.spend_day,
-            spend_month=schema.spend_month,
-            spend_year=schema.spend_year
-        )
-        
-        if not is_available:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Data is not found. Ensure selected data already created on database.")
-        
         logging.info("Endpoint create spend money.")
         async with database_connection().connect() as session:
             try:

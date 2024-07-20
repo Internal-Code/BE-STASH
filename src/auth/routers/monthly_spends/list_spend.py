@@ -8,7 +8,7 @@ from src.auth.schema.response import ResponseDefault
 from src.database.connection import database_connection
 from src.database.models import money_spends
 
-router = APIRouter(tags=["spends"])
+router = APIRouter(tags=["money-spends"])
 
 async def list_spending(
     users: Annotated[dict, Depends(get_current_user)],
@@ -28,16 +28,17 @@ async def list_spending(
     year = year if year is not None else current_time.year
     
     response = ResponseDefault()
+    
     is_available = await filter_month_year(
         user_uuid=users.user_uuid,
         month=month,
         year=year
     )
+    
+    if not is_available:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Schema on {month}/{year} is not created yet.")
 
     try:
-        if not is_available:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Schema on {month}/{year} is not created yet.")
-        
         logging.info("Endpoint get spend per month.")
         async with database_connection().connect() as session:
             try:

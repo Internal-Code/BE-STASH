@@ -8,7 +8,7 @@ from src.auth.utils.request_format import UpdateCategorySchema, local_time
 from src.database.connection import database_connection
 from src.database.models import money_spend_schemas
 
-router = APIRouter(tags=["schemas"])
+router = APIRouter(tags=["money-schemas"])
 
 async def update_category_schema(schema: UpdateCategorySchema, users:Annotated[dict, Depends(get_current_active_user)]) -> ResponseDefault:
     
@@ -21,19 +21,21 @@ async def update_category_schema(schema: UpdateCategorySchema, users:Annotated[d
     """
     
     response = ResponseDefault()
+    
     is_available = await filter_month_year_category(
         month=schema.month,
         year=schema.year,
         category=schema.category,
         user_uuid=users.user_uuid
     )
-    checked_category = await filter_spesific_category(category=schema.changed_category_into)
+    
+    category_already_saved = await filter_spesific_category(category=schema.changed_category_into)
     
     if is_available is False:
         logging.info(f"User {users.username} is not created schema in {schema.month}/{schema.year}.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Category {schema.category} not found. Please create category first.")
     
-    if checked_category is True:
+    if category_already_saved is True:
         logging.warning(f"Cannot changed category into: {schema.changed_category_into}.")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Category {schema.changed_category_into} already saved. Please change with another category.")
     

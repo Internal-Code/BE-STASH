@@ -9,7 +9,7 @@ from src.auth.utils.request_format import DeleteCategorySchema
 from src.database.connection import database_connection
 from src.database.models import money_spend_schemas
 
-router = APIRouter(tags=["schemas"])
+router = APIRouter(tags=["money-schemas"])
 
 async def update_category_schema(schema: DeleteCategorySchema, users:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     
@@ -22,18 +22,19 @@ async def update_category_schema(schema: DeleteCategorySchema, users:Annotated[d
     """
     
     response = ResponseDefault()
-    try:
-        isAvailable = await filter_month_year_category(
-            user_uuid=users.user_uuid,
-            month=schema.month,
-            year=schema.year,
-            category=schema.category
-        )
+    
+    is_available = await filter_month_year_category(
+        user_uuid=users.user_uuid,
+        month=schema.month,
+        year=schema.year,
+        category=schema.category
+    )
 
-        if isAvailable is False:
-            logging.info(f"User {users.username} does not have the category {schema.category} in {schema.month}/{schema.year}.")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Category {schema.category} not found. Please create category first.")
-        
+    if is_available is False:
+        logging.info(f"User {users.username} does not have the category {schema.category} in {schema.month}/{schema.year}.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Category {schema.category} not found. Please create category first.")
+
+    try:
         logging.info("Endpoint delete category.")
         async with database_connection().connect() as session:
             try:
