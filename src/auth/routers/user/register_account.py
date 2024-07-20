@@ -5,7 +5,7 @@ from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import filter_registered_user, register_account_format, check_password
 from src.database.connection import database_connection
 from src.auth.utils.access_token.security import get_password_hash
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(tags=["users"], prefix='/users')
 

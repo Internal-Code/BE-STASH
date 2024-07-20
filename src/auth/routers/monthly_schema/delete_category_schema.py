@@ -1,4 +1,3 @@
-from uuid import UUID
 from typing import Annotated
 from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends

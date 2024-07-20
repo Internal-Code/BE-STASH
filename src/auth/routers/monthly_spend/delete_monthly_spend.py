@@ -1,4 +1,3 @@
-from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.access_token.security import get_current_user

@@ -1,4 +1,3 @@
-from uuid import UUID
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
