@@ -1,5 +1,4 @@
-import pytest
-import httpx
+import pytest, httpx
 from jose import jwt
 from datetime import datetime
 from src.auth.utils.database.general import create_category_format
@@ -10,7 +9,7 @@ TEST_USERNAME = "string"
 TEST_PASSWORD = "String123!"
 
 @pytest.mark.asyncio
-async def test_create_schema() -> None:
+async def test_create_schema_with_valid_token() -> None:
     """
     Should log in with valid credentials and create a new schema successfully.
     """
