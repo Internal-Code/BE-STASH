@@ -9,7 +9,7 @@ on:
       - development
 
 jobs:
-  test:
+  run-testing:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +24,6 @@ jobs:
     - name: Install poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
-        echo "::add-path::$HOME/.local/bin"
 
     - name: Install dependencies
       run: |
