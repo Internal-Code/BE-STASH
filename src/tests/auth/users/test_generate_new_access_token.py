@@ -1,4 +1,5 @@
-import pytest, httpx
+import pytest
+import httpx
 from src.auth.utils.generator import random_word
 
 TEST_USERNAME = "string"

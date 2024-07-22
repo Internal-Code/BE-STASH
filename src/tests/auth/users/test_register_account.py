@@ -1,4 +1,5 @@
-import httpx, pytest
+import httpx
+import pytest
 from faker import Faker
 from src.auth.utils.generator import random_password
 

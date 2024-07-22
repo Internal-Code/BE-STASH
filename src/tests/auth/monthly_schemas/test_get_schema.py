@@ -1,4 +1,5 @@
-import pytest, httpx
+import pytest
+import httpx
 from src.auth.utils.database.general import local_time
 from src.auth.utils.generator import random_number, random_word
 

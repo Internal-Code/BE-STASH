@@ -34,7 +34,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
             email=schema.email,
         )
         if is_available:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Account already registered. Please create an another account.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account already registered. Please create an another account.")
         
         await check_password(schema.password)
         
@@ -52,7 +52,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                 query = users.insert().values(prepared_data)
                 await session.execute(query)
                 await session.commit()
-                logging.info(f"Created new account.")
+                logging.info("Created new account.")
                 response.message = "Register account success."
                 response.success = True
             except Exception as E:

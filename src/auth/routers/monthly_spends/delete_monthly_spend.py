@@ -36,13 +36,13 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
     )
         
     if not is_available:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Data is not found. Ensure selected data already created on database.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data is not found. Ensure selected data already created on database.")
     
     try:
         logging.info("Endpoint create spend money.")
         async with database_connection().connect() as session:
             try:
-                logging.info(f"Deleting daily spending record.")
+                logging.info("Deleting daily spending record.")
                 create_spend = money_spends.delete().where(
                     money_spends.c.id==is_available.id,
                     money_spends.c.spend_day == is_available.spend_day,

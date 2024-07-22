@@ -1,6 +1,7 @@
 #TODO: create unit testing for deleting a schema
 
-import pytest, httpx
+import pytest
+import httpx
 from jose import jwt
 from datetime import datetime
 from src.auth.utils.database.general import create_category_format
