@@ -9,7 +9,7 @@ TEST_USERNAME = "string"
 TEST_PASSWORD = "String123!"
 
 @pytest.mark.asyncio
-async def test_create_schema():
+async def test_create_schema() -> None:
     """
     Should return 201 for creating new schema.
     """
@@ -19,7 +19,7 @@ async def test_create_schema():
             "password": TEST_PASSWORD
         }
         
-        token_response = await client.post("http://localhost:8000/auth/token", data=login_data)
+        token_response = await client.post("http://localhost:8000/api/v1/auth/token", data=login_data)
         assert token_response.status_code == 200
         tokens = token_response.json()
         access_token = tokens["access_token"]
