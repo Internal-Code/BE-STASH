@@ -1,37 +1,50 @@
-import pytest
-import httpx
-from jose import jwt
-from src.secret import ACCESS_TOKEN_ALGORITHM, ACCESS_TOKEN_SECRET_KEY, REFRESH_TOKEN_SECRET_KEY
+import pytest, httpx
+from src.auth.utils.generator import random_word
 
 TEST_USERNAME = "string"
 TEST_PASSWORD = "String123!"
 
 @pytest.mark.asyncio
-async def test_generate_new_access_token() -> None:
+async def test_login_with_random_credentials() -> None:
     """
-    Should login with valid credentials.
+    Should return invalid credentials
     """
     
     login_data = {
-        "username": TEST_USERNAME,
-        "password": TEST_PASSWORD
+        "username": random_word(10),
+        "password": random_word(10)
     }
     
     async with httpx.AsyncClient() as client:
         res = await client.post("http://localhost:8000/api/v1/auth/token", data=login_data)
+        assert res.status_code == 403
+    
+
+@pytest.mark.asyncio
+async def test_generate_new_access_token_with_valid_refresh_token() -> None:
+    """
+    Should generate new access_token using valid refresh token.
+    """
+    login_data = {
+        "username": TEST_USERNAME,
+        "password": TEST_PASSWORD
+    }
+
+    async with httpx.AsyncClient() as client:
+        res = await client.post("http://localhost:8000/api/v1/auth/token", data=login_data)
         response = res.json()
         refresh_token = response['refresh_token']
-        assert res.status_code == 200
         
-        """
-        Should generate new access_token using valid refresh token.
-        """
         refresh_token_res = await client.post("http://localhost:8000/api/v1/auth/refresh-token", params=f'refresh_token={refresh_token}')
-        assert refresh_token_res.status_code == 200        
+        assert refresh_token_res.status_code == 200
 
-        """
-        Should return 401 for invalid refresh token input params
-        """
-        invalid_refresh_token_res = await client.post("http://localhost:8000/api/v1/auth/refresh-token", params='refresh_token=invalidtoken')
+@pytest.mark.asyncio
+async def test_generate_new_access_token_with_invalid_refresh_token() -> None:
+    """
+    Should return 401 for invalid refresh token input params.
+    """
+    invalid_refresh_token = "eyinvalidtokenheader.invalidtokenpayload.invalidtokensignature"
+    
+    async with httpx.AsyncClient() as client:
+        invalid_refresh_token_res = await client.post("http://localhost:8000/api/v1/auth/refresh-token", params=f'refresh_token={invalid_refresh_token}')
         assert invalid_refresh_token_res.status_code == 401
-        await client.aclose()

@@ -17,7 +17,7 @@ async def access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()
         if not user_in_db:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, 
-                detail="User could not be validated.", 
+                detail="Authentication failed due to invalid credentials.", 
                 headers={"WWW-Authenticate":"Bearer"}
             )
 
