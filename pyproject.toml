@@ -25,6 +25,7 @@ uuid7 = "^0.1.0"
 python-jose = "^3.3.0"
 passlib = "^1.7.4"
 faker = "^26.0.0"
+bcrypt = "~4.0.0"
 
 
 [build-system]
