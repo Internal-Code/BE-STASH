@@ -10,19 +10,21 @@ from src.database.models import money_spends
 
 router = APIRouter(tags=["money-spends"])
 
-async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
-    
-    """
-        Delete spesific money spend data with all the information:
 
-        - **spend_day**: This refers to the specific calendar date (e.g., 1, 2 ... 31) when the schema was created or applies to.
-        - **spend_month**: This refers to the specific calendar month (e.g., January, February) when the schema was created or applies to.
-        - **spend_year**: This represents the calendar year (e.g., 2023, 2024) associated with the schema.
-        - **category**: This identifies the type of expense or area the schema pertains to. Examples of categories could be "Rent," "Groceries," "Transportation," or any other relevant groupings you define.
-        - **description**: A description or note about the spending.
-        - **amount**: The amount of money spent.
+async def create_spend(
+    schema: CreateSpend, users: Annotated[dict, Depends(get_current_user)]
+) -> ResponseDefault:
     """
-    
+    Delete spesific money spend data with all the information:
+
+    - **spend_day**: This refers to the specific calendar date (e.g., 1, 2 ... 31) when the schema was created or applies to.
+    - **spend_month**: This refers to the specific calendar month (e.g., January, February) when the schema was created or applies to.
+    - **spend_year**: This represents the calendar year (e.g., 2023, 2024) associated with the schema.
+    - **category**: This identifies the type of expense or area the schema pertains to. Examples of categories could be "Rent," "Groceries," "Transportation," or any other relevant groupings you define.
+    - **description**: A description or note about the spending.
+    - **amount**: The amount of money spent.
+    """
+
     response = ResponseDefault()
 
     is_available = await filter_daily_spending(
@@ -32,51 +34,61 @@ async def create_spend(schema: CreateSpend, users:Annotated[dict, Depends(get_cu
         category=schema.category,
         spend_day=schema.spend_day,
         spend_month=schema.spend_month,
-        spend_year=schema.spend_year
+        spend_year=schema.spend_year,
     )
-        
+
     if not is_available:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data is not found. Ensure selected data already created on database.")
-    
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Data is not found. Ensure selected data already created on database.",
+        )
+
     try:
         logging.info("Endpoint create spend money.")
         async with database_connection().connect() as session:
             try:
                 logging.info("Deleting daily spending record.")
                 create_spend = money_spends.delete().where(
-                    money_spends.c.id==is_available.id,
+                    money_spends.c.id == is_available.id,
                     money_spends.c.spend_day == is_available.spend_day,
                     money_spends.c.spend_month == is_available.spend_month,
                     money_spends.c.spend_year == is_available.spend_year,
                     money_spends.c.category == is_available.category,
                     money_spends.c.description == is_available.description,
                     money_spends.c.amount == is_available.amount,
-                    money_spends.c.user_uuid == users.user_uuid
+                    money_spends.c.user_uuid == users.user_uuid,
                 )
                 await session.execute(create_spend)
                 await session.commit()
                 logging.info("Deleted a daily spend record.")
-                response.message="Delete daily spend data success."
-                response.success=True
+                response.message = "Delete daily spend data success."
+                response.success = True
             except Exception as E:
                 logging.error(f"Error during delete daily spend money data: {E}.")
                 await session.rollback()
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Server error during delete daily spend money data: {E}.")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Server error during delete daily spend money data: {E}.",
+                )
             finally:
                 await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
         logging.error(f"Error after deleting daily spend money data: {E}.")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {E}.")
-    
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal Server Error: {E}.",
+        )
+
     return response
-        
+
+
 router.add_api_route(
     methods=["DELETE"],
-    path="/delete-spend", 
+    path="/delete-spend",
     response_model=ResponseDefault,
     endpoint=create_spend,
     status_code=status.HTTP_201_CREATED,
-    summary="Delete daily spend record."
+    summary="Delete daily spend record.",
 )

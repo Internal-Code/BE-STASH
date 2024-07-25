@@ -6,11 +6,11 @@ if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
   . .venv/bin/activate
 else
   case "$OSTYPE" in
-    linux*)   
+    linux*)
       echo "Linux based OS detected"
       . .venv/bin/activate
       ;;
-    cygwin* | msys* | mingw*)  
+    cygwin* | msys* | mingw*)
       echo "Windows based OS detected"
       source .venv/Scripts/activate
       ;;

@@ -12,19 +12,22 @@ from src.database.connection import database_connection
 from src.database.models import users
 from src.auth.utils.request_format import TokenData, UserInDB, DetailUser
 from src.secret import (
-    ACCESS_TOKEN_SECRET_KEY, 
+    ACCESS_TOKEN_SECRET_KEY,
     ACCESS_TOKEN_ALGORITHM,
-    REFRESH_TOKEN_SECRET_KEY
+    REFRESH_TOKEN_SECRET_KEY,
 )
 
-password_content = CryptContext(schemes=['bcrypt'], deprecated="auto")
+password_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+
 
 async def verify_password(password: str, hashed_password: str) -> str:
     return password_content.verify(password, hashed_password)
 
+
 async def get_password_hash(password: str) -> str:
     return password_content.hash(password)
+
 
 async def get_user(username: str) -> UserInDB | None:
     try:
@@ -43,7 +46,7 @@ async def get_user(username: str) -> UserInDB | None:
                         password=checked.password,
                         user_uuid=checked.user_uuid,
                         is_deactivated=checked.is_deactivated,
-                        verified_at=checked.verified_at
+                        verified_at=checked.verified_at,
                     )
                     return user_data
                 else:
@@ -66,45 +69,51 @@ async def authenticate_user(username: str, password: str) -> Row | None:
             logging.error(f"Authentication failed: users {username} not found.")
             return None
         if not await verify_password(password=password, hashed_password=users.password):
-            logging.error(f"Authentication failed: invalid password for users {username}.")
+            logging.error(
+                f"Authentication failed: invalid password for users {username}."
+            )
             return None
     except Exception as E:
         logging.error(f"Error after authenticate_user: {E}.")
         return None
     return users
 
+
 async def create_access_token(data: dict, access_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + access_token_expires
-    to_encode.update({'exp': expires})
+    to_encode.update({"exp": expires})
     encoded_access_token = jwt.encode(claims=to_encode, key=ACCESS_TOKEN_SECRET_KEY)
     return encoded_access_token
 
-async def create_refresh_token(data:dict, refresh_token_expires: timedelta) -> str:
+
+async def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + refresh_token_expires
-    to_encode.update({'exp': expires})
+    to_encode.update({"exp": expires})
     encoded_refresh_token = jwt.encode(claims=to_encode, key=REFRESH_TOKEN_SECRET_KEY)
     return encoded_refresh_token
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> DetailUser | None:
-    
+
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> DetailUser | None:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid bearer token.",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = jwt.decode(
             token=token,
             key=ACCESS_TOKEN_SECRET_KEY,
-            algorithms=[ACCESS_TOKEN_ALGORITHM]
+            algorithms=[ACCESS_TOKEN_ALGORITHM],
         )
-        username = payload.get('sub')
+        username = payload.get("sub")
         token_data = TokenData(username=username)
         users = await get_user(username=token_data.username)
-        
+
         if username is None or users is None:
             raise credentials_exception
     except JWTError as e:
@@ -112,7 +121,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Det
         raise credentials_exception
     return users
 
-async def get_current_active_user(current_user: Annotated[str, Depends(get_current_user)]) -> str | dict:
+
+async def get_current_active_user(
+    current_user: Annotated[str, Depends(get_current_user)],
+) -> str | dict:
     if current_user.is_deactivated:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive users")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive users"
+        )
     return current_user

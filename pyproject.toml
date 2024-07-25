@@ -27,6 +27,7 @@ passlib = "^1.7.4"
 faker = "^26.0.0"
 bcrypt = "~4.0.0"
 coverage = "^7.6.0"
+pre-commit = "^3.7.1"
 
 
 [build-system]

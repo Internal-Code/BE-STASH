@@ -9,37 +9,34 @@ from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,
     delete_category_schema,
-    update_category_schema
+    update_category_schema,
 )
 from src.auth.routers.monthly_spends import (
     create_spend,
     list_spend,
     update_monthly_spend,
-    delete_monthly_spend
+    delete_monthly_spend,
 )
-from src.auth.routers.account_managements import (
-    access_token,
-    refresh_token
-)
+from src.auth.routers.account_managements import access_token, refresh_token
 
-from src.auth.routers.users import (
-    register_account,
-    detail_account
-)
+from src.auth.routers.users import register_account, detail_account
 
 app = FastAPI(root_path="/api/v1")
 app.openapi_scheme = {
     "type": "oauth2",
-    "flows": OAuthFlowsModel(password=OAuthFlowPassword(tokenUrl="auth/token"))
+    "flows": OAuthFlowsModel(password=OAuthFlowPassword(tokenUrl="auth/token")),
 }
+
 
 @app.on_event("startup")
 async def startup():
     await async_main()
 
+
 @app.on_event("shutdown")
 async def shutdown():
     await database_connection().dispose()
+
 
 app.add_middleware(
     CORSMiddleware,

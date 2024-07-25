@@ -21,7 +21,7 @@ src\                            # Root folder.
 │   ├ ...                       # Another of general utilities files.
 ├── database\                   # Stored of databases connection and table models.
 │   ├── connection.py           # Stored of global database connection.
-│   ├── models.py               # Stored for databases model mapped by SQLAlchemy.    
+│   ├── models.py               # Stored for databases model mapped by SQLAlchemy.
 ├── tests\                      # Unit testing root directory.
 │   ├── monthly_schema\         # Stored of list unit testing on montly_schema router.
 │   ├ ...                       # Another of unit testing folders.
