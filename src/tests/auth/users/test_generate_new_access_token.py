@@ -1,7 +1,7 @@
 import pytest
 import httpx
 from src.auth.utils.generator import random_word
-
+from src.tests.auth.initialization import user_initialization
 
 @pytest.mark.asyncio
 async def test_login_with_random_credentials() -> None:

@@ -7,8 +7,6 @@ from src.auth.utils.generator import random_account
 async def user_initialization():
     async with httpx.AsyncClient() as client:
         account = random_account()
-        res = await client.post(
-            "http://localhost:8000/api/v1/users/register", json=account
-        )
+        res = await client.post("http://localhost:8000/api/v1/users/register", json=account)
         assert res.status_code == 201
         return account
