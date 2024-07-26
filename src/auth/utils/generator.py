@@ -1,5 +1,9 @@
 import random
 import string
+from pydantic import EmailStr
+from faker import Faker
+
+faker = Faker()
 
 
 def random_number(length: int = 1) -> int:
@@ -40,3 +44,19 @@ def random_password(length: int = 8) -> str:
 
     random.shuffle(password)
     return "".join(password)
+
+
+def random_account(
+    first_name: str = faker.first_name(),
+    last_name: str = faker.last_name(),
+    username: str = f"testing-{faker.first_name()}",
+    email: EmailStr = faker.email(),
+    password: str = random_password(),
+) -> dict:
+    return {
+        "first_name": first_name,
+        "last_name": last_name,
+        "username": username,
+        "email": email,
+        "password": password,
+    }

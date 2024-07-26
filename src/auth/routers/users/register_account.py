@@ -38,7 +38,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
         )
         if is_available:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Account already registered. Please create an another account.",
             )
 

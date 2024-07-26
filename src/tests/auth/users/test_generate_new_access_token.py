@@ -2,9 +2,6 @@ import pytest
 import httpx
 from src.auth.utils.generator import random_word
 
-TEST_USERNAME = "string"
-TEST_PASSWORD = "String123!"
-
 
 @pytest.mark.asyncio
 async def test_login_with_random_credentials() -> None:
@@ -22,11 +19,16 @@ async def test_login_with_random_credentials() -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_new_access_token_with_valid_refresh_token() -> None:
+async def test_generate_new_access_token_with_valid_refresh_token(
+    user_initialization,
+) -> None:
     """
     Should generate new access_token using valid refresh token.
     """
-    login_data = {"username": TEST_USERNAME, "password": TEST_PASSWORD}
+
+    account = await user_initialization
+
+    login_data = {"username": account["username"], "password": account["password"]}
 
     async with httpx.AsyncClient() as client:
         res = await client.post(
