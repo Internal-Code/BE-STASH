@@ -39,14 +39,18 @@ async def get_user(username: str) -> UserInDB | None:
                 if checked:
                     logging.info(f"User {checked.username} found.")
                     user_data = UserInDB(
+                        user_uuid=checked.user_uuid,
+                        created_at=checked.created_at,
+                        updated_at=checked.updated_at,
+                        username=checked.username,
                         first_name=checked.first_name,
                         last_name=checked.last_name,
                         email=checked.email,
-                        username=checked.username,
-                        password=checked.password,
-                        user_uuid=checked.user_uuid,
-                        is_deactivated=checked.is_deactivated,
                         verified_at=checked.verified_at,
+                        is_verified=checked.is_verified,
+                        password=checked.password,
+                        is_deactivated=checked.is_deactivated,
+                        last_login=checked.last_login,
                     )
                     return user_data
                 else:

@@ -1,22 +1,22 @@
 import pytest
 import httpx
 from jose import jwt
+import uuid
 from datetime import datetime
 from src.auth.utils.database.general import create_category_format
 from src.auth.utils.generator import random_number, random_word
 from src.secret import ACCESS_TOKEN_SECRET_KEY, ACCESS_TOKEN_ALGORITHM
-
-TEST_USERNAME = "string"
-TEST_PASSWORD = "String123!"
-
+from src.tests.auth.initialization import user_initialization
 
 @pytest.mark.asyncio
-async def test_create_schema_with_valid_token() -> None:
+async def test_create_schema_with_valid_token(user_initialization) -> None:
     """
     Should log in with valid credentials and create a new schema successfully.
     """
     async with httpx.AsyncClient() as client:
-        login_data = {"username": TEST_USERNAME, "password": TEST_PASSWORD}
+        account = await user_initialization
+
+        login_data = {"username": account["username"], "password": account["password"]}
 
         token_response = await client.post(
             "http://localhost:8000/api/v1/auth/token", data=login_data
@@ -48,3 +48,32 @@ async def test_create_schema_with_valid_token() -> None:
             "http://localhost:8000/api/v1/create-schema", json=data, headers=headers
         )
         assert schema_response.status_code == 201
+
+@pytest.mark.asyncio
+async def test_create_schema_with_invalid_token() -> None:
+    """
+    Should return forbidden due to invalid access token.
+    """
+    async with httpx.AsyncClient() as client:
+
+        access_token = f"{random_word(10)}.{random_word(10)}.{random_word(10)}"
+        user_uuid = str(uuid.uuid4)
+
+        data = create_category_format(
+            user_uuid=user_uuid,
+            month=random_number(),
+            year=random_number(4),
+            category=f"testing-{random_word()}",
+            budget=random_number(10),
+        )
+
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                data[key] = value.isoformat()
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        schema_response = await client.post(
+            "http://localhost:8000/api/v1/create-schema", json=data, headers=headers
+        )
+        assert schema_response.status_code == 401

@@ -1,12 +1,12 @@
 import pytest
 import httpx
 from src.auth.utils.generator import random_word
-
+from src.tests.auth.initialization import user_initialization
 
 @pytest.mark.asyncio
 async def test_login_with_random_credentials() -> None:
     """
-    Should return invalid credentials
+    Should return invalid credentials.
     """
 
     login_data = {"username": random_word(10), "password": random_word(10)}
@@ -16,7 +16,6 @@ async def test_login_with_random_credentials() -> None:
             "http://localhost:8000/api/v1/auth/token", data=login_data
         )
         assert res.status_code == 403
-
 
 @pytest.mark.asyncio
 async def test_generate_new_access_token_with_valid_refresh_token(
@@ -39,10 +38,9 @@ async def test_generate_new_access_token_with_valid_refresh_token(
 
         refresh_token_res = await client.post(
             "http://localhost:8000/api/v1/auth/refresh-token",
-            params=f"refresh_token={refresh_token}",
+            params={"refresh_token": refresh_token},
         )
         assert refresh_token_res.status_code == 200
-
 
 @pytest.mark.asyncio
 async def test_generate_new_access_token_with_invalid_refresh_token() -> None:
@@ -56,6 +54,6 @@ async def test_generate_new_access_token_with_invalid_refresh_token() -> None:
     async with httpx.AsyncClient() as client:
         invalid_refresh_token_res = await client.post(
             "http://localhost:8000/api/v1/auth/refresh-token",
-            params=f"refresh_token={invalid_refresh_token}",
+            params={"refresh_token": invalid_refresh_token},
         )
         assert invalid_refresh_token_res.status_code == 401

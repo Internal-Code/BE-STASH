@@ -69,8 +69,13 @@ class DetailUser(BaseModel):
 
 class UserInDB(CreateUser):
     user_uuid: UUID
-    is_deactivated: bool
+    created_at: datetime
+    updated_at: datetime | None
     verified_at: datetime | None
+    is_verified: bool
+    password: str
+    is_deactivated: bool
+    last_login: datetime | None
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(

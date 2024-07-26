@@ -27,7 +27,7 @@ async def test_create_user_with_valid_data() -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_user_with_username_is_already_saved() -> None:
+async def test_create_user_with_data_is_already_saved() -> None:
     """
     Should return conflict due to username or email is already saved on db.
     """
