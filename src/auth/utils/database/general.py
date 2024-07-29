@@ -8,7 +8,12 @@ from sqlalchemy import select, or_, update
 from datetime import datetime
 from fastapi import HTTPException, status
 from src.auth.utils.logging import logging
-from src.database.models import money_spend_schemas, money_spends, users
+from src.database.models import (
+    money_spend_schemas,
+    money_spends,
+    users,
+    blacklist_tokens,
+)
 from src.database.connection import database_connection
 
 
@@ -223,9 +228,7 @@ async def filter_registered_user(username: str, email: EmailStr) -> bool:
                     )
                     return True
             except Exception as E:
-                logging.error(
-                    f"Error during filter_registered_user category availability: {E}."
-                )
+                logging.error(f"Error during filter_registered_user availability: {E}.")
                 await session.rollback()
             finally:
                 await session.close()
@@ -327,5 +330,51 @@ async def is_using_same_username(changed_username: str) -> bool:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after is_safe_to_update: {E}")
+
+    return False
+
+
+async def is_access_token_blacklisted(access_token: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(blacklist_tokens).where(
+                    blacklist_tokens.c.access_token == access_token,
+                )
+                result = await session.execute(query)
+                checked = result.fetchone()
+                if checked:
+                    return True
+            except Exception as E:
+                logging.error(f"Error while is_token_blacklisted: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after is_token_blacklisted: {E}")
+
+    return False
+
+
+async def is_refresh_token_blacklisted(refresh_token: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(blacklist_tokens).where(
+                    blacklist_tokens.c.refresh_token == refresh_token
+                )
+
+                result = await session.execute(query)
+                checked = result.fetchone()
+                print("data refresh token", checked)
+                if checked:
+                    return True
+            except Exception as E:
+                logging.error(f"Error while is_token_blacklisted: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after is_token_blacklisted: {E}")
 
     return False

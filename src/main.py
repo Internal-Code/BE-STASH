@@ -17,9 +17,8 @@ from src.auth.routers.monthly_spends import (
     update_monthly_spend,
     delete_monthly_spend,
 )
-from src.auth.routers.account_managements import access_token, refresh_token
-
-from src.auth.routers.users import register_account, detail_account
+from src.auth.routers.users import user_detail, user_register, user_logout
+from src.auth.routers.authorizations import access_token, refresh_token
 
 app = FastAPI(root_path="/api/v1")
 app.openapi_scheme = {
@@ -54,7 +53,8 @@ app.include_router(create_spend.router)
 app.include_router(list_spend.router)
 app.include_router(update_monthly_spend.router)
 app.include_router(delete_monthly_spend.router)
-app.include_router(register_account.router)
 app.include_router(access_token.router)
-app.include_router(detail_account.router)
 app.include_router(refresh_token.router)
+app.include_router(user_register.router)
+app.include_router(user_logout.router)
+app.include_router(user_detail.router)

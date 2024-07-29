@@ -26,7 +26,6 @@ users = Table(
     Column("last_name", String(255), nullable=False, unique=False),
     Column("email", String(255), nullable=False, unique=True),
     Column("verified_at", DateTime(timezone=True), nullable=True, default=None),
-    Column("is_verified", Boolean, nullable=False, default=False),
     Column("password", String(255), nullable=False),
     Column("is_deactivated", Boolean, nullable=False, default=False),
     Column("last_login", DateTime(timezone=True), nullable=True),
@@ -58,6 +57,16 @@ money_spend_schemas = Table(
     Column("year", Integer, nullable=False),
     Column("category", String(255), nullable=False),
     Column("budget", BigInteger, nullable=False),
+)
+
+blacklist_tokens = Table(
+    "blacklist_tokens",
+    meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("blacklisted_at", DateTime(timezone=True), nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("access_token", String(255), nullable=False, unique=True),
+    Column("refresh_token", String(255), nullable=False, unique=True),
 )
 
 

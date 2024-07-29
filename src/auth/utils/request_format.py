@@ -57,7 +57,7 @@ class CreateUser(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: str | None = None
+    username: str = None
 
 
 class DetailUser(BaseModel):
@@ -72,10 +72,6 @@ class UserInDB(CreateUser):
     created_at: datetime
     updated_at: datetime | None
     verified_at: datetime | None
-    is_verified: bool
-    password: str
-    is_deactivated: bool
-    last_login: datetime | None
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(

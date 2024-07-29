@@ -3,6 +3,7 @@ import httpx
 from src.auth.utils.generator import random_word
 from src.tests.auth.initialization import user_initialization
 
+
 @pytest.mark.asyncio
 async def test_login_with_random_credentials() -> None:
     """
@@ -41,6 +42,7 @@ async def test_generate_new_access_token_with_valid_refresh_token(
             params={"refresh_token": refresh_token},
         )
         assert refresh_token_res.status_code == 200
+
 
 @pytest.mark.asyncio
 async def test_generate_new_access_token_with_invalid_refresh_token() -> None:

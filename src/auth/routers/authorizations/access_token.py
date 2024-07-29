@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseToken
 from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
-from src.auth.utils.access_token.security import (
+from src.auth.utils.jwt.security import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
@@ -18,19 +18,22 @@ router = APIRouter(tags=["authorizations"], prefix="/auth")
 async def access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> ResponseToken:
+    credentials_error = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="User could not be validated.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
     try:
         response = ResponseToken()
         user_in_db = await authenticate_user(form_data.username, form_data.password)
-        if not user_in_db:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Authentication failed due to invalid credentials.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
         latest_login = await update_latest_login(
             username=user_in_db.username, email=user_in_db.email
         )
+
+        if not user_in_db:
+            raise credentials_error
+
         if latest_login is True:
             access_token = await create_access_token(
                 data={
@@ -49,7 +52,7 @@ async def access_token(
             )
             response.refresh_token = refresh_token
             response.access_token = access_token
-            response.token_type = "Bearer"
+            print(response)
     except HTTPException as e:
         raise e
     except Exception as e:

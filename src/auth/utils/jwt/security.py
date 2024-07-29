@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.engine.row import Row
 from sqlalchemy import select
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import local_time
+from src.auth.utils.database.general import local_time, is_access_token_blacklisted
 from src.database.connection import database_connection
 from src.database.models import users
 from src.auth.utils.request_format import TokenData, UserInDB, DetailUser
@@ -50,7 +50,6 @@ async def get_user(username: str) -> UserInDB | None:
                         is_verified=checked.is_verified,
                         password=checked.password,
                         is_deactivated=checked.is_deactivated,
-                        last_login=checked.last_login,
                     )
                     return user_data
                 else:
@@ -99,21 +98,38 @@ async def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> 
     return encoded_refresh_token
 
 
+async def get_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
+    return access_token
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
 ) -> DetailUser | None:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid bearer token.",
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    blacklisted_access_token = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Access token already blacklisted.",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
     try:
+        validate_access_token = await is_access_token_blacklisted(access_token=token)
+
+        logging.info(f"Token received: {token}")
         payload = jwt.decode(
             token=token,
             key=ACCESS_TOKEN_SECRET_KEY,
             algorithms=[ACCESS_TOKEN_ALGORITHM],
         )
+
+        if validate_access_token is True:
+            raise blacklisted_access_token
+
         username = payload.get("sub")
         token_data = TokenData(username=username)
         users = await get_user(username=token_data.username)

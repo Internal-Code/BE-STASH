@@ -8,7 +8,7 @@ from src.auth.utils.database.general import (
     check_password,
 )
 from src.database.connection import database_connection
-from src.auth.utils.access_token.security import get_password_hash
+from src.auth.utils.jwt.security import get_password_hash
 from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(tags=["users"], prefix="/users")

@@ -6,6 +6,7 @@ from src.tests.auth.initialization import user_initialization
 
 login_data = {"username": "string", "password": "String123!"}
 
+
 @pytest.mark.asyncio
 async def test_list_category_with_valid_token_no_params(user_initialization) -> None:
     """
