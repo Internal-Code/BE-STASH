@@ -72,6 +72,7 @@ class UserInDB(CreateUser):
     created_at: datetime
     updated_at: datetime | None
     verified_at: datetime | None
+    is_deactivated: bool
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
