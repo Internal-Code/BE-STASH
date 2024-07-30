@@ -2,7 +2,7 @@ from typing import Annotated
 from jose import jwt, JWTError
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.security import get_current_active_user
+from src.auth.utils.jwt.security import get_current_user
 from src.auth.schema.response import ResponseToken
 from src.auth.utils.database.general import local_time, is_refresh_token_blacklisted
 from src.auth.utils.logging import logging
@@ -17,7 +17,7 @@ router = APIRouter(tags=["authorizations"], prefix="/auth")
 
 
 async def refresh_access_token(
-    refresh_token: str, current_user: Annotated[dict, Depends(get_current_active_user)]
+    refresh_token: str, current_user: Annotated[dict, Depends(get_current_user)]
 ) -> ResponseToken:
     invalid_refresh_token = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token."

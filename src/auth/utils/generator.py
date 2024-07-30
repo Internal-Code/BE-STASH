@@ -51,6 +51,7 @@ def random_account(
     last_name: str = faker.last_name(),
     username: str = f"testing-{faker.first_name()}",
     email: EmailStr = faker.email(),
+    phone_number: str = f"{random_number(10)}",
     password: str = random_password(),
 ) -> dict:
     return {
@@ -58,5 +59,6 @@ def random_account(
         "last_name": last_name,
         "username": username,
         "email": email,
+        "phone_number": phone_number,
         "password": password,
     }

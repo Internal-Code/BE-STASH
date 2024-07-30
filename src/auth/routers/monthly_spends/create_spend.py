@@ -2,11 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.jwt.security import get_current_user
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import (
-    create_spending_format,
-    filter_month_year_category,
-    create_category_format,
-)
+from src.auth.utils.database.general import filter_month_year_category, local_time
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateSpend
 from src.database.connection import database_connection
@@ -16,7 +12,7 @@ router = APIRouter(tags=["money-spends"])
 
 
 async def create_spend(
-    schema: CreateSpend, users: Annotated[dict, Depends(get_current_user)]
+    schema: CreateSpend, current_user: Annotated[dict, Depends(get_current_user)]
 ) -> ResponseDefault:
     """
     Create a money spend data with all the information:
@@ -32,20 +28,10 @@ async def create_spend(
     response = ResponseDefault()
 
     is_available = await filter_month_year_category(
-        user_uuid=users.user_uuid,
+        user_uuid=current_user.user_uuid,
         month=schema.spend_month,
         year=schema.spend_year,
         category=schema.category,
-    )
-
-    prepared_spend = create_spending_format(
-        user_uuid=users.user_uuid,
-        category=schema.category,
-        description=schema.description,
-        amount=schema.amount,
-        spend_day=schema.spend_day,
-        spend_month=schema.spend_month,
-        spend_year=schema.spend_year,
     )
 
     try:
@@ -58,16 +44,25 @@ async def create_spend(
                             f"Inserting data into table {money_spends.name} and {money_spend_schemas.name}"
                         )
 
-                        prepared_category = create_category_format(
-                            user_uuid=users.user_uuid,
+                        create_spend = money_spends.insert().values(
+                            created_at=local_time(),
+                            updated_at=None,
+                            user_uuid=current_user.user_uuid,
+                            spend_day=schema.spend_day,
+                            spend_month=schema.spend_month,
+                            spend_year=schema.spend_year,
+                            category=schema.category,
+                            description=schema.description,
+                            amount=schema.amount,
+                        )
+                        create_category = money_spend_schemas.insert().values(
+                            created_at=local_time(),
+                            updated_at=None,
+                            user_uuid=current_user.user_uuid,
                             month=schema.spend_month,
                             year=schema.spend_year,
                             category=schema.category,
-                        )
-
-                        create_spend = money_spends.insert().values(prepared_spend)
-                        create_category = money_spend_schemas.insert().values(
-                            prepared_category
+                            budget=0,
                         )
                         await session.execute(create_spend)
                         await session.execute(create_category)
@@ -89,7 +84,17 @@ async def create_spend(
                         logging.info(
                             f"Only inserting data into table {money_spends.name}"
                         )
-                        create_spend = money_spends.insert().values(prepared_spend)
+                        create_spend = money_spends.insert().values(
+                            created_at=local_time(),
+                            updated_at=None,
+                            user_uuid=current_user.user_uuid,
+                            spend_day=schema.spend_day,
+                            spend_month=schema.spend_month,
+                            spend_year=schema.spend_year,
+                            category=schema.category,
+                            description=schema.description,
+                            amount=schema.amount,
+                        )
                         await session.execute(create_spend)
                         await session.commit()
                         logging.info("Created new spend money.")

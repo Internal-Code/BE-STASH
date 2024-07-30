@@ -35,14 +35,18 @@ async def test_generate_new_access_token_with_valid_refresh_token(
             "http://localhost:8000/api/v1/auth/token", data=login_data
         )
         response = res.json()
+        print(res.content)
+        access_token = response["access_token"]
         refresh_token = response["refresh_token"]
+
+        headers = {"Authorization": f"Bearer {access_token}"}
 
         refresh_token_res = await client.post(
             "http://localhost:8000/api/v1/auth/refresh-token",
             params={"refresh_token": refresh_token},
+            headers=headers
         )
         assert refresh_token_res.status_code == 200
-
 
 @pytest.mark.asyncio
 async def test_generate_new_access_token_with_invalid_refresh_token() -> None:

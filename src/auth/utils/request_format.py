@@ -53,6 +53,7 @@ class CreateUser(BaseModel):
     last_name: str
     username: str
     email: EmailStr
+    phone_number: str
     password: str
 
 
@@ -65,14 +66,15 @@ class DetailUser(BaseModel):
     last_name: str
     username: str
     email: EmailStr
+    phone_number: str
 
 
 class UserInDB(CreateUser):
     user_uuid: UUID
     created_at: datetime
     updated_at: datetime | None
-    verified_at: datetime | None
-    is_deactivated: bool
+    verified_email: bool
+    verified_phone_number: bool
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
@@ -80,4 +82,5 @@ class UserInDB(CreateUser):
             last_name=self.last_name,
             username=self.username,
             email=self.email,
+            phone_number=self.phone_number,
         )

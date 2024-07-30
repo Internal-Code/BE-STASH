@@ -42,13 +42,14 @@ async def get_user(username: str) -> UserInDB | None:
                         user_uuid=checked.user_uuid,
                         created_at=checked.created_at,
                         updated_at=checked.updated_at,
-                        username=checked.username,
                         first_name=checked.first_name,
                         last_name=checked.last_name,
+                        username=checked.username,
                         email=checked.email,
-                        verified_at=checked.verified_at,
+                        phone_number=checked.phone_number,
                         password=checked.password,
-                        is_deactivated=checked.is_deactivated,
+                        verified_email=checked.verified_email,
+                        verified_phone_number=checked.verified_phone_number,
                     )
                     return user_data
                 else:
@@ -112,22 +113,21 @@ async def get_current_user(
 
     blacklisted_access_token = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Access token already blacklisted.",
+        detail="Session expired. Please perform re login.",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
     try:
         validate_access_token = await is_access_token_blacklisted(access_token=token)
 
-        logging.info(f"Token received: {token}")
+        if validate_access_token is True:
+            raise blacklisted_access_token
+
         payload = jwt.decode(
             token=token,
             key=ACCESS_TOKEN_SECRET_KEY,
             algorithms=[ACCESS_TOKEN_ALGORITHM],
         )
-
-        if validate_access_token is True:
-            raise blacklisted_access_token
 
         username = payload.get("sub")
         token_data = TokenData(username=username)
@@ -139,13 +139,3 @@ async def get_current_user(
         logging.error(f"JWTError: {e}")
         raise credentials_exception
     return users
-
-
-async def get_current_active_user(
-    current_user: Annotated[str, Depends(get_current_user)],
-) -> str | dict:
-    if current_user.is_deactivated:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive users"
-        )
-    return current_user

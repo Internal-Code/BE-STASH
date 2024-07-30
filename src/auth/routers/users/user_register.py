@@ -1,11 +1,14 @@
+from uuid_extensions import uuid7
 from src.database.models import users
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
+from src.auth.utils.database.general import local_time
 from src.auth.utils.database.general import (
-    filter_registered_user,
-    register_account_format,
+    filter_user_register,
     check_password,
+    check_phone_number,
+    check_username,
 )
 from src.database.connection import database_connection
 from src.auth.utils.jwt.security import get_password_hash
@@ -21,7 +24,10 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
     - **first_name**: The first name of the users.
     - **last_name**: The last name of the users.
     - **username**: The username chosen by the users for logging in.
+        - Contain at least 5 character.
     - **email**: The email address of the users.
+    - **phone_number**: The phone number of the users.
+        - Should be 10 - 13 digit of number.
     - **password**: The password chosen by the users for account security. It must:
         - Be at least 8 characters long.
         - Contain at least one uppercase letter.
@@ -32,30 +38,29 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
 
     response = ResponseDefault()
     try:
-        is_available = await filter_registered_user(
+        await filter_user_register(
             username=schema.username,
             email=schema.email,
+            phone_number=schema.phone_number,
         )
-        if is_available:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Account already registered. Please create an another account.",
-            )
 
+        await check_phone_number(schema.phone_number)
+        await check_username(schema.username)
         await check_password(schema.password)
-
-        prepared_data = register_account_format(
-            first_name=schema.first_name,
-            last_name=schema.last_name,
-            username=schema.username,
-            email=schema.email,
-            password=await get_password_hash(schema.password),
-        )
 
         logging.info("Endpoint register account.")
         async with database_connection().connect() as session:
             try:
-                query = users.insert().values(prepared_data)
+                query = users.insert().values(
+                    user_uuid=uuid7(),
+                    created_at=local_time(),
+                    username=schema.username,
+                    first_name=schema.first_name,
+                    last_name=schema.last_name,
+                    email=schema.email,
+                    phone_number=schema.phone_number,
+                    password=await get_password_hash(schema.password),
+                )
                 await session.execute(query)
                 await session.commit()
                 logging.info("Created new account.")

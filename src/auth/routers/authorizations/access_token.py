@@ -27,12 +27,13 @@ async def access_token(
     try:
         response = ResponseToken()
         user_in_db = await authenticate_user(form_data.username, form_data.password)
+
+        if user_in_db is None:
+            raise credentials_error
+
         latest_login = await update_latest_login(
             username=user_in_db.username, email=user_in_db.email
         )
-
-        if not user_in_db:
-            raise credentials_error
 
         if latest_login is True:
             access_token = await create_access_token(
@@ -56,7 +57,7 @@ async def access_token(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logging.error(f"Error while creating category: {e}.")
+        logging.error(f"Error while generate access_token: {e}.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal Server Error: {e}.",

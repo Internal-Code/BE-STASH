@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.security import get_current_active_user
+from src.auth.utils.jwt.security import get_current_user
 from src.auth.utils.logging import logging
 from src.auth.utils.database.general import (
     filter_month_year_category,
@@ -16,7 +16,7 @@ router = APIRouter(tags=["money-schemas"])
 
 async def update_category_schema(
     schema: UpdateCategorySchema,
-    users: Annotated[dict, Depends(get_current_active_user)],
+    current_users: Annotated[dict, Depends(get_current_user)],
 ) -> ResponseDefault:
     """
     Update category information from a spesific month and year:
@@ -32,7 +32,7 @@ async def update_category_schema(
         month=schema.month,
         year=schema.year,
         category=schema.category,
-        user_uuid=users.user_uuid,
+        user_uuid=current_users.user_uuid,
     )
 
     category_already_saved = await filter_spesific_category(
@@ -41,7 +41,7 @@ async def update_category_schema(
 
     if is_available is False:
         logging.info(
-            f"User {users.username} is not created schema in {schema.month}/{schema.year}."
+            f"User {current_users.username} is not created schema in {schema.month}/{schema.year}."
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -67,7 +67,7 @@ async def update_category_schema(
                         money_spend_schemas.c.month == schema.month,
                         money_spend_schemas.c.year == schema.year,
                         money_spend_schemas.c.category == schema.category,
-                        money_spend_schemas.c.user_uuid == users.user_uuid,
+                        money_spend_schemas.c.user_uuid == current_users.user_uuid,
                     )
                     .values(
                         updated_at=local_time(), category=schema.changed_category_into

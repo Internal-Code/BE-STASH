@@ -4,8 +4,6 @@ from src.auth.utils.database.general import local_time
 from src.auth.utils.generator import random_number, random_word
 from src.tests.auth.initialization import user_initialization
 
-login_data = {"username": "string", "password": "String123!"}
-
 
 @pytest.mark.asyncio
 async def test_list_category_with_valid_token_no_params(user_initialization) -> None:
@@ -30,16 +28,20 @@ async def test_list_category_with_valid_token_no_params(user_initialization) -> 
         get_data = await client.get(
             "http://localhost:8000/api/v1/list-category", headers=headers
         )
+        print(get_data.content)
         assert get_data.status_code == 200
 
 
 @pytest.mark.asyncio
-async def test_list_category_with_valid_token_and_params() -> None:
+async def test_list_category_with_valid_token_and_params(user_initialization) -> None:
     """
     Should return the latest schema for the current user with given month and year parameters.
     """
 
     async with httpx.AsyncClient() as client:
+        account = await user_initialization
+
+        login_data = {"username": account["username"], "password": account["password"]}
 
         res = await client.post(
             "http://localhost:8000/api/v1/auth/token", data=login_data
@@ -81,12 +83,15 @@ async def test_list_category_with_invalid_token() -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_category_with_valid_token_and_nonexistent_params() -> None:
+async def test_list_category_with_valid_token_and_nonexistent_params(user_initialization) -> None:
     """
     Should return 404 when querying with parameters not available in the database.
     """
 
     async with httpx.AsyncClient() as client:
+        account = await user_initialization
+
+        login_data = {"username": account["username"], "password": account["password"]}
 
         res = await client.post(
             "http://localhost:8000/api/v1/auth/token", data=login_data

@@ -40,7 +40,7 @@ async def create_spend(
     if not is_available:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Data is not found. Ensure selected data already created on database.",
+            detail="Data is not found. Ensure data already created on database.",
         )
 
     try:

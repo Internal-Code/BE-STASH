@@ -1,10 +1,12 @@
 import re
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.schema import Table
 from sqlalchemy.engine.row import Row
 from uuid_extensions import uuid7
 from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
-from sqlalchemy import select, or_, update
+from sqlalchemy import select, update
 from datetime import datetime
 from fastapi import HTTPException, status
 from src.auth.utils.logging import logging
@@ -212,29 +214,37 @@ async def filter_month_year(
     return False
 
 
-async def filter_registered_user(username: str, email: EmailStr) -> bool:
+async def filter_user_register(
+    username: str, email: EmailStr, phone_number: str
+) -> None:
     try:
-        async with database_connection().connect() as session:
-            try:
-                logging.info("Filter with username and email")
-                query = select(users).where(
-                    or_(users.c.username == username, users.c.email == email)
-                )
-                result = await session.execute(query)
-                checked = result.fetchone()
-                if checked:
-                    logging.warning(
-                        f"Account with username: {username} or email: {email} already registered. Please create an another account"
-                    )
-                    return True
-            except Exception as E:
-                logging.error(f"Error during filter_registered_user availability: {E}.")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after filter_registered_user availability: {E}.")
-    return False
+        logging.info("Filtering username, email and phone number.")
+
+        if await is_using_registered_email(email=email):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already taken. Please use another email.",
+            )
+        if await is_using_registered_username(username=username):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username already taken. Please use another username.",
+            )
+        if await is_using_registered_phone_number(phone_number=phone_number):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Phone number already taken. Please use another phone number.",
+            )
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        logging.error(f"Error while filter_registered_user availability: {e}.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal Server Error: {e}.",
+        )
 
 
 async def update_latest_login(username: str, email: EmailStr) -> bool:
@@ -260,9 +270,55 @@ async def update_latest_login(username: str, email: EmailStr) -> bool:
             finally:
                 await session.close()
     except Exception as e:
-        logging.error(f"Error connecting to database in update_latest_login: {e}")
+        logging.error(f"Error after update_latest_login: {e}")
 
     return False
+
+
+async def is_phone_number_registered(phone_number: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(users).where(users.c.phone_number == phone_number)
+                result = await session.execute(query)
+                checked = result.fetchone()
+                logging.error(
+                    f"Phone number :{phone_number} already saved in database."
+                )
+                if checked:
+                    return True
+            except Exception as e:
+                logging.error(f"Error during is_phone_num_registered: {e}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as e:
+        logging.error(f"Error after is_phone_num_registered: {e}")
+
+    return False
+
+
+async def check_phone_number(value: str) -> str:
+    if not value.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phone number must contain only digits",
+        )
+    if not 10 <= len(value) <= 13:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phone number must be between 10 and 13 digits long",
+        )
+    return value
+
+
+async def check_username(value: str) -> str:
+    if len(value) < 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username must be at least 5 characters long.",
+        )
+    return value
 
 
 async def check_password(value: str) -> str:
@@ -294,42 +350,77 @@ async def check_password(value: str) -> str:
     return value
 
 
-async def is_using_same_email(changed_email: EmailStr) -> bool:
+async def is_using_registered_field(
+    session: AsyncSession, table_name: Table, field: str, value: str
+) -> bool:
+    try:
+        query = select(table_name).where(getattr(table_name.c, field) == value)
+        result = await session.execute(query)
+        return result.fetchone() is not None
+    except Exception as e:
+        logging.error(f"Error while checking {field}: {e}")
+        raise
+
+
+async def is_using_registered_email(email: EmailStr) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(users).where(users.c.email == changed_email)
-                result = await session.execute(query)
-                checked = result.fetchone()
-                if checked:
+                result = await is_using_registered_field(
+                    session=session, table_name=users, field="email", value=email
+                )
+                if result:
                     return True
             except Exception as E:
-                logging.error(f"Error while is_safe_to_update: {E}")
+                logging.error(f"Error while is_using_registered_email: {E}")
                 await session.rollback()
             finally:
                 await session.close()
     except Exception as E:
-        logging.error(f"Error after is_safe_to_update: {E}")
+        logging.error(f"Error after is_using_registered_email: {E}")
 
     return False
 
 
-async def is_using_same_username(changed_username: str) -> bool:
+async def is_using_registered_phone_number(phone_number: str) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(users).where(users.c.username == changed_username)
-                result = await session.execute(query)
-                checked = result.fetchone()
-                if checked:
+                result = await is_using_registered_field(
+                    session=session,
+                    table_name=users,
+                    field="phone_number",
+                    value=phone_number,
+                )
+                if result:
                     return True
             except Exception as E:
-                logging.error(f"Error while is_safe_to_update: {E}")
+                logging.error(f"Error while is_using_registered_phone_number: {E}")
                 await session.rollback()
             finally:
                 await session.close()
     except Exception as E:
-        logging.error(f"Error after is_safe_to_update: {E}")
+        logging.error(f"Error after is_using_registered_phone_number: {E}")
+
+    return False
+
+
+async def is_using_registered_username(username: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                result = await is_using_registered_field(
+                    session=session, table_name=users, field="username", value=username
+                )
+                if result:
+                    return True
+            except Exception as E:
+                logging.error(f"Error while is_using_registered_username: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after is_using_registered_username: {E}")
 
     return False
 

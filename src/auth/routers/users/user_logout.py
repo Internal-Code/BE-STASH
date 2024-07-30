@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
-from src.auth.utils.jwt.security import get_current_active_user
+from src.auth.utils.jwt.security import get_current_user, get_access_token
 from src.database.models import blacklist_tokens
 from src.database.connection import database_connection
 from src.auth.utils.database.general import (
@@ -15,9 +15,9 @@ router = APIRouter(tags=["users"], prefix="/users")
 
 
 async def users(
-    current_user: Annotated[dict, Depends(get_current_active_user)],
-    access_token: str,
     refresh_token: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    access_token: str = Depends(get_access_token),
 ) -> ResponseDefault:
     saved_token = HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST, detail="Token already blacklisted."
@@ -28,11 +28,9 @@ async def users(
         validate_refresh_token = await is_refresh_token_blacklisted(
             refresh_token=refresh_token
         )
-        print(validate_refresh_token)
         validate_access_token = await is_access_token_blacklisted(
             access_token=access_token
         )
-        print(validate_access_token)
 
         if validate_refresh_token is True or validate_access_token is True:
             raise saved_token

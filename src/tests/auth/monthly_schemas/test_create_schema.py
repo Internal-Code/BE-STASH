@@ -1,18 +1,25 @@
 import pytest
 import httpx
-from jose import jwt
-import uuid
 from datetime import datetime
-from src.auth.utils.database.general import create_category_format
+from src.auth.utils.database.general import local_time
 from src.auth.utils.generator import random_number, random_word
-from src.secret import ACCESS_TOKEN_SECRET_KEY, ACCESS_TOKEN_ALGORITHM
 from src.tests.auth.initialization import user_initialization
+
+data = {
+        "created_at": local_time(),
+        "updated_at": None,
+        "user_uuid": None,
+        "month": local_time().month,
+        "year": local_time().year,
+        "category": f"testing-{random_word(10)}",
+        "budget": random_number(10),
+        }
 
 
 @pytest.mark.asyncio
-async def test_create_schema_with_valid_token(user_initialization) -> None:
+async def test_create_schema_with_valid_data(user_initialization) -> None:
     """
-    Should log in with valid credentials and create a new schema successfully.
+    Should create a new schema successfully.
     """
     async with httpx.AsyncClient() as client:
         account = await user_initialization
@@ -26,18 +33,6 @@ async def test_create_schema_with_valid_token(user_initialization) -> None:
 
         tokens = token_response.json()
         access_token = tokens["access_token"]
-        decoded_token = jwt.decode(
-            access_token, ACCESS_TOKEN_SECRET_KEY, algorithms=[ACCESS_TOKEN_ALGORITHM]
-        )
-        user_uuid = decoded_token["user_uuid"]
-
-        data = create_category_format(
-            user_uuid=user_uuid,
-            month=random_number(),
-            year=random_number(4),
-            category=f"testing-{random_word()}",
-            budget=random_number(10),
-        )
 
         for key, value in data.items():
             if isinstance(value, datetime):
@@ -51,6 +46,35 @@ async def test_create_schema_with_valid_token(user_initialization) -> None:
         assert schema_response.status_code == 201
 
 @pytest.mark.asyncio
+async def test_create_schema_with_category_already_saved(user_initialization) -> None:
+    """
+    Should return forbidden due to same category on database.
+    """
+    async with httpx.AsyncClient() as client:
+        account = await user_initialization
+
+        login_data = {"username": account["username"], "password": account["password"]}
+
+        token_response = await client.post(
+            "http://localhost:8000/api/v1/auth/token", data=login_data
+        )
+        assert token_response.status_code == 200
+
+        tokens = token_response.json()
+        access_token = tokens["access_token"]
+
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                data[key] = value.isoformat()
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        schema_response = await client.post(
+            "http://localhost:8000/api/v1/create-schema", json=data, headers=headers
+        )
+        assert schema_response.status_code == 403
+
+@pytest.mark.asyncio
 async def test_create_schema_with_invalid_token() -> None:
     """
     Should return forbidden due to invalid access token.
@@ -58,15 +82,15 @@ async def test_create_schema_with_invalid_token() -> None:
     async with httpx.AsyncClient() as client:
 
         access_token = f"{random_word(10)}.{random_word(10)}.{random_word(10)}"
-        user_uuid = str(uuid.uuid4)
-
-        data = create_category_format(
-            user_uuid=user_uuid,
-            month=random_number(),
-            year=random_number(4),
-            category=f"testing-{random_word()}",
-            budget=random_number(10),
-        )
+        data = {
+                "created_at": local_time(),
+                "updated_at": None,
+                "user_uuid": None,
+                "month": random_number(),
+                "year": random_number(4),
+                "category": f"testing-{random_word(10)}",
+                "budget": random_number(10),
+                }
 
         for key, value in data.items():
             if isinstance(value, datetime):
@@ -78,3 +102,37 @@ async def test_create_schema_with_invalid_token() -> None:
             "http://localhost:8000/api/v1/create-schema", json=data, headers=headers
         )
         assert schema_response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_create_schema_with_invalid_format_data(user_initialization) -> None:
+    """
+    Should return unprocessable entity due to invalid payload.
+    """
+    async with httpx.AsyncClient() as client:
+        account = await user_initialization
+
+        login_data = {"username": account["username"], "password": account["password"]}
+
+        token_response = await client.post(
+            "http://localhost:8000/api/v1/auth/token", data=login_data
+        )
+        assert token_response.status_code == 200
+
+        tokens = token_response.json()
+        access_token = tokens["access_token"]
+
+        data = {
+                "month": random_number(),
+                "year": random_number(),
+                "category": f"testing-{random_word(10)}",
+                "budget": random_number(10),
+                }
+
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        schema_response = await client.post(
+            "http://localhost:8000/api/v1/create-schema", json=data, headers=headers
+        )
+
+        assert schema_response.status_code == 422
