@@ -1,0 +1,79 @@
+from typing import Annotated
+from fastapi import APIRouter, HTTPException, status, Depends
+from src.auth.utils.logging import logging
+from src.auth.schema.response import ResponseDefault
+from src.auth.utils.jwt.security import get_current_user, get_access_token
+from src.database.models import blacklist_tokens
+from src.database.connection import database_connection
+from src.auth.utils.database.general import (
+    local_time,
+    is_refresh_token_blacklisted,
+    is_access_token_blacklisted,
+)
+
+router = APIRouter(tags=["users"], prefix="/users")
+
+
+async def users(
+    refresh_token: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    access_token: str = Depends(get_access_token),
+) -> ResponseDefault:
+    saved_token = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST, detail="Token already blacklisted."
+    )
+
+    response = ResponseDefault()
+    try:
+        validate_refresh_token = await is_refresh_token_blacklisted(
+            refresh_token=refresh_token
+        )
+        validate_access_token = await is_access_token_blacklisted(
+            access_token=access_token
+        )
+
+        if validate_refresh_token is True or validate_access_token is True:
+            raise saved_token
+
+        async with database_connection().connect() as session:
+            try:
+                query = blacklist_tokens.insert().values(
+                    blacklisted_at=local_time(),
+                    user_uuid=current_user.user_uuid,
+                    access_token=access_token,
+                    refresh_token=refresh_token,
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(f"User {current_user.username} logged out successfully.")
+                response.message = "Logout successful."
+                response.success = True
+            except Exception as E:
+                logging.error(f"Error during logout: {E}.")
+                await session.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Server error during logout: {E}.",
+                )
+            finally:
+                await session.close()
+    except HTTPException as e:
+        logging.error(f"HTTPException during logout: {e.detail}")
+        raise e
+    except Exception as e:
+        logging.error(f"Server error after logout: {e}.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal Server Error: {e}.",
+        )
+    return response
+
+
+router.add_api_route(
+    methods=["GET"],
+    path="/logout",
+    response_model=ResponseDefault,
+    endpoint=users,
+    status_code=status.HTTP_200_OK,
+    summary="Logout logged in current user.",
+)

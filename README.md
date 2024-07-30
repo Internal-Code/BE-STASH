@@ -5,6 +5,9 @@ This is Proof of Concept (POC) for Finance Tracker Management. Established using
 This repository is for a personal full-stack development project.
 
 ```
+script\                         # Shell script folder.
+├── run_server.sh               # Shell script for starting fastapi server.
+├── setup.sh                    # Shell script for installing project setup.
 src\                            # Root folder.
 ├── auth\                       # Root of all endpoints folder.
 │   ├── routers\                # Stored of list API during development.
@@ -21,14 +24,13 @@ src\                            # Root folder.
 │   ├ ...                       # Another of general utilities files.
 ├── database\                   # Stored of databases connection and table models.
 │   ├── connection.py           # Stored of global database connection.
-│   ├── models.py               # Stored for databases model mapped by SQLAlchemy.    
+│   ├── models.py               # Stored for databases model mapped by SQLAlchemy.
 ├── tests\                      # Unit testing root directory.
 │   ├── monthly_schema\         # Stored of list unit testing on montly_schema router.
 │   ├ ...                       # Another of unit testing folders.
 ├──main.py                      # Stored of main backend application.
 ├──secret.py                    # Stored of all secret on .env
 pyproject.toml                  # Stored of all library based on project requirement.
-run_server.sh                   # Shell script for starting fastapi server.
 ```
 # Project Setup Instructions
 

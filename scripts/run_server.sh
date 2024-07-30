@@ -6,11 +6,11 @@ if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
   . .venv/bin/activate
 else
   case "$OSTYPE" in
-    linux*)   
+    linux*)
       echo "Linux based OS detected"
       . .venv/bin/activate
       ;;
-    cygwin* | msys* | mingw*)  
+    cygwin* | msys* | mingw*)
       echo "Windows based OS detected"
       source .venv/Scripts/activate
       ;;
@@ -23,4 +23,4 @@ fi
 
 
 echo "Running uvicorn server (debug mode)"
-uvicorn src.main:app --reload
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
