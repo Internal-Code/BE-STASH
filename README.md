@@ -46,12 +46,12 @@ For Windows users, you'll also need to install either MinGW or Cygwin to run the
 
 ## Setup Steps
 
-1. **Run the Setup Script**
+1. **Run the setup script**
     ```
     sh scripts/setup.sh
     ```
 
-2. **Start the Docker Containers**
+2. **Start docker containers**
     ```
     docker-compose up
     ```

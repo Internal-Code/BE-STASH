@@ -87,13 +87,14 @@ def register_account_format(
     }
 
 
-async def filter_spesific_category(category: str) -> bool:
+async def filter_spesific_category(user_uuid: uuid7, category: str) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
                 logging.info("Connected PostgreSQL to perform filter spesific category")
                 query = select(money_spend_schemas).where(
-                    money_spend_schemas.c.category == category
+                    money_spend_schemas.c.category == category,
+                    money_spend_schemas.c.user_uuid == user_uuid,
                 )
                 result = await session.execute(query)
                 checked = result.fetchone()
