@@ -7,6 +7,7 @@ This repository is for a personal full-stack development project.
 ```
 script\                         # Shell script folder.
 ├── run_server.sh               # Shell script for starting fastapi server.
+├── run_test.sh                 # Shell script for end2end endpoint unit testing.
 ├── setup.sh                    # Shell script for installing project setup.
 src\                            # Root folder.
 ├── auth\                       # Root of all endpoints folder.

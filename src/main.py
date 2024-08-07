@@ -8,9 +8,9 @@ from src.database.models import async_main
 from starlette.middleware.sessions import SessionMiddleware
 from src.secret import MIDDLEWARE_SECRET_KEY
 from src.auth.routers.google_sso import (
-    google_frontend,
-    google_login,
+    google,
     google_auth,
+    google_login,
     google_welcome,
     google_logout,
 )
@@ -70,7 +70,7 @@ app.include_router(refresh_token.router)
 app.include_router(user_register.router)
 app.include_router(user_logout.router)
 app.include_router(user_detail.router)
-app.include_router(google_frontend.router)
+app.include_router(google.router)
 app.include_router(google_login.router)
 app.include_router(google_auth.router)
 app.include_router(google_welcome.router)
