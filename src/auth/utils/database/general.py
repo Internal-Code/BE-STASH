@@ -15,6 +15,7 @@ from src.database.models import (
     money_spends,
     users,
     blacklist_tokens,
+    user_tokens,
 )
 from src.database.connection import database_connection
 
@@ -87,13 +88,14 @@ def register_account_format(
     }
 
 
-async def filter_spesific_category(category: str) -> bool:
+async def filter_spesific_category(user_uuid: uuid7, category: str) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
                 logging.info("Connected PostgreSQL to perform filter spesific category")
                 query = select(money_spend_schemas).where(
-                    money_spend_schemas.c.category == category
+                    money_spend_schemas.c.category == category,
+                    money_spend_schemas.c.user_uuid == user_uuid,
                 )
                 result = await session.execute(query)
                 checked = result.fetchone()
@@ -457,7 +459,6 @@ async def is_refresh_token_blacklisted(refresh_token: str) -> bool:
 
                 result = await session.execute(query)
                 checked = result.fetchone()
-                print("data refresh token", checked)
                 if checked:
                     return True
             except Exception as E:
@@ -469,3 +470,50 @@ async def is_refresh_token_blacklisted(refresh_token: str) -> bool:
         logging.error(f"Error after is_token_blacklisted: {E}")
 
     return False
+
+
+async def save_tokens(user_uuid: uuid7, access_token: str, refresh_token: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = user_tokens.insert().values(
+                    created_at=local_time(),
+                    user_uuid=user_uuid,
+                    access_token=access_token,
+                    refresh_token=refresh_token,
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(
+                    f"User {user_uuid} successfully saved tokens into database."
+                )
+            except Exception as E:
+                logging.error(f"Error while save_tokens: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_tokens: {E}")
+
+
+async def extract_tokens(user_uuid: uuid7) -> Row | None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(user_tokens)
+                    .where(user_tokens.c.user_uuid == user_uuid)
+                    .order_by(user_tokens.c.created_at.desc())
+                )
+                result = await session.execute(query)
+                latest_record = result.fetchone()
+                if latest_record is not None:
+                    return latest_record
+            except Exception as E:
+                logging.error(f"Error during extract_tokens: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after extract_tokens: {E}")
+    return None

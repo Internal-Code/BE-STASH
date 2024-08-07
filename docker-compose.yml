@@ -2,7 +2,7 @@ services:
   postgre_sql:
     container_name: postgres_container
     image: postgres:16.3-alpine
-    restart: no #change to 'always' if model already deployed into development server
+    restart: no
     environment:
       - POSTGRES_USER=${LOCAL_POSTGRESQL_USER}
       - POSTGRES_PASSWORD=${LOCAL_POSTGRESQL_PASSWORD}
@@ -17,8 +17,8 @@ services:
 
   pg_admin:
     container_name: pgadmin4_container
-    image: dpage/pgadmin4:8
-    restart: no #change to 'always' if model already deployed into development server
+    image: dpage/pgadmin4:8.10
+    restart: no
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
@@ -29,20 +29,17 @@ services:
       app_net:
         ipv4_address: 172.18.0.31
 
-  ollama:
-    container_name: ollama_container
-    image: ollama/ollama:0.1.45 #TODO: research how to utilize ROCM on RX6800s
-    restart: no #change to 'always' if model already deployed into development server
-    ports:
-      - 11434:11434
-    volumes:
-      - ollama:/var/lib/ollama/data
-    group_add:
-      - video
+  # ollama:
+  #   container_name: ollama_container
+  #   image: ollama/ollama:0.3.4
+  #   restart: no
+  #   ports:
+  #     - 11434:11434
+  #   group_add:
+  #     - video
 
 volumes:
   postgre_sql:
-  ollama:
 
 networks:
   app_net:

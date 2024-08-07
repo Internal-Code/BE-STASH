@@ -36,7 +36,7 @@ async def update_category_schema(
     )
 
     category_already_saved = await filter_spesific_category(
-        category=schema.changed_category_into
+        category=schema.changed_category_into, user_uuid=current_users.user_uuid
     )
 
     if is_available is False:
