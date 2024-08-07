@@ -5,33 +5,33 @@ This is Proof of Concept (POC) for Finance Tracker Management. Established using
 This repository is for a personal full-stack development project.
 
 ```
-script\                         # Shell script folder.
-├── run_server.sh               # Shell script for starting fastapi server.
-├── run_test.sh                 # Shell script for end2end endpoint unit testing.
-├── setup.sh                    # Shell script for installing project setup.
-src\                            # Root folder.
-├── auth\                       # Root of all endpoints folder.
-│   ├── routers\                # Stored of list API during development.
-│   │   ├── monthly_schemas\    # Stored of list monthly_shcema router.
-│   ├   ├   ...                 # Another list of routers folders.
-│   ├── schema\                 # Stored of API responses schema serialized by pydantic.
-│   │   ├── response.py         # Pydantic response model.
-│   ├── exception.py            # Handling custom error for more convenient debug.
-│   ├── health_check.py         # Root endpoint.
-│   ├── utils\                  # Stored of list utilites based on project needs.
-│   │   ├── databases\          # Stored of spesific utilities related to databases.
-│   ├   ├   ...                 # Another list of utilities folders.
-│   ├── generator.py            # Stored of utilities for generating data.
-│   ├ ...                       # Another of general utilities files.
-├── database\                   # Stored of databases connection and table models.
-│   ├── connection.py           # Stored of global database connection.
-│   ├── models.py               # Stored for databases model mapped by SQLAlchemy.
-├── tests\                      # Unit testing root directory.
-│   ├── monthly_schema\         # Stored of list unit testing on montly_schema router.
-│   ├ ...                       # Another of unit testing folders.
-├──main.py                      # Stored of main backend application.
-├──secret.py                    # Stored of all secret on .env
-pyproject.toml                  # Stored of all library based on project requirement.
+script\                     # Shell script folder.
+├──run_server.sh            # Shell script for starting fastapi server.
+├──run_test.sh              # Shell script for end2end endpoint unit testing.
+├──setup.sh                 # Shell script for installing project setup.
+src\                        # Root folder.
+├──auth\                    # Root of all endpoints folder.
+│   ├──routers\             # Stored of list API during development.
+│   │   ├──monthly_schemas\ # Stored of list monthly_shcema router.
+│   ├── ├──   ...           # Another list of routers folders.
+│   ├──schema\              # Stored of API responses schema serialized by pydantic.
+│   │   ├──response.py      # Pydantic response model.
+│   ├──exception.py         # Handling custom error for more convenient debug.
+│   ├──health_check.py      # Root endpoint.
+│   ├──utils\               # Stored of list utilites based on project needs.
+│   │   ├──databases\       # Stored of spesific utilities related to databases.
+│   ├── ├──  ...            # Another list of utilities folders.
+│   ├── generator.py        # Stored of utilities for generating data.
+│   ├── ...                 # Another of general utilities files.
+├──database\                # Stored of databases connection and table models.
+│   ├──connection.py        # Stored of global database connection.
+│   ├──models.py            # Stored for databases model mapped by SQLAlchemy.
+├──tests\                   # Unit testing root directory.
+│   ├──monthly_schema\      # Stored of list unit testing on montly_schema router.
+│   ├── ...                 # Another of unit testing folders.
+├──main.py                  # Stored of main backend application.
+├──secret.py                # Stored of all secret on .env
+pyproject.toml              # Stored of all library based on project requirement.
 ```
 # Project Setup Instructions
 
