@@ -4,13 +4,13 @@ from src.auth.utils.generator import random_number, random_word
 from src.tests.auth.initialization import user_initialization
 
 data = {
-        "spend_day": random_number(),
-        "spend_month": random_number(),
-        "spend_year": random_number(4),
-        "category": f"testing-category-{random_word(10)}",
-        "description": f"testing-description{random_word(10)}",
-        "amount": random_number(10),
-        }
+    "spend_day": random_number(),
+    "spend_month": random_number(),
+    "spend_year": random_number(4),
+    "category": f"testing-category-{random_word(10)}",
+    "description": f"testing-description{random_word(10)}",
+    "amount": random_number(10),
+}
 
 
 @pytest.mark.asyncio
