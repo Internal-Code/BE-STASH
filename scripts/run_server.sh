@@ -1,5 +1,12 @@
 #!/bin/bash
 
+echo "Checking for existing processes on port 8000"
+PIDS=$(lsof -ti :8000)
+if [ -n "$PIDS" ]; then
+  echo "Killing existing processes on port 8000"
+  kill -9 $PIDS
+fi
+
 echo "Checking OS Environment"
 if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
   echo "WSL detected"
@@ -23,4 +30,4 @@ fi
 
 
 echo "Running uvicorn server (debug mode)"
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload &

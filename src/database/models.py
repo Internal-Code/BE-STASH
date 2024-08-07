@@ -70,6 +70,16 @@ blacklist_tokens = Table(
     Column("refresh_token", String(255), nullable=False, unique=True),
 )
 
+user_tokens = Table(
+    "user_tokens",
+    meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("access_token", String(255), nullable=False, unique=True),
+    Column("refresh_token", String(255), nullable=False, unique=True),
+)
+
 
 async def async_main():
     engine = database_connection()

@@ -10,7 +10,7 @@ from src.auth.utils.jwt.security import (
     create_access_token,
     create_refresh_token,
 )
-from src.auth.utils.database.general import update_latest_login
+from src.auth.utils.database.general import update_latest_login, save_tokens
 
 router = APIRouter(tags=["authorizations"], prefix="/auth")
 
@@ -51,9 +51,13 @@ async def access_token(
                 },
                 refresh_token_expires=timedelta(minutes=int(REFRESH_TOKEN_EXPIRED)),
             )
-            response.refresh_token = refresh_token
-            response.access_token = access_token
-            print(response)
+        await save_tokens(
+            user_uuid=user_in_db.user_uuid,
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
+        response.refresh_token = refresh_token
+        response.access_token = access_token
     except HTTPException as e:
         raise e
     except Exception as e:

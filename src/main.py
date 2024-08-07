@@ -5,6 +5,16 @@ from fastapi.openapi.models import OAuthFlowPassword
 from src.auth.routers import health_check
 from src.database.connection import database_connection
 from src.database.models import async_main
+from starlette.middleware.sessions import SessionMiddleware
+from src.secret import MIDDLEWARE_SECRET_KEY
+from src.auth.routers.google_sso import (
+    google_frontend,
+    google_login,
+    google_auth,
+    google_welcome,
+    google_logout,
+)
+from fastapi.staticfiles import StaticFiles
 from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,
@@ -21,6 +31,7 @@ from src.auth.routers.users import user_detail, user_register, user_logout
 from src.auth.routers.authorizations import access_token, refresh_token
 
 app = FastAPI(root_path="/api/v1")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi_scheme = {
     "type": "oauth2",
     "flows": OAuthFlowsModel(password=OAuthFlowPassword(tokenUrl="auth/token")),
@@ -37,6 +48,7 @@ async def shutdown():
     await database_connection().dispose()
 
 
+app.add_middleware(SessionMiddleware, secret_key=MIDDLEWARE_SECRET_KEY)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -58,3 +70,8 @@ app.include_router(refresh_token.router)
 app.include_router(user_register.router)
 app.include_router(user_logout.router)
 app.include_router(user_detail.router)
+app.include_router(google_frontend.router)
+app.include_router(google_login.router)
+app.include_router(google_auth.router)
+app.include_router(google_welcome.router)
+app.include_router(google_logout.router)

@@ -2,22 +2,21 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
-from src.auth.utils.jwt.security import get_current_user, get_access_token
+from src.auth.utils.jwt.security import get_current_user
 from src.database.models import blacklist_tokens
 from src.database.connection import database_connection
 from src.auth.utils.database.general import (
     local_time,
     is_refresh_token_blacklisted,
     is_access_token_blacklisted,
+    extract_tokens,
 )
 
 router = APIRouter(tags=["users"], prefix="/users")
 
 
-async def users(
-    refresh_token: str,
+async def user_logout(
     current_user: Annotated[dict, Depends(get_current_user)],
-    access_token: str = Depends(get_access_token),
 ) -> ResponseDefault:
     saved_token = HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST, detail="Token already blacklisted."
@@ -25,11 +24,14 @@ async def users(
 
     response = ResponseDefault()
     try:
+        token_data = await extract_tokens(user_uuid=current_user.user_uuid)
+        print(token_data)
+
         validate_refresh_token = await is_refresh_token_blacklisted(
-            refresh_token=refresh_token
+            refresh_token=token_data.refresh_token
         )
         validate_access_token = await is_access_token_blacklisted(
-            access_token=access_token
+            access_token=token_data.access_token
         )
 
         if validate_refresh_token is True or validate_access_token is True:
@@ -40,8 +42,8 @@ async def users(
                 query = blacklist_tokens.insert().values(
                     blacklisted_at=local_time(),
                     user_uuid=current_user.user_uuid,
-                    access_token=access_token,
-                    refresh_token=refresh_token,
+                    access_token=token_data.access_token,
+                    refresh_token=token_data.refresh_token,
                 )
                 await session.execute(query)
                 await session.commit()
@@ -70,10 +72,10 @@ async def users(
 
 
 router.add_api_route(
-    methods=["GET"],
+    methods=["POST"],
     path="/logout",
     response_model=ResponseDefault,
-    endpoint=users,
+    endpoint=user_logout,
     status_code=status.HTTP_200_OK,
     summary="Logout logged in current user.",
 )
