@@ -12,6 +12,7 @@ data = {
     "amount": random_number(10),
 }
 
+damldma
 
 @pytest.mark.asyncio
 async def test_create_spends_with_valid_data(user_initialization) -> None:
