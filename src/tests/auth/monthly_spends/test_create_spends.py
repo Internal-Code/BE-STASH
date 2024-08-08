@@ -24,7 +24,7 @@ async def test_create_spends_with_valid_data(user_initialization) -> None:
         login_data = {"username": account["username"], "password": account["password"]}
 
         token_response = await client.post(
-            "http://localhost:8000/api/v1/auth/token", data=login_data
+            "http://localhost:8000/api/v1/auth/token", data=login_datadmalda
         )
         print(token_response)
         assert token_response.status_code == 200
