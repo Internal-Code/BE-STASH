@@ -11,7 +11,6 @@ from src.auth.routers.google_sso import (
     google_auth,
     google_login,
 )
-from fastapi.staticfiles import StaticFiles
 from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,

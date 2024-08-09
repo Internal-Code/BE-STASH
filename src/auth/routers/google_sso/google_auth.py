@@ -2,7 +2,6 @@ from src.auth.utils.logging import logging
 from datetime import timedelta
 from fastapi import APIRouter, status, HTTPException
 from starlette.requests import Request
-from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from src.auth.utils.sso.general import google_oauth_configuration
 from authlib.integrations.starlette_client import OAuthError
@@ -17,7 +16,6 @@ from src.secret import (
     REFRESH_TOKEN_EXPIRED
 )
 from src.auth.utils.database.general import (
-    update_latest_login, 
     save_tokens
 )
 from src.auth.utils.jwt.security import (
@@ -25,13 +23,7 @@ from src.auth.utils.jwt.security import (
     create_refresh_token,
     get_user
 )
-from src.secret import (
-    ACCESS_TOKEN_SECRET_KEY,
-    ACCESS_TOKEN_ALGORITHM,
-    REFRESH_TOKEN_SECRET_KEY,
-)
 
-templates = Jinja2Templates(directory="templates")
 router = APIRouter(tags=["google-sso"], prefix="/google")
 
 
