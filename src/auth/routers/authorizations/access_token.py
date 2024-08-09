@@ -3,22 +3,14 @@ from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseToken
-from fastapi import (
-    APIRouter, HTTPException, status, Depends
-)
-from src.secret import (
-    ACCESS_TOKEN_EXPIRED, 
-    REFRESH_TOKEN_EXPIRED
-)
+from fastapi import APIRouter, HTTPException, status, Depends
+from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
 from src.auth.utils.jwt.security import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
 )
-from src.auth.utils.database.general import (
-    update_latest_login, 
-    save_tokens
-)
+from src.auth.utils.database.general import update_latest_login, save_tokens
 
 router = APIRouter(tags=["authorizations"], prefix="/auth")
 

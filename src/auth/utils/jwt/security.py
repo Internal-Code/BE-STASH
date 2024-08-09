@@ -31,7 +31,7 @@ async def get_password_hash(password: str) -> str:
     return password_content.hash(password)
 
 
-async def get_user(identifier: str|EmailStr) -> UserInDB | None:
+async def get_user(identifier: str | EmailStr) -> UserInDB | None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -55,7 +55,7 @@ async def get_user(identifier: str|EmailStr) -> UserInDB | None:
                         password=checked.password,
                         verified_email=checked.verified_email,
                         verified_phone_number=checked.verified_phone_number,
-                        pin=checked.pin
+                        pin=checked.pin,
                     )
                     return user_data
                 else:

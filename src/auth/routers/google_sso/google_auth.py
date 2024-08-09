@@ -2,26 +2,20 @@ from src.auth.utils.logging import logging
 from datetime import timedelta
 from fastapi import APIRouter, status, HTTPException
 from starlette.requests import Request
-from fastapi.templating import Jinja2Templates
 from src.auth.utils.sso.general import google_oauth_configuration
 from authlib.integrations.starlette_client import OAuthError
 from src.auth.schema.response import ResponseToken
 from src.auth.utils.generator import random_number
 from src.auth.utils.database.general import (
-    is_using_registered_email, 
-    save_google_sso_account
+    is_using_registered_email,
+    save_google_sso_account,
 )
-from src.secret import (
-    ACCESS_TOKEN_EXPIRED, 
-    REFRESH_TOKEN_EXPIRED
-)
-from src.auth.utils.database.general import (
-    save_tokens
-)
+from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
+from src.auth.utils.database.general import save_tokens
 from src.auth.utils.jwt.security import (
     create_access_token,
     create_refresh_token,
-    get_user
+    get_user,
 )
 
 router = APIRouter(tags=["google-sso"], prefix="/google")
@@ -34,7 +28,9 @@ async def google_sso_auth(request: Request) -> ResponseToken:
         token = await oauth.google.authorize_access_token(request)
         user_info = token.get("userinfo")
         if not user_info:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Google login failed.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Google login failed."
+            )
 
         request.session["userinfo"] = dict(user_info)
         registered_email = await is_using_registered_email(user_info.email)
@@ -50,7 +46,9 @@ async def google_sso_auth(request: Request) -> ResponseToken:
         user_in_db = await get_user(identifier=user_info.email)
         print(user_in_db.username)
         if user_in_db is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+            )
 
         access_token = await create_access_token(
             data={
@@ -73,15 +71,14 @@ async def google_sso_auth(request: Request) -> ResponseToken:
             access_token=access_token,
             refresh_token=refresh_token,
         )
-        
+
         response.access_token = access_token
         response.refresh_token = refresh_token
 
     except OAuthError as OauthErr:
         logging.error(f"Oauth error in google_sso_auth: {OauthErr}.")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"OAuth error: {OauthErr}"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=f"OAuth error: {OauthErr}"
         )
     except HTTPException as E:
         raise E
@@ -92,7 +89,6 @@ async def google_sso_auth(request: Request) -> ResponseToken:
             detail=f"Internal Server Error: {E}.",
         )
     return response
-
 
 
 router.add_api_route(

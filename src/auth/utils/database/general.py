@@ -295,6 +295,7 @@ async def check_phone_number(value: str) -> str:
         )
     return value
 
+
 async def check_pin(value: str) -> str:
     if not value.isdigit():
         raise HTTPException(
@@ -528,7 +529,7 @@ async def save_google_sso_account(
     password: str = None,
     pin: str = None,
     is_email_verified: bool = True,
-    is_phone_number_verified: bool = False
+    is_phone_number_verified: bool = False,
 ) -> None:
     try:
         async with database_connection().connect() as session:
@@ -544,13 +545,11 @@ async def save_google_sso_account(
                     password=password,
                     pin=pin,
                     verified_email=is_email_verified,
-                    verified_phone_number=is_phone_number_verified
+                    verified_phone_number=is_phone_number_verified,
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info(
-                    f"User {email} successfully saved data into database."
-                )
+                logging.info(f"User {email} successfully saved data into database.")
             except Exception as E:
                 logging.error(f"Error while save_google_sso_account: {E}")
                 await session.rollback()
