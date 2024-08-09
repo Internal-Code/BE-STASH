@@ -23,7 +23,7 @@ users = Table(
     Column("updated_at", DateTime(timezone=True), nullable=True, default=None),
     Column("username", String(255), nullable=False, unique=True),
     Column("first_name", String(255), nullable=False, unique=False),
-    Column("last_name", String(255), nullable=False, unique=False),
+    Column("last_name", String(255), nullable=True, unique=False, default=None),
     Column("email", String(255), nullable=False, unique=True),
     Column("phone_number", String(255), nullable=True, unique=True),
     Column("password", String(255), nullable=True),

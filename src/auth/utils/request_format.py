@@ -50,7 +50,7 @@ class CreateSpend(BaseModel):
 
 class CreateUser(BaseModel):
     first_name: str
-    last_name: str
+    last_name: str | None
     username: str
     email: EmailStr
     phone_number: str | None

@@ -22,7 +22,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
     Create a new users account with the following information:
 
     - **first_name**: The first name of the users.
-    - **last_name**: The last name of the users.
+    - **last_name (optional)**: The last name of the users.
     - **username**: The username chosen by the users for logging in.
         - Contain at least 5 character.
     - **email**: The email address of the users.
