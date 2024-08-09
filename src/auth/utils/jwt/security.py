@@ -73,7 +73,7 @@ async def get_user(identifier: str|EmailStr) -> UserInDB | None:
 
 async def authenticate_user(username: str, password: str) -> Row | None:
     try:
-        users = await get_user(username=username)
+        users = await get_user(identifier=username)
         if not users:
             logging.error(f"Authentication failed: users {username} not found.")
             return None

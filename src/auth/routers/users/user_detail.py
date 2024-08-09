@@ -23,7 +23,7 @@ async def users(
 
 router.add_api_route(
     methods=["GET"],
-    path="/detail/{current_user.username}",
+    path="/detail",
     response_model=ResponseDefault,
     endpoint=users,
     status_code=status.HTTP_200_OK,

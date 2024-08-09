@@ -27,7 +27,7 @@ from src.auth.utils.jwt.security import (
 router = APIRouter(tags=["google-sso"], prefix="/google")
 
 
-async def google_sso_auth(request: Request):
+async def google_sso_auth(request: Request) -> ResponseToken:
     try:
         response = ResponseToken()
         oauth = await google_oauth_configuration()
