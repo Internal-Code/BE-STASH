@@ -1,3 +1,5 @@
+from sqlalchemy import or_
+from pydantic import EmailStr
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import timedelta
@@ -29,13 +31,16 @@ async def get_password_hash(password: str) -> str:
     return password_content.hash(password)
 
 
-async def get_user(username: str) -> UserInDB | None:
+async def get_user(identifier: str | EmailStr) -> UserInDB | None:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(users).where(users.c.username == username)
+                query = select(users).where(
+                    or_(users.c.username == identifier, users.c.email == identifier)
+                )
                 result = await session.execute(query)
                 checked = result.fetchone()
+                print(checked)
                 if checked:
                     logging.info(f"User {checked.username} found.")
                     user_data = UserInDB(
@@ -50,10 +55,11 @@ async def get_user(username: str) -> UserInDB | None:
                         password=checked.password,
                         verified_email=checked.verified_email,
                         verified_phone_number=checked.verified_phone_number,
+                        pin=checked.pin,
                     )
                     return user_data
                 else:
-                    logging.error(f"User {username} not found.")
+                    logging.error(f"User {identifier} not found.")
                     return None
             except Exception as E:
                 logging.error(f"Error during get_user: {E}.")
@@ -67,7 +73,7 @@ async def get_user(username: str) -> UserInDB | None:
 
 async def authenticate_user(username: str, password: str) -> Row | None:
     try:
-        users = await get_user(username=username)
+        users = await get_user(identifier=username)
         if not users:
             logging.error(f"Authentication failed: users {username} not found.")
             return None
@@ -131,7 +137,7 @@ async def get_current_user(
 
         username = payload.get("sub")
         token_data = TokenData(username=username)
-        users = await get_user(username=token_data.username)
+        users = await get_user(identifier=token_data.username)
 
         if username is None or users is None:
             raise credentials_exception

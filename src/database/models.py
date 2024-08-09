@@ -23,14 +23,16 @@ users = Table(
     Column("updated_at", DateTime(timezone=True), nullable=True, default=None),
     Column("username", String(255), nullable=False, unique=True),
     Column("first_name", String(255), nullable=False, unique=False),
-    Column("last_name", String(255), nullable=False, unique=False),
+    Column("last_name", String(255), nullable=True, unique=False, default=None),
     Column("email", String(255), nullable=False, unique=True),
-    Column("phone_number", String(255), nullable=False, unique=True),
-    Column("password", String(255), nullable=False),
+    Column("phone_number", String(255), nullable=True, unique=True),
+    Column("password", String(255), nullable=True),
+    Column("pin", String(6), nullable=True, default=None),
     Column("verified_email", Boolean, nullable=False, default=False),
     Column("verified_phone_number", Boolean, nullable=False, default=False),
     Column("last_login", DateTime(timezone=True), nullable=True),
 )
+
 
 money_spends = Table(
     "money_spends",

@@ -277,53 +277,54 @@ async def update_latest_login(username: str, email: EmailStr) -> bool:
     return False
 
 
-async def is_phone_number_registered(phone_number: str) -> bool:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                query = select(users).where(users.c.phone_number == phone_number)
-                result = await session.execute(query)
-                checked = result.fetchone()
-                logging.error(
-                    f"Phone number :{phone_number} already saved in database."
-                )
-                if checked:
-                    return True
-            except Exception as e:
-                logging.error(f"Error during is_phone_num_registered: {e}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as e:
-        logging.error(f"Error after is_phone_num_registered: {e}")
-
-    return False
-
-
 async def check_phone_number(value: str) -> str:
+    if len(value) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phone number cannot be empty.",
+        )
     if not value.isdigit():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number must contain only digits",
+            detail="Phone number must contain only digits.",
         )
     if not 10 <= len(value) <= 13:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number must be between 10 and 13 digits long",
+            detail="Phone number must be between 10 or 13 digits long.",
+        )
+    return value
+
+
+async def check_pin(value: str) -> str:
+    if not value.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pin number must contain only digits.",
+        )
+    if len(value) != 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Pin number must be 6 digits long.",
         )
     return value
 
 
 async def check_username(value: str) -> str:
-    if len(value) < 5:
+    if not 5 <= len(value) <= 20:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username must be at least 5 characters long.",
+            detail="Username must be between 5 or 20 characters long.",
         )
     return value
 
 
 async def check_password(value: str) -> str:
+    if len(value) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password cannot be empty.",
+        )
     if len(value) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -516,4 +517,44 @@ async def extract_tokens(user_uuid: uuid7) -> Row | None:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after extract_tokens: {E}")
+    return None
+
+
+async def save_google_sso_account(
+    username: str,
+    first_name: str,
+    last_name: str,
+    email: EmailStr,
+    phone_number: str = None,
+    password: str = None,
+    pin: str = None,
+    is_email_verified: bool = True,
+    is_phone_number_verified: bool = False,
+) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = users.insert().values(
+                    user_uuid=uuid7(),
+                    created_at=local_time(),
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    phone_number=phone_number,
+                    password=password,
+                    pin=pin,
+                    verified_email=is_email_verified,
+                    verified_phone_number=is_phone_number_verified,
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(f"User {email} successfully saved data into database.")
+            except Exception as E:
+                logging.error(f"Error while save_google_sso_account: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_google_sso_account: {E}")
     return None

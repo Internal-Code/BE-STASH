@@ -50,11 +50,11 @@ class CreateSpend(BaseModel):
 
 class CreateUser(BaseModel):
     first_name: str
-    last_name: str
+    last_name: str | None
     username: str
     email: EmailStr
-    phone_number: str
-    password: str
+    phone_number: str | None
+    password: str | None
 
 
 class TokenData(BaseModel):
@@ -66,7 +66,7 @@ class DetailUser(BaseModel):
     last_name: str
     username: str
     email: EmailStr
-    phone_number: str
+    phone_number: str | None
 
 
 class UserInDB(CreateUser):
@@ -75,6 +75,7 @@ class UserInDB(CreateUser):
     updated_at: datetime | None
     verified_email: bool
     verified_phone_number: bool
+    pin: str | None
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
