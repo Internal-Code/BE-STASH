@@ -109,7 +109,11 @@ class SendForgotPasswordMethod(str, Enum):
     PHONE_NUMBER = "phone_number"
 
 
-class ResetPasswordRequest(BaseModel):
+class SendVerificationLink(BaseModel):
     reset_id: str
     forget_password_type: SendForgotPasswordMethod
+
+
+class ForgotPassword(BaseModel):
     new_password: str
+    confirm_new_password: str

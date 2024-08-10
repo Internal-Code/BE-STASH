@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.schema import Table
 from sqlalchemy.engine.row import Row
 from uuid_extensions import uuid7
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, update
 from pydantic import EmailStr
 from pytz import timezone
 from sqlalchemy import select
@@ -476,7 +476,7 @@ async def save_reset_password_id(email: EmailStr, reset_id: uuid7) -> None:
                     created_at=local_time(),
                     email=email,
                     reset_id=reset_id,
-                    expired_at=local_time() + timedelta(minutes=5),
+                    expired_at=local_time() + timedelta(minutes=10),
                 )
                 await session.execute(query)
                 await session.commit()
@@ -490,6 +490,7 @@ async def save_reset_password_id(email: EmailStr, reset_id: uuid7) -> None:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after save_reset_password_id: {E}")
+    return None
 
 
 async def verify_reset_id(reset_id: uuid7) -> bool:
@@ -659,4 +660,28 @@ async def verify_user_pin(user_uuid: uuid7, pin: str) -> bool:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after verify_user_pin: {E}")
+    return None
+
+
+async def reset_user_password(user_uuid: uuid7, changed_password: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    update(users)
+                    .where(users.c.user_uuid == user_uuid)
+                    .values(updated_at=local_time(), password=changed_password)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(
+                    f"User {user_uuid} successfully saved reset password id into database."
+                )
+            except Exception as E:
+                logging.error(f"Error while save_reset_password_id: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_reset_password_id: {E}")
     return None

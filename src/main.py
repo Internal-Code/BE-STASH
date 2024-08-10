@@ -27,7 +27,8 @@ from src.auth.routers.users import (
     user_register,
     user_logout,
     user_forgot_password,
-    user_reset_password,
+    user_send_email,
+    user_new_password,
 )
 from src.auth.routers.authorizations import access_token, refresh_token
 
@@ -78,6 +79,7 @@ app.include_router(user_detail.router)
 app.include_router(google_login.router)
 app.include_router(google_auth.router)
 app.include_router(user_forgot_password.router)
-app.include_router(user_reset_password.router)
+app.include_router(user_send_email.router)
+app.include_router(user_new_password.router)
 # app.include_router(validate_pin.router)
 # app.include_router(create_pin.router)
