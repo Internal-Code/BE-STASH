@@ -71,6 +71,7 @@ For Windows users, you'll also need to install either MinGW or Cygwin to run the
 - Ensure that docker-compose are running on your system.
 - The setup.sh script configures the virtual environment and installs all necessary dependencies.
 - The run_server.sh script starts the uvicorn server in debug mode for development purposes.
+- The run_test.sh script initiates end-to-end unit testing using pytest to verify that the endpoints function correctly according to the business processes.
 
 # Repo Owner? #
 * Bastian Armananta
