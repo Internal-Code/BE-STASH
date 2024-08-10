@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
-from fastapi.openapi.models import OAuthFlowPassword
+from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.auth.routers import health_check
 from src.database.connection import database_connection
 from src.database.models import async_main
@@ -23,13 +22,24 @@ from src.auth.routers.monthly_spends import (
     update_monthly_spend,
     delete_monthly_spend,
 )
-from src.auth.routers.users import user_detail, user_register, user_logout
+from src.auth.routers.users import (
+    user_detail,
+    user_register,
+    user_logout,
+    user_forgot_password,
+    user_reset_password,
+)
 from src.auth.routers.authorizations import access_token, refresh_token
 
-app = FastAPI(root_path="/api/v1")
+app = FastAPI(
+    root_path="/api/v1",
+    title="FastAPI Backend Application",
+    description="Backend application for finance-tracker.",
+    version="1.0",
+)
 app.openapi_scheme = {
     "type": "oauth2",
-    "flows": OAuthFlowsModel(password=OAuthFlowPassword(tokenUrl="auth/token")),
+    "flows": OAuthFlows(password=OAuthFlowPassword(tokenUrl="auth/token")),
 }
 
 
@@ -67,3 +77,7 @@ app.include_router(user_logout.router)
 app.include_router(user_detail.router)
 app.include_router(google_login.router)
 app.include_router(google_auth.router)
+app.include_router(user_forgot_password.router)
+app.include_router(user_reset_password.router)
+# app.include_router(validate_pin.router)
+# app.include_router(create_pin.router)

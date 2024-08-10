@@ -26,6 +26,7 @@ async def google_sso_auth(request: Request) -> ResponseToken:
         response = ResponseToken()
         oauth = await google_oauth_configuration()
         token = await oauth.google.authorize_access_token(request)
+        print(token)
         user_info = token.get("userinfo")
         if not user_info:
             raise HTTPException(

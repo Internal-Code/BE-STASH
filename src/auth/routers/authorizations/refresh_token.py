@@ -31,11 +31,9 @@ async def refresh_access_token(
     response = ResponseToken()
 
     try:
-        validate_refresh_token = await is_refresh_token_blacklisted(
-            refresh_token=refresh_token
-        )
+        blacklisted = await is_refresh_token_blacklisted(refresh_token=refresh_token)
 
-        if validate_refresh_token is True:
+        if blacklisted is True:
             raise blacklisted_refresh_token
 
         payload = jwt.decode(

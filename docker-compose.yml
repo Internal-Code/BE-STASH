@@ -29,6 +29,15 @@ services:
       app_net:
         ipv4_address: 172.18.0.31
 
+  mailhog:
+    container_name: mailhog_container
+    image: mailhog/mailhog:latest
+    ports:
+      - 1025:1025
+      - 8025:8025
+    networks:
+      app_net:
+        ipv4_address: 172.18.0.32
   # ollama:
   #   container_name: ollama_container
   #   image: ollama/ollama:0.3.4

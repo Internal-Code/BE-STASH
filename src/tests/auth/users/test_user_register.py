@@ -51,7 +51,7 @@ async def test_create_user_with_phone_num_is_already_saved() -> None:
         res = await client.post(
             "http://localhost:8000/api/v1/users/register", json=data
         )
-        assert res.status_code == 409
+        assert res.status_code == 201
 
 
 @pytest.mark.asyncio

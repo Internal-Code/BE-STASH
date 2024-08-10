@@ -38,11 +38,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
 
     response = ResponseDefault()
     try:
-        await filter_user_register(
-            username=schema.username,
-            email=schema.email,
-            phone_number=schema.phone_number,
-        )
+        await filter_user_register(username=schema.username, email=schema.email)
 
         await check_phone_number(schema.phone_number)
         await check_username(schema.username)

@@ -53,9 +53,10 @@ async def get_user(identifier: str | EmailStr) -> UserInDB | None:
                         email=checked.email,
                         phone_number=checked.phone_number,
                         password=checked.password,
+                        pin=checked.pin,
+                        pin_enabled=checked.pin_enabled,
                         verified_email=checked.verified_email,
                         verified_phone_number=checked.verified_phone_number,
-                        pin=checked.pin,
                     )
                     return user_data
                 else:

@@ -1,7 +1,9 @@
+from typing import List
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
+from enum import Enum
 
 
 class MoneySpendSchema(BaseModel):
@@ -76,6 +78,7 @@ class UserInDB(CreateUser):
     verified_email: bool
     verified_phone_number: bool
     pin: str | None
+    pin_enabled: bool
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
@@ -85,3 +88,28 @@ class UserInDB(CreateUser):
             email=self.email,
             phone_number=self.phone_number,
         )
+
+
+class UserPin(BaseModel):
+    pin: str
+
+
+class MailBody(BaseModel):
+    to: List[str]
+    subject: str
+    body: str
+
+
+class UserForgotPassword(BaseModel):
+    email: EmailStr
+
+
+class SendForgotPasswordMethod(str, Enum):
+    EMAIL = "email"
+    PHONE_NUMBER = "phone_number"
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_id: str
+    forget_password_type: SendForgotPasswordMethod
+    new_password: str

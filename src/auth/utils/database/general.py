@@ -1,4 +1,5 @@
 import re
+import string
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.schema import Table
 from sqlalchemy.engine.row import Row
@@ -6,8 +7,8 @@ from uuid_extensions import uuid7
 from sqlalchemy.sql import and_
 from pydantic import EmailStr
 from pytz import timezone
-from sqlalchemy import select, update
-from datetime import datetime
+from sqlalchemy import select
+from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from src.auth.utils.logging import logging
 from src.database.models import (
@@ -16,6 +17,7 @@ from src.database.models import (
     users,
     blacklist_tokens,
     user_tokens,
+    reset_passwords,
 )
 from src.database.connection import database_connection
 
@@ -25,7 +27,7 @@ def local_time(zone: str = "Asia/Jakarta") -> datetime:
     return time
 
 
-def create_category_format(
+async def create_category_format(
     category: str,
     user_uuid: uuid7,
     month: int = local_time().month,
@@ -216,9 +218,7 @@ async def filter_month_year(
     return False
 
 
-async def filter_user_register(
-    username: str, email: EmailStr, phone_number: str
-) -> None:
+async def filter_user_register(username: str, email: EmailStr) -> None:
     try:
         logging.info("Filtering username, email and phone number.")
 
@@ -232,11 +232,6 @@ async def filter_user_register(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Username already taken. Please use another username.",
             )
-        if await is_using_registered_phone_number(phone_number=phone_number):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Phone number already taken. Please use another phone number.",
-            )
 
     except HTTPException as e:
         raise e
@@ -249,40 +244,10 @@ async def filter_user_register(
         )
 
 
-async def update_latest_login(username: str, email: EmailStr) -> bool:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                await session.execute(
-                    update(users)
-                    .where(
-                        and_(
-                            users.c.username == username,
-                            users.c.email == email,
-                        )
-                    )
-                    .values(last_login=local_time())
-                )
-                await session.commit()
-                logging.info(f"Updated last_login for users {username}.")
-                return True
-            except Exception as e:
-                logging.error(f"Error during update_latest_login: {e}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as e:
-        logging.error(f"Error after update_latest_login: {e}")
+async def check_phone_number(value: str | None) -> str | None:
+    if value is None:
+        return None
 
-    return False
-
-
-async def check_phone_number(value: str) -> str:
-    if len(value) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number cannot be empty.",
-        )
     if not value.isdigit():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -311,6 +276,12 @@ async def check_pin(value: str) -> str:
 
 
 async def check_username(value: str) -> str:
+    if not all(char in string.ascii_letters + string.digits for char in value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username should be containing only character or digits.",
+        )
+
     if not 5 <= len(value) <= 20:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -497,6 +468,93 @@ async def save_tokens(user_uuid: uuid7, access_token: str, refresh_token: str) -
         logging.error(f"Error after save_tokens: {E}")
 
 
+async def save_reset_password_id(email: EmailStr, reset_id: uuid7) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = reset_passwords.insert().values(
+                    created_at=local_time(),
+                    email=email,
+                    reset_id=reset_id,
+                    expired_at=local_time() + timedelta(minutes=5),
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(
+                    f"User {email} successfully saved reset password id into database."
+                )
+            except Exception as E:
+                logging.error(f"Error while save_reset_password_id: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_reset_password_id: {E}")
+
+
+async def verify_reset_id(reset_id: uuid7) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(reset_passwords)
+                    .where(
+                        reset_passwords.c.reset_id == reset_id,
+                    )
+                    .order_by(reset_passwords.c.created_at.desc())
+                )
+                result = await session.execute(query)
+                checked = result.fetchone()
+                now_utc = datetime.now(timezone("UTC"))
+                expired_at_utc = checked.expired_at
+
+                if not checked:
+                    logging.error(f"Reset ID {reset_id} not found.")
+
+                if expired_at_utc <= now_utc:
+                    logging.error(f"Reset ID {reset_id} already expired.")
+
+                if checked and expired_at_utc >= now_utc:
+                    logging.info(f"User {checked.email} have valid unique reset id.")
+                    return True
+
+                await session.execute(query)
+                await session.commit()
+
+            except Exception as E:
+                logging.error(f"Error while verify_reset_id: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after verify_reset_id: {E}")
+    return False
+
+
+async def extract_reset_id(reset_id: uuid7) -> Row | None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(reset_passwords)
+                    .where(reset_passwords.c.reset_id == reset_id)
+                    .order_by(reset_passwords.c.created_at.desc())
+                )
+                result = await session.execute(query)
+                latest_record = result.fetchone()
+                print("ini latest recordnya broo", latest_record)
+                if latest_record is not None:
+                    return latest_record
+            except Exception as E:
+                logging.error(f"Error during extract_reset_id: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after extract_reset_id: {E}")
+    return None
+
+
 async def extract_tokens(user_uuid: uuid7) -> Row | None:
     try:
         async with database_connection().connect() as session:
@@ -557,4 +615,48 @@ async def save_google_sso_account(
                 await session.close()
     except Exception as E:
         logging.error(f"Error after save_google_sso_account: {E}")
+    return None
+
+
+async def save_user_pin(user_uuid: uuid7, user_pin: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(pin=user_pin)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(f"User {user_uuid} successfully saved pin into database.")
+            except Exception as E:
+                logging.error(f"Error while save_user_pin: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_user_pin: {E}")
+
+
+async def verify_user_pin(user_uuid: uuid7, pin: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(users).where(
+                    and_(users.c.user_uuid == user_uuid, users.c.pin == pin)
+                )
+                result = await session.execute(query)
+                latest_record = result.fetchone()
+                if latest_record is not None:
+                    return latest_record
+            except Exception as E:
+                logging.error(f"Error during verify_user_pin: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after verify_user_pin: {E}")
     return None
