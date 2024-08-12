@@ -12,10 +12,12 @@ from src.auth.utils.jwt.general import get_user, get_password_hash
 router = APIRouter(tags=["users"], prefix="/users")
 
 
-async def reset_password(request: ForgotPassword, unique_id: str) -> ResponseDefault:
+async def reset_password(
+    request: ForgotPassword, reset_password_id: str
+) -> ResponseDefault:
     response = ResponseDefault()
     try:
-        reset_id_is_valid = await verify_reset_id(reset_id=unique_id)
+        reset_id_is_valid = await verify_reset_id(reset_id=reset_password_id)
         if reset_id_is_valid is False:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -28,7 +30,7 @@ async def reset_password(request: ForgotPassword, unique_id: str) -> ResponseDef
                 detail="Passwords is not match.",
             )
 
-        user_email = await extract_reset_id(reset_id=unique_id)
+        user_email = await extract_reset_id(reset_id=reset_password_id)
         detail_user = await get_user(identifier=user_email.email)
 
         if not detail_user:
@@ -56,7 +58,7 @@ async def reset_password(request: ForgotPassword, unique_id: str) -> ResponseDef
 
 router.add_api_route(
     methods=["POST"],
-    path="/reset-password/{unique_id}",
+    path="/reset-password/{reset_password_id}",
     response_model=ResponseDefault,
     endpoint=reset_password,
     status_code=status.HTTP_200_OK,

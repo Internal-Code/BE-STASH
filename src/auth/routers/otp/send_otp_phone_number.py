@@ -14,14 +14,14 @@ from fastapi import APIRouter, status, HTTPException
 router = APIRouter(tags=["send-otp"], prefix="/send-otp")
 
 
-async def send_otp_phone_number(unique_id: str) -> ResponseDefault:
+async def send_otp_phone_number(otp_id: str) -> ResponseDefault:
     response = ResponseDefault()
 
     try:
         otp_number = str(random_number(6))
 
         initials_account = await extract_phone_number_otp_token(
-            phone_number_token=unique_id
+            phone_number_token=otp_id
         )
         if not initials_account:
             raise HTTPException(
@@ -43,7 +43,7 @@ async def send_otp_phone_number(unique_id: str) -> ResponseDefault:
         account = await get_user(identifier=initials_account.email)
 
         await save_otp_phone_number_verification(
-            phone_number_otp_uuid=unique_id,
+            phone_number_otp_uuid=otp_id,
             email=account.email,
             current_api_hit=current_api_hit,
             otp_number=otp_number,
@@ -68,7 +68,7 @@ async def send_otp_phone_number(unique_id: str) -> ResponseDefault:
 
         response.success = True
         response.message = "OTP data sent."
-        response.data = {"OTP_validation_token": unique_id}
+        response.data = {"verification_id": otp_id}
 
     except HTTPException as E:
         raise E
@@ -83,7 +83,7 @@ async def send_otp_phone_number(unique_id: str) -> ResponseDefault:
 
 router.add_api_route(
     methods=["POST"],
-    path="/phone-number/{unique_id}",
+    path="/phone-number/{otp_id}",
     endpoint=send_otp_phone_number,
     status_code=status.HTTP_201_CREATED,
     summary="Send otp phone number.",

@@ -30,7 +30,7 @@ from src.auth.routers.users import (
     user_logout,
     user_forgot_password,
     user_reset_password,
-    user_send_email,
+    user_send_reset_link,
 )
 from src.auth.routers.authorizations import access_token, refresh_token
 from src.auth.routers.verify_account import verify_phone_number
@@ -82,7 +82,7 @@ app.include_router(user_detail.router)
 app.include_router(google_login.router)
 app.include_router(google_auth.router)
 app.include_router(user_forgot_password.router)
-app.include_router(user_send_email.router)
+app.include_router(user_send_reset_link.router)
 app.include_router(user_reset_password.router)
 app.include_router(send_otp_phone_number.router)
 app.include_router(user_phone_number.router)

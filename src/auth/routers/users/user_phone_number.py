@@ -16,23 +16,25 @@ router = APIRouter(tags=["users"], prefix="/users")
 
 
 async def save_phone_number_endpoint(
-    phone_number: InputPhoneNumber, unique_id: str
+    phone_number: InputPhoneNumber, phone_number_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
 
     try:
-        UUID(unique_id)
+        UUID(phone_number_id)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid UUID format: {unique_id}",
+            detail="Invalid UUID format.",
         )
 
     try:
         phone_number_otp_unique_id = str(uuid7())
-        account = await extract_phone_number_token(phone_number_unique_id=unique_id)
 
-        logging.info("UUID found")
+        account = await extract_phone_number_token(
+            phone_number_unique_id=phone_number_id
+        )
+        logging.info("UUID found.")
         if not account:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="UUID not found."
@@ -61,7 +63,7 @@ async def save_phone_number_endpoint(
 
         response.success = True
         response.message = "Phone number saved."
-        response.data = {"phone_number_unique_id": phone_number_otp_unique_id}
+        response.data = {"otp_id": phone_number_otp_unique_id}
 
     except HTTPException as E:
         raise E
@@ -76,7 +78,7 @@ async def save_phone_number_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/phone-number/{unique_id}",
+    path="/phone-number/{phone_number_id}",
     endpoint=save_phone_number_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Verify phone number.",

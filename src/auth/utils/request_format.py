@@ -55,7 +55,6 @@ class CreateUser(BaseModel):
     last_name: str | None
     username: str
     email: EmailStr
-    phone_number: str | None
     password: str | None
 
 
@@ -79,6 +78,7 @@ class UserInDB(CreateUser):
     verified_phone_number: bool
     pin: str | None
     pin_enabled: bool
+    phone_number: str
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
@@ -110,7 +110,6 @@ class SendForgotPasswordMethod(str, Enum):
 
 
 class SendVerificationLink(BaseModel):
-    reset_id: str
     forget_password_type: SendForgotPasswordMethod
 
 

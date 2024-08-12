@@ -248,12 +248,6 @@ async def filter_user_register(username: str, email: EmailStr) -> None:
 
 
 async def check_phone_number(value: str) -> str:
-    if not value.startswith("0"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number must be started with 0.",
-        )
-
     if not value.isdigit():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -589,6 +583,7 @@ async def extract_tokens(user_uuid: uuid7) -> Row | None:
 
 
 async def save_google_sso_account(
+    user_uuid: uuid7,
     username: str,
     first_name: str,
     last_name: str,

@@ -4,15 +4,15 @@ from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import local_time
+from src.database.connection import database_connection
+from src.auth.utils.jwt.general import get_password_hash
+from src.auth.utils.database.general import save_verify_phone_number_token
+from fastapi import APIRouter, HTTPException, status
 from src.auth.utils.database.general import (
     filter_user_register,
     check_password,
-    check_phone_number,
     check_username,
 )
-from src.database.connection import database_connection
-from src.auth.utils.jwt.general import get_password_hash
-from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(tags=["users"], prefix="/users")
 
@@ -39,22 +39,22 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
     response = ResponseDefault()
     try:
         await filter_user_register(username=schema.username, email=schema.email)
-
-        await check_phone_number(schema.phone_number)
         await check_username(schema.username)
         await check_password(schema.password)
+
+        user_uuid = str(uuid7())
 
         logging.info("Endpoint register account.")
         async with database_connection().connect() as session:
             try:
                 query = users.insert().values(
-                    user_uuid=uuid7(),
+                    user_uuid=user_uuid,
                     created_at=local_time(),
                     username=schema.username,
                     first_name=schema.first_name,
                     last_name=schema.last_name,
                     email=schema.email,
-                    phone_number=schema.phone_number,
+                    phone_number=None,
                     password=await get_password_hash(schema.password),
                 )
                 await session.execute(query)
@@ -71,6 +71,16 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                 )
             finally:
                 await session.close()
+
+        await save_verify_phone_number_token(
+            phone_number_unique_id=user_uuid,
+            email=schema.email,
+        )
+
+        response.success = True
+        response.message = "Account successfully created."
+        response.data = {"phone_number_id": user_uuid}
+
     except HTTPException as E:
         raise E
     except Exception as E:
