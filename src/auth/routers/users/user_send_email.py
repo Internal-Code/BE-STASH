@@ -3,7 +3,7 @@ from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import SendVerificationLink, SendForgotPasswordMethod
 from src.auth.utils.database.general import verify_reset_id, extract_reset_id
-from src.auth.utils.email.general import gmail_configuration
+from src.auth.utils.forgot_password.general import send_gmail
 from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(tags=["users"], prefix="/users")
@@ -35,11 +35,12 @@ async def send_email_endpoints(request: SendVerificationLink) -> ResponseDefault
                 f"We received a request to reset your password. Please click the link below to create a new password:\n\n"
                 f"{reset_link}\n\n"
                 f"This link will expire on {formatted_expiration_time}. If you did not request a password reset, please ignore this email.\n\n"
-                f"Thank you,\n"
+                f"Thank you,\n\n"
+                f"Best regards,"
                 f"The Support Team"
             )
 
-            await gmail_configuration(
+            await send_gmail(
                 email_subject="Reset Password",
                 email_receiver=change_password_user.email,
                 email_body=email_body,

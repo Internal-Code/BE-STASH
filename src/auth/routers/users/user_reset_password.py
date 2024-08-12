@@ -7,7 +7,7 @@ from src.auth.utils.database.general import (
     reset_user_password,
     extract_reset_id,
 )
-from src.auth.utils.jwt.security import get_user, get_password_hash
+from src.auth.utils.jwt.general import get_user, get_password_hash
 
 router = APIRouter(tags=["users"], prefix="/users")
 
@@ -22,7 +22,7 @@ async def reset_password(request: ForgotPassword, unique_id: str) -> ResponseDef
                 detail="Invalid or expired reset ID.",
             )
 
-        if request.new_password != request.confirm_new_password:
+        if request.password != request.confirm_new_password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Passwords is not match.",
@@ -36,7 +36,7 @@ async def reset_password(request: ForgotPassword, unique_id: str) -> ResponseDef
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User {user_email.email} not found.",
             )
-        hashed_password = await get_password_hash(password=request.new_password)
+        hashed_password = await get_password_hash(password=request.password)
         await reset_user_password(
             user_uuid=detail_user.user_uuid, changed_password=hashed_password
         )

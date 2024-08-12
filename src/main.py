@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.auth.routers import health_check
+from src.auth.routers.otp import send_otp_phone_number
 from src.database.connection import database_connection
 from src.database.models import async_main
 from starlette.middleware.sessions import SessionMiddleware
@@ -24,13 +25,15 @@ from src.auth.routers.monthly_spends import (
 )
 from src.auth.routers.users import (
     user_detail,
+    user_phone_number,
     user_register,
     user_logout,
     user_forgot_password,
+    user_reset_password,
     user_send_email,
-    user_new_password,
 )
 from src.auth.routers.authorizations import access_token, refresh_token
+from src.auth.routers.verify_account import verify_phone_number
 
 app = FastAPI(
     root_path="/api/v1",
@@ -80,6 +83,7 @@ app.include_router(google_login.router)
 app.include_router(google_auth.router)
 app.include_router(user_forgot_password.router)
 app.include_router(user_send_email.router)
-app.include_router(user_new_password.router)
-# app.include_router(validate_pin.router)
-# app.include_router(create_pin.router)
+app.include_router(user_reset_password.router)
+app.include_router(send_otp_phone_number.router)
+app.include_router(user_phone_number.router)
+app.include_router(verify_phone_number.router)

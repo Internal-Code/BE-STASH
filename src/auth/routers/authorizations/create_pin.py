@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
-from src.auth.utils.jwt.security import get_current_user
+from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.database.general import check_pin, save_user_pin
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import UserPin

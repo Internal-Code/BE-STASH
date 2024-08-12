@@ -35,7 +35,7 @@ async def test_generate_new_access_token_with_valid_refresh_token(
             "http://localhost:8000/api/v1/auth/token", data=login_data
         )
         response = res.json()
-        print(res.content)
+
         access_token = response["access_token"]
         refresh_token = response["refresh_token"]
 

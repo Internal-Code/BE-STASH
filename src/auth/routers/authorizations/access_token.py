@@ -5,7 +5,7 @@ from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseToken
 from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.security import (
+from src.auth.utils.jwt.general import (
     authenticate_user,
     create_access_token,
     create_refresh_token,

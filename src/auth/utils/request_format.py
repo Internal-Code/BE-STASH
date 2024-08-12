@@ -115,5 +115,18 @@ class SendVerificationLink(BaseModel):
 
 
 class ForgotPassword(BaseModel):
-    new_password: str
+    password: str
     confirm_new_password: str
+
+
+class InputPhoneNumber(BaseModel):
+    phone_number: str
+
+
+class SendOTPPayload(BaseModel):
+    phoneNumber: str
+    message: str
+
+
+class OTPVerification(BaseModel):
+    otp: str

@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
-from src.auth.utils.jwt.security import get_current_user
+from src.auth.utils.jwt.general import get_current_user
 from src.database.models import blacklist_tokens
 from src.database.connection import database_connection
 from src.auth.utils.database.general import (
@@ -25,7 +25,6 @@ async def user_logout(
     response = ResponseDefault()
     try:
         token_data = await extract_tokens(user_uuid=current_user.user_uuid)
-        print(token_data)
 
         validate_refresh_token = await is_refresh_token_blacklisted(
             refresh_token=token_data.refresh_token

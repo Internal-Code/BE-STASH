@@ -28,7 +28,7 @@ async def test_list_category_with_valid_token_no_params(user_initialization) -> 
         get_data = await client.get(
             "http://localhost:8000/api/v1/list-category", headers=headers
         )
-        print(get_data.content)
+
         assert get_data.status_code == 200
 
 

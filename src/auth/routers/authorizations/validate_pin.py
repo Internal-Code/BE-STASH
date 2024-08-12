@@ -1,7 +1,7 @@
 from src.auth.utils.logging import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
-from src.auth.utils.jwt.security import get_current_user
+from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.database.general import verify_user_pin
 from src.auth.utils.request_format import UserPin
 from src.auth.schema.response import ResponseDefault
@@ -24,7 +24,7 @@ async def validate_pin(
         valid_pin = await verify_user_pin(
             user_uuid=current_user.user_uuid, pin=pin_data.pin
         )
-        print("anjayy", valid_pin)
+
         if not valid_pin:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

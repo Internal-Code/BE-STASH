@@ -11,7 +11,7 @@ from src.auth.utils.database.general import (
     check_username,
 )
 from src.database.connection import database_connection
-from src.auth.utils.jwt.security import get_password_hash
+from src.auth.utils.jwt.general import get_password_hash
 from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(tags=["users"], prefix="/users")

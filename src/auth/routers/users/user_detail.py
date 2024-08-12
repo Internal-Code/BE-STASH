@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
-from src.auth.utils.jwt.security import get_current_user
+from src.auth.utils.jwt.general import get_current_user
 
 router = APIRouter(tags=["users"], prefix="/users")
 

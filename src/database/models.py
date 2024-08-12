@@ -25,7 +25,7 @@ users = Table(
     Column("first_name", String(255), nullable=False, unique=False),
     Column("last_name", String(255), nullable=True, unique=False, default=None),
     Column("email", String(255), nullable=False, unique=True),
-    Column("phone_number", String(255), nullable=True, unique=False),
+    Column("phone_number", String(13), nullable=True, default=None),
     Column("password", String(255), nullable=True),
     Column("pin", String(6), nullable=True, default=None),
     Column("pin_enabled", Boolean, nullable=False, default=False),
@@ -90,6 +90,34 @@ reset_passwords = Table(
     Column("email", String(255), nullable=False, unique=False),
     Column("reset_id", String(255), nullable=False, unique=True),
     Column("expired_at", DateTime(timezone=True), nullable=False),
+)
+
+phone_number_tokens = Table(
+    "phone_number_tokens",
+    meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("phone_number_token", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("email", String(255), nullable=False, unique=False),
+)
+
+
+phone_number_otps = Table(
+    "phone_number_otps",
+    meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column(
+        "phone_number_token",
+        UUID(as_uuid=True),
+        default=uuid7,
+        nullable=False,
+        unique=False,
+    ),
+    Column("email", String(255), nullable=False, unique=False),
+    Column("otp_number", String(6), nullable=True, unique=False, default=None),
+    Column("current_api_hit", Integer, nullable=True, unique=False, default=None),
+    Column("blacklisted_at", DateTime(timezone=True), nullable=False),
 )
 
 

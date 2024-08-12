@@ -40,7 +40,7 @@ async def get_user(identifier: str | EmailStr) -> UserInDB | None:
                 )
                 result = await session.execute(query)
                 checked = result.fetchone()
-                print(checked)
+
                 if checked:
                     logging.info(f"User {checked.username} found.")
                     user_data = UserInDB(

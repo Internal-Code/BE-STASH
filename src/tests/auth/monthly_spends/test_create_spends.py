@@ -26,7 +26,7 @@ async def test_create_spends_with_valid_data(user_initialization) -> None:
         token_response = await client.post(
             "http://localhost:8000/api/v1/auth/token", data=login_data
         )
-        print(token_response)
+
         assert token_response.status_code == 200
 
         tokens = token_response.json()
@@ -37,5 +37,5 @@ async def test_create_spends_with_valid_data(user_initialization) -> None:
         schema_response = await client.post(
             "http://localhost:8000/api/v1/create-spend", json=data, headers=headers
         )
-        print(schema_response.content)
+
         assert schema_response.status_code == 201
