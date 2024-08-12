@@ -887,7 +887,9 @@ async def extract_phone_number_otp(email: EmailStr) -> Row | None:
     return None
 
 
-async def update_phone_number_status(email: EmailStr, password: str) -> None:
+async def update_phone_number_status(
+    email: EmailStr, password: str, username: str
+) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -896,7 +898,9 @@ async def update_phone_number_status(email: EmailStr, password: str) -> None:
                     .where(
                         users.c.email == email,
                     )
-                    .values(password=password, verified_phone_number=True)
+                    .values(
+                        username=username, password=password, verified_phone_number=True
+                    )
                 )
                 await session.execute(query)
                 await session.commit()

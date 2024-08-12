@@ -58,7 +58,9 @@ async def verify_otp_phone_number(
         )
 
         await update_phone_number_status(
-            email=account.email, password=hashed_generated_password
+            username=generated_username,
+            email=account.email,
+            password=hashed_generated_password,
         )
         await send_gmail(
             email_subject="Default Password",
