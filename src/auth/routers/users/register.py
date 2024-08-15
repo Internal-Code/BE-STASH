@@ -14,7 +14,7 @@ from src.auth.utils.database.general import (
     save_otp_phone_number_verification,
 )
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-register"], prefix="/users")
 
 
 async def register_user(schema: CreateUser) -> ResponseDefault:

@@ -505,13 +505,9 @@ async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:
                 await session.execute(query)
                 await session.commit()
 
-                if email is None:
-                    logging.info("Initialized saving forgot pin data.")
-
-                if email:
-                    logging.info(
-                        "User successfully insert reset password id into database."
-                    )
+                logging.info(
+                    "User successfully insert reset password id into database."
+                )
 
             except Exception as E:
                 logging.error(f"Error while save_reset_password_id: {E}")

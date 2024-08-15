@@ -4,7 +4,7 @@ from src.auth.utils.database.general import check_phone_number
 from src.auth.utils.jwt.general import get_user
 from src.auth.schema.response import ResponseDefault, UniqueID
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-general"], prefix="/users")
 
 
 async def get_user_endpoint(phone_number: str) -> ResponseDefault:

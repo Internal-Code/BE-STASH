@@ -24,10 +24,10 @@ from src.auth.routers.monthly_spends import (
     delete_monthly_spend,
 )
 from src.auth.routers.users import (
+    create_pin,
     detail,
     get_user_login,
     logout,
-    pin,
     register,
     get_user_forgot_pin,
     send_reset_link,
@@ -76,14 +76,14 @@ app.include_router(update_monthly_spend.router)
 app.include_router(delete_monthly_spend.router)
 app.include_router(access_token.router)
 app.include_router(refresh_token.router)
-app.include_router(register.router)
 app.include_router(logout.router)
 app.include_router(detail.router)
+app.include_router(get_user_login.router)
+app.include_router(register.router)
+app.include_router(create_pin.router)
+app.include_router(get_user_forgot_pin.router)
+app.include_router(send_reset_link.router)
 app.include_router(login.router)
 app.include_router(authentication.router)
-app.include_router(get_user_login.router)
-app.include_router(send_reset_link.router)
-app.include_router(pin.router)
 app.include_router(save_phone_number.router)
 app.include_router(verify_phone_number.router)
-app.include_router(get_user_forgot_pin.router)

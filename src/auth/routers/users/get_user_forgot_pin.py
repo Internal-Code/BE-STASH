@@ -4,11 +4,9 @@ from src.auth.schema.response import ResponseDefault, UniqueID
 from fastapi import APIRouter, HTTPException, status
 from src.auth.utils.database.general import (
     check_phone_number,
-    save_reset_pin_data,
-    extract_reset_pin_data,
 )
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-forgot-pin"], prefix="/users")
 
 
 async def get_user_forgot_pin_endpoint(phone_number: str) -> ResponseDefault:
@@ -23,19 +21,6 @@ async def get_user_forgot_pin_endpoint(phone_number: str) -> ResponseDefault:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found.",
             )
-
-        initial_data = await extract_reset_pin_data(user_uuid=account.user_uuid)
-
-        if initial_data is not None:
-            logging.info("Forgot pin data already initialized.")
-            response.success = True
-            response.message = "User already initialized forgot pin. Please choose send forgot link method."
-            response.data = UniqueID(unique_id=str(account.user_uuid))
-
-            return response
-
-        logging.info("Save forgot pin initialization data.")
-        await save_reset_pin_data(user_uuid=account.user_uuid)
 
         response.success = True
         response.message = f"User {validated_phone_number} found."

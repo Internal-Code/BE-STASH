@@ -1,6 +1,6 @@
 import httpx
 from pytz import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 from src.secret import LOCAL_WHATSAPP_API
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault, UniqueID
@@ -14,7 +14,7 @@ from src.auth.utils.database.general import (
     verify_uuid,
 )
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-forgot-pin"], prefix="/users")
 
 
 async def send_reset_link_endpoints(
@@ -50,38 +50,57 @@ async def send_reset_link_endpoints(
             if account.verified_email is True:
                 logging.info("User account email validated.")
 
+                email_body = (
+                    f"Dear {account.email},<br><br>"
+                    f"We received a request to reset your password. Please click the link below to create a new password:<br><br>"
+                    f'<a href="{reset_link}">Reset Password</a><br><br>'
+                    f"If you did not request a password reset, please ignore this email.<br><br>"
+                    f"Thank you,<br><br>"
+                    f"Best regards,<br>"
+                    f"<b>The Support Team</b>"
+                )
+
                 latest_reset_pin_data = await extract_reset_pin_data(
                     user_uuid=unique_id
                 )
+
+                if latest_reset_pin_data is None:
+                    logging.info("Initialized send reset password link via email.")
+
+                    await save_reset_pin_data(user_uuid=unique_id, email=account.email)
+
+                    await send_gmail(
+                        email_subject="Reset Password",
+                        email_receiver=account.email,
+                        email_body=email_body,
+                    )
+
+                    response.success = True
+                    response.message = "Password reset link sent to email."
+                    response.data = UniqueID(unique_id=unique_id)
+
                 now_utc = datetime.now(timezone("UTC"))
                 jakarta_timezone = timezone("Asia/Jakarta")
-                times_later_jakarta = latest_reset_pin_data.blacklisted_at.astimezone(
-                    jakarta_timezone
-                )
+                blacklist_time = now_utc + timedelta(minutes=1)
+                if (
+                    latest_reset_pin_data is None
+                    or latest_reset_pin_data.blacklisted_at is None
+                ):
+                    valid_blacklist_time = blacklist_time
+                else:
+                    valid_blacklist_time = latest_reset_pin_data.blacklisted_at
+                times_later_jakarta = valid_blacklist_time.astimezone(jakarta_timezone)
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
-                if (
-                    latest_reset_pin_data is not None
-                    and now_utc < latest_reset_pin_data.blacklisted_at
-                ):
+                if latest_reset_pin_data is not None and now_utc < valid_blacklist_time:
                     logging.info("User should wait API cooldown.")
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=f"Should wait until {formatted_time}.",
                     )
 
-                if now_utc >= latest_reset_pin_data.blacklisted_at:
+                if now_utc >= valid_blacklist_time:
                     logging.info("Saved new reset pin request data.")
-
-                    email_body = (
-                        f"Dear {account.email},<br><br>"
-                        f"We received a request to reset your password. Please click the link below to create a new password:<br><br>"
-                        f'<a href="{reset_link}">Reset Password</a><br><br>'
-                        f"If you did not request a password reset, please ignore this email.<br><br>"
-                        f"Thank you,<br><br>"
-                        f"Best regards,<br>"
-                        f"<b>The Support Team</b>"
-                    )
 
                     await send_gmail(
                         email_subject="Reset Password",
@@ -112,28 +131,27 @@ async def send_reset_link_endpoints(
             if account.verified_phone_number is True:
                 logging.info("User phone number validated.")
 
+                payload = SendOTPPayload(
+                    phoneNumber=account.phone_number,
+                    message=(
+                        f"Dear *{account.full_name}*,\n\n"
+                        f"We received a request to reset your password. Please click the link below to create a new password:\n\n"
+                        f"{reset_link}\n\n"
+                        f"If you did not request a password reset, please ignore this message.\n\n"
+                        f"Thank you,\n\n"
+                        f"Best regards,\n"
+                        "*The Support Team*"
+                    ),
+                )
+
                 latest_reset_pin_data = await extract_reset_pin_data(
                     user_uuid=unique_id
                 )
-                now_utc = datetime.now(timezone("UTC"))
-                jakarta_timezone = timezone("Asia/Jakarta")
-                times_later_jakarta = latest_reset_pin_data.blacklisted_at.astimezone(
-                    jakarta_timezone
-                )
-                formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
-                if (
-                    latest_reset_pin_data is not None
-                    and now_utc < latest_reset_pin_data.blacklisted_at
-                ):
-                    logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Should wait until {formatted_time}.",
+                if latest_reset_pin_data is None:
+                    logging.info(
+                        "Initialized send reset password link via phone nnumber."
                     )
-
-                if now_utc >= latest_reset_pin_data.blacklisted_at:
-                    logging.info("Saved new reset pin request data.")
 
                     await save_reset_pin_data(user_uuid=unique_id, email=account.email)
 
@@ -149,6 +167,45 @@ async def send_reset_link_endpoints(
                             "*The Support Team*"
                         ),
                     )
+                    async with httpx.AsyncClient() as client:
+                        whatsapp_response = await client.post(
+                            LOCAL_WHATSAPP_API, json=dict(payload)
+                        )
+
+                    if whatsapp_response.status_code != 200:
+                        raise HTTPException(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to send OTP via WhatsApp.",
+                        )
+
+                    response.success = True
+                    response.message = "Password reset link sent to phone number."
+                    response.data = UniqueID(unique_id=unique_id)
+
+                now_utc = datetime.now(timezone("UTC"))
+                jakarta_timezone = timezone("Asia/Jakarta")
+                blacklist_time = now_utc + timedelta(minutes=1)
+                if (
+                    latest_reset_pin_data is None
+                    or latest_reset_pin_data.blacklisted_at is None
+                ):
+                    valid_blacklist_time = blacklist_time
+                else:
+                    valid_blacklist_time = latest_reset_pin_data.blacklisted_at
+                times_later_jakarta = valid_blacklist_time.astimezone(jakarta_timezone)
+                formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
+
+                if latest_reset_pin_data is not None and now_utc < valid_blacklist_time:
+                    logging.info("User should wait API cooldown.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Should wait until {formatted_time}.",
+                    )
+
+                if now_utc >= valid_blacklist_time:
+                    logging.info("Saved new reset pin request data.")
+
+                    await save_reset_pin_data(user_uuid=unique_id, email=account.email)
 
                     async with httpx.AsyncClient() as client:
                         whatsapp_response = await client.post(

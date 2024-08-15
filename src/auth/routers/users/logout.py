@@ -12,7 +12,7 @@ from src.auth.utils.database.general import (
     extract_tokens,
 )
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-general"], prefix="/users")
 
 
 async def user_logout(

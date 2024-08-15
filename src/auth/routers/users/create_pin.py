@@ -7,7 +7,7 @@ from src.auth.utils.request_format import UserPin, SendOTPPayload
 from src.auth.utils.database.general import update_user_pin, verify_uuid, check_pin
 from fastapi import APIRouter, HTTPException, status
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-register"], prefix="/users")
 
 
 async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseDefault:
