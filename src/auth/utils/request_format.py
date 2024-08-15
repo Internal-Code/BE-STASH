@@ -1,4 +1,3 @@
-from typing import List
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
@@ -51,11 +50,12 @@ class CreateSpend(BaseModel):
 
 
 class CreateUser(BaseModel):
-    first_name: str
-    last_name: str | None
-    username: str
-    email: EmailStr
-    password: str | None
+    full_name: str
+    phone_number: str
+
+
+class UserPin(BaseModel):
+    pin: str
 
 
 class TokenData(BaseModel):
@@ -73,12 +73,13 @@ class DetailUser(BaseModel):
 class UserInDB(CreateUser):
     user_uuid: UUID
     created_at: datetime
-    updated_at: datetime | None
+    updated_at: datetime | None = None
+    full_name: str | None = None
+    email: EmailStr | None = None
+    phone_number: str | None = None
+    pin: str | None = None
     verified_email: bool
     verified_phone_number: bool
-    pin: str | None
-    pin_enabled: bool
-    phone_number: str
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
@@ -90,27 +91,17 @@ class UserInDB(CreateUser):
         )
 
 
-class UserPin(BaseModel):
-    pin: str
-
-
-class MailBody(BaseModel):
-    to: List[str]
-    subject: str
-    body: str
-
-
 class UserForgotPassword(BaseModel):
     email: EmailStr
 
 
-class SendForgotPasswordMethod(str, Enum):
-    EMAIL = "email"
+class SendMethod(str, Enum):
     PHONE_NUMBER = "phone_number"
+    EMAIL = "email"
 
 
 class SendVerificationLink(BaseModel):
-    forget_password_type: SendForgotPasswordMethod
+    method: SendMethod
 
 
 class ForgotPassword(BaseModel):
@@ -118,7 +109,8 @@ class ForgotPassword(BaseModel):
     confirm_new_password: str
 
 
-class InputPhoneNumber(BaseModel):
+class GoogleSSOPayload(BaseModel):
+    full_name: str
     phone_number: str
 
 

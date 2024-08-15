@@ -1,47 +1,37 @@
-from uuid import UUID
-from uuid_extensions import uuid7
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
-from src.auth.utils.request_format import InputPhoneNumber
+from src.auth.utils.request_format import GoogleSSOPayload
+from src.auth.utils.jwt.general import get_user
 from src.auth.utils.database.general import (
-    save_phone_number,
-    extract_phone_number_token,
+    update_user_google_sso,
     check_phone_number,
     is_using_registered_phone_number,
     save_otp_phone_number_verification,
+    verify_uuid,
+    check_fullname,
 )
 from fastapi import APIRouter, status, HTTPException
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["google-sso"], prefix="/google")
 
 
-async def save_phone_number_endpoint(
-    phone_number: InputPhoneNumber, phone_number_id: str
+async def google_sso_payload(
+    schema: GoogleSSOPayload, unique_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
 
+    await verify_uuid(unique_id=unique_id)
     try:
-        UUID(phone_number_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format.",
-        )
-
-    try:
-        phone_number_otp_unique_id = str(uuid7())
-
-        account = await extract_phone_number_token(
-            phone_number_unique_id=phone_number_id
-        )
+        account = await get_user(unique_id=unique_id)
         logging.info("UUID found.")
         if not account:
+            logging.info("UUID not found.")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="UUID not found."
             )
 
         validated_phone_number = await check_phone_number(
-            value=phone_number.phone_number
+            phone_number=schema.phone_number
         )
         registered_phone_number = await is_using_registered_phone_number(
             phone_number=validated_phone_number
@@ -54,16 +44,17 @@ async def save_phone_number_endpoint(
                 detail="Phone number already used. Please use another number.",
             )
 
-        await save_phone_number(
-            email=account.email, phone_number=validated_phone_number
-        )
+        fullname = await check_fullname(value=schema.full_name)
         await save_otp_phone_number_verification(
-            phone_number_otp_uuid=phone_number_otp_unique_id, email=account.email
+            phone_number_otp_uuid=unique_id, phone_number=validated_phone_number
+        )
+        await update_user_google_sso(
+            user_uuid=unique_id, phone_number=validated_phone_number, full_name=fullname
         )
 
         response.success = True
-        response.message = "Phone number saved."
-        response.data = {"otp_id": phone_number_otp_unique_id}
+        response.message = "Updated full name and phone number."
+        response.data = {"unique_id": unique_id}
 
     except HTTPException as E:
         raise E
@@ -78,8 +69,8 @@ async def save_phone_number_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/phone-number/{phone_number_id}",
-    endpoint=save_phone_number_endpoint,
+    path="/account/{unique_id}",
+    endpoint=google_sso_payload,
     status_code=status.HTTP_200_OK,
-    summary="Verify phone number.",
+    summary="Verify phone number google sso.",
 )

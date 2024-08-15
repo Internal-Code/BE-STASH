@@ -1,4 +1,4 @@
-from sqlalchemy import or_
+from sqlalchemy import and_
 from pydantic import EmailStr
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -23,44 +23,52 @@ password_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
-async def verify_password(password: str, hashed_password: str) -> str:
-    return password_content.verify(password, hashed_password)
+async def verify_pin(pin: str, hashed_pin: str) -> str:
+    return password_content.verify(pin, hashed_pin)
 
 
 async def get_password_hash(password: str) -> str:
     return password_content.hash(password)
 
 
-async def get_user(identifier: str | EmailStr) -> UserInDB | None:
+async def get_user(
+    phone_number: str = None, unique_id: str = None, email: EmailStr = None
+) -> UserInDB | None:
     try:
         async with database_connection().connect() as session:
             try:
-                query = select(users).where(
-                    or_(users.c.username == identifier, users.c.email == identifier)
-                )
+                filters = []
+
+                if phone_number:
+                    filters.append(users.c.phone_number == phone_number)
+                if unique_id:
+                    filters.append(users.c.user_uuid == unique_id)
+                if email:
+                    filters.append(users.c.email == email)
+
+                if not filters:
+                    logging.error("No valid filter provided.")
+                    return None
+
+                query = select(users).where(and_(*filters))
                 result = await session.execute(query)
                 checked = result.fetchone()
-
                 if checked:
-                    logging.info(f"User {checked.username} found.")
+                    logging.info("User found.")
                     user_data = UserInDB(
                         user_uuid=checked.user_uuid,
                         created_at=checked.created_at,
                         updated_at=checked.updated_at,
-                        first_name=checked.first_name,
-                        last_name=checked.last_name,
-                        username=checked.username,
+                        full_name=checked.full_name,
                         email=checked.email,
                         phone_number=checked.phone_number,
-                        password=checked.password,
                         pin=checked.pin,
-                        pin_enabled=checked.pin_enabled,
                         verified_email=checked.verified_email,
                         verified_phone_number=checked.verified_phone_number,
                     )
                     return user_data
                 else:
-                    logging.error(f"User {identifier} not found.")
+                    logging.error("User not found.")
                     return None
             except Exception as E:
                 logging.error(f"Error during get_user: {E}.")
@@ -78,7 +86,7 @@ async def authenticate_user(username: str, password: str) -> Row | None:
         if not users:
             logging.error(f"Authentication failed: users {username} not found.")
             return None
-        if not await verify_password(password=password, hashed_password=users.password):
+        if not await verify_pin(password=password, hashed_password=users.password):
             logging.error(
                 f"Authentication failed: invalid password for users {username}."
             )
