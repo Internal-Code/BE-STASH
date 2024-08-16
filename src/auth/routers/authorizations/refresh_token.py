@@ -2,7 +2,7 @@ from typing import Annotated
 from jose import jwt, JWTError
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.security import get_current_user
+from src.auth.utils.jwt.general import get_current_user
 from src.auth.schema.response import ResponseToken
 from src.auth.utils.database.general import local_time, is_refresh_token_blacklisted
 from src.auth.utils.logging import logging
@@ -31,11 +31,9 @@ async def refresh_access_token(
     response = ResponseToken()
 
     try:
-        validate_refresh_token = await is_refresh_token_blacklisted(
-            refresh_token=refresh_token
-        )
+        blacklisted = await is_refresh_token_blacklisted(refresh_token=refresh_token)
 
-        if validate_refresh_token is True:
+        if blacklisted is True:
             raise blacklisted_refresh_token
 
         payload = jwt.decode(

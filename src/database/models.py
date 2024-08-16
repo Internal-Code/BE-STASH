@@ -1,4 +1,3 @@
-from uuid_extensions import uuid7
 from sqlalchemy.dialects.postgresql import UUID
 from src.database.connection import database_connection
 from sqlalchemy import (
@@ -18,19 +17,15 @@ users = Table(
     "users",
     meta,
     Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("user_uuid", UUID(as_uuid=True), default=uuid7, unique=True, nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), unique=True, nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=True, default=None),
-    Column("username", String(255), nullable=False, unique=True),
-    Column("first_name", String(255), nullable=False, unique=False),
-    Column("last_name", String(255), nullable=True, unique=False, default=None),
-    Column("email", String(255), nullable=False, unique=True),
-    Column("phone_number", String(255), nullable=True, unique=True),
-    Column("password", String(255), nullable=True),
-    Column("pin", String(6), nullable=True, default=None),
+    Column("full_name", String(255), nullable=True, unique=False, default=None),
+    Column("email", String(255), nullable=True, unique=True, default=None),
+    Column("phone_number", String(13), nullable=True, unique=False, default=None),
+    Column("pin", String(255), nullable=True, unique=False, default=None),
     Column("verified_email", Boolean, nullable=False, default=False),
     Column("verified_phone_number", Boolean, nullable=False, default=False),
-    Column("last_login", DateTime(timezone=True), nullable=True),
 )
 
 
@@ -40,7 +35,7 @@ money_spends = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=True),
-    Column("user_uuid", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), nullable=False),
     Column("spend_day", Integer, nullable=False),
     Column("spend_month", Integer, nullable=False),
     Column("spend_year", Integer, nullable=False),
@@ -55,7 +50,7 @@ money_spend_schemas = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=True),
-    Column("user_uuid", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), nullable=False),
     Column("month", Integer, nullable=False),
     Column("year", Integer, nullable=False),
     Column("category", String(255), nullable=False),
@@ -67,7 +62,7 @@ blacklist_tokens = Table(
     meta,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("blacklisted_at", DateTime(timezone=True), nullable=False),
-    Column("user_uuid", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), nullable=False),
     Column("access_token", String(255), nullable=False, unique=True),
     Column("refresh_token", String(255), nullable=False, unique=True),
 )
@@ -77,9 +72,33 @@ user_tokens = Table(
     meta,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
-    Column("user_uuid", UUID(as_uuid=True), default=uuid7, nullable=False),
+    Column("user_uuid", UUID(as_uuid=True), nullable=False),
     Column("access_token", String(255), nullable=False, unique=True),
     Column("refresh_token", String(255), nullable=False, unique=True),
+)
+
+reset_pins = Table(
+    "reset_pins",
+    meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("user_uuid", UUID(as_uuid=True), nullable=False, unique=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("email", String(255), nullable=True, unique=False, default=None),
+    Column("save_to_hit_at", DateTime(timezone=True), nullable=True, default=None),
+    Column("blacklisted_at", DateTime(timezone=True), nullable=True, default=None),
+)
+
+
+phone_number_otps = Table(
+    "phone_number_otps",
+    meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("phone_number_token", UUID(as_uuid=True), nullable=False, unique=False),
+    Column("phone_number", String(13), nullable=True, unique=False, default=None),
+    Column("otp_number", String(6), nullable=True, unique=False, default=None),
+    Column("save_to_hit_at", DateTime(timezone=True), nullable=True, default=None),
+    Column("blacklisted_at", DateTime(timezone=True), nullable=True, default=None),
 )
 
 

@@ -1,13 +1,13 @@
-import re
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.schema import Table
 from sqlalchemy.engine.row import Row
 from uuid_extensions import uuid7
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, update
 from pydantic import EmailStr
 from pytz import timezone
-from sqlalchemy import select, update
-from datetime import datetime
+from sqlalchemy import select
+from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from src.auth.utils.logging import logging
 from src.database.models import (
@@ -16,6 +16,8 @@ from src.database.models import (
     users,
     blacklist_tokens,
     user_tokens,
+    reset_pins,
+    phone_number_otps,
 )
 from src.database.connection import database_connection
 
@@ -25,7 +27,7 @@ def local_time(zone: str = "Asia/Jakarta") -> datetime:
     return time
 
 
-def create_category_format(
+async def create_category_format(
     category: str,
     user_uuid: uuid7,
     month: int = local_time().month,
@@ -216,141 +218,130 @@ async def filter_month_year(
     return False
 
 
-async def filter_user_register(
-    username: str, email: EmailStr, phone_number: str
-) -> None:
-    try:
-        logging.info("Filtering username, email and phone number.")
+# async def filter_user_register(username: str, email: EmailStr) -> None:
+#     try:
+#         logging.info("Filtering username, email and phone number.")
 
-        if await is_using_registered_email(email=email):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already taken. Please use another email.",
-            )
-        if await is_using_registered_username(username=username):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username already taken. Please use another username.",
-            )
-        if await is_using_registered_phone_number(phone_number=phone_number):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Phone number already taken. Please use another phone number.",
-            )
+#         if await is_using_registered_email(email=email):
+#             raise HTTPException(
+#                 status_code=status.HTTP_409_CONFLICT,
+#                 detail="Email already taken. Please use another email.",
+#             )
+#         if await is_using_registered_username(username=username):
+#             raise HTTPException(
+#                 status_code=status.HTTP_409_CONFLICT,
+#                 detail="Username already taken. Please use another username.",
+#             )
 
-    except HTTPException as e:
-        raise e
+#     except HTTPException as e:
+#         raise e
 
-    except Exception as e:
-        logging.error(f"Error while filter_registered_user availability: {e}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {e}.",
-        )
+#     except Exception as e:
+#         logging.error(f"Error while filter_registered_user availability: {e}.")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=f"Internal Server Error: {e}.",
+#         )
 
 
-async def update_latest_login(username: str, email: EmailStr) -> bool:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                await session.execute(
-                    update(users)
-                    .where(
-                        and_(
-                            users.c.username == username,
-                            users.c.email == email,
-                        )
-                    )
-                    .values(last_login=local_time())
-                )
-                await session.commit()
-                logging.info(f"Updated last_login for users {username}.")
-                return True
-            except Exception as e:
-                logging.error(f"Error during update_latest_login: {e}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as e:
-        logging.error(f"Error after update_latest_login: {e}")
-
-    return False
-
-
-async def check_phone_number(value: str) -> str:
-    if len(value) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number cannot be empty.",
-        )
-    if not value.isdigit():
+async def check_phone_number(phone_number: str) -> str:
+    if not phone_number.isdigit():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Phone number must contain only digits.",
         )
-    if not 10 <= len(value) <= 13:
+
+    if not (10 <= len(phone_number) <= 13):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Phone number must be between 10 or 13 digits long.",
         )
-    return value
+
+    return phone_number
 
 
-async def check_pin(value: str) -> str:
-    if not value.isdigit():
+async def check_pin(pin: str) -> str:
+    if not pin.isdigit():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Pin number must contain only digits.",
         )
-    if len(value) != 6:
+
+    if len(pin) != 6:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Pin number must be 6 digits long.",
         )
-    return value
+    return pin
 
 
-async def check_username(value: str) -> str:
-    if not 5 <= len(value) <= 20:
+async def check_otp(otp: str) -> str:
+    if not otp.isdigit():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username must be between 5 or 20 characters long.",
+            detail="OTP number must contain only digits.",
         )
-    return value
+
+    if len(otp) != 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP number must be 6 digits long.",
+        )
+    return otp
 
 
-async def check_password(value: str) -> str:
-    if len(value) == 0:
+async def check_fullname(value: str) -> str:
+    value = " ".join(value.split())
+
+    if not all(char.isalpha() or char.isspace() for char in value):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password cannot be empty.",
+            detail="Fullname should contain only letters and spaces.",
         )
-    if len(value) < 8:
+
+    if len(value) > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long.",
+            detail="Fullname should be less than 100 character.",
         )
-    if not re.search(r"[A-Z]", value):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one uppercase letter.",
-        )
-    if not re.search(r"[a-z]", value):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one lowercase letter.",
-        )
-    if not re.search(r"[0-9]", value):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one number.",
-        )
-    if not re.search(r"[\W_]", value):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one special character.",
-        )
-    return value
+
+    fullname = value.title()
+
+    return fullname
+
+
+# async def check_password(value: str) -> str:
+#     if len(value) == 0:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Password cannot be empty.",
+#         )
+#     if len(value) < 8:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Password must be at least 8 characters long.",
+#         )
+#     if not re.search(r"[A-Z]", value):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Password must contain at least one uppercase letter.",
+#         )
+#     if not re.search(r"[a-z]", value):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Password must contain at least one lowercase letter.",
+#         )
+#     if not re.search(r"[0-9]", value):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Password must contain at least one number.",
+#         )
+#     if not re.search(r"[\W_]", value):
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Password must contain at least one special character.",
+#         )
+#     return value
 
 
 async def is_using_registered_field(
@@ -359,10 +350,12 @@ async def is_using_registered_field(
     try:
         query = select(table_name).where(getattr(table_name.c, field) == value)
         result = await session.execute(query)
-        return result.fetchone() is not None
+        record = result.fetchone()
+        if record:
+            return True
     except Exception as e:
         logging.error(f"Error while checking {field}: {e}")
-        raise
+    return False
 
 
 async def is_using_registered_email(email: EmailStr) -> bool:
@@ -495,6 +488,60 @@ async def save_tokens(user_uuid: uuid7, access_token: str, refresh_token: str) -
                 await session.close()
     except Exception as E:
         logging.error(f"Error after save_tokens: {E}")
+    return None
+
+
+async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = reset_pins.insert().values(
+                    user_uuid=user_uuid,
+                    created_at=local_time(),
+                    email=email,
+                    save_to_hit_at=local_time() + timedelta(minutes=1),
+                    blacklisted_at=local_time() + timedelta(minutes=5),
+                )
+                await session.execute(query)
+                await session.commit()
+
+                logging.info(
+                    "User successfully insert reset password id into database."
+                )
+
+            except Exception as E:
+                logging.error(f"Error while save_reset_password_id: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_reset_password_id: {E}")
+    return None
+
+
+async def extract_reset_pin_data(user_uuid: uuid7) -> Row | None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(reset_pins)
+                    .where(reset_pins.c.user_uuid == user_uuid)
+                    .order_by(reset_pins.c.created_at.desc())
+                )
+                result = await session.execute(query)
+                latest_data = result.fetchone()
+
+                if latest_data:
+                    return latest_data
+                logging.error(f"User {user_uuid} not found.")
+            except Exception as E:
+                logging.error(f"Error during extract_reset_pin_data: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after extract_reset_pin_data: {E}")
+    return None
 
 
 async def extract_tokens(user_uuid: uuid7) -> Row | None:
@@ -521,12 +568,10 @@ async def extract_tokens(user_uuid: uuid7) -> Row | None:
 
 
 async def save_google_sso_account(
-    username: str,
-    first_name: str,
-    last_name: str,
+    user_uuid: uuid7,
     email: EmailStr,
+    full_name: str = None,
     phone_number: str = None,
-    password: str = None,
     pin: str = None,
     is_email_verified: bool = True,
     is_phone_number_verified: bool = False,
@@ -535,21 +580,18 @@ async def save_google_sso_account(
         async with database_connection().connect() as session:
             try:
                 query = users.insert().values(
-                    user_uuid=uuid7(),
+                    user_uuid=user_uuid,
                     created_at=local_time(),
-                    username=username,
-                    first_name=first_name,
-                    last_name=last_name,
+                    full_name=full_name,
                     email=email,
                     phone_number=phone_number,
-                    password=password,
                     pin=pin,
                     verified_email=is_email_verified,
                     verified_phone_number=is_phone_number_verified,
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info(f"User {email} successfully saved data into database.")
+                logging.info("User google ss0 successfully saved data into database.")
             except Exception as E:
                 logging.error(f"Error while save_google_sso_account: {E}")
                 await session.rollback()
@@ -558,3 +600,288 @@ async def save_google_sso_account(
     except Exception as E:
         logging.error(f"Error after save_google_sso_account: {E}")
     return None
+
+
+async def save_user_pin(user_uuid: uuid7, user_pin: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(pin=user_pin)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info(f"User {user_uuid} successfully saved pin into database.")
+            except Exception as E:
+                logging.error(f"Error while save_user_pin: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_user_pin: {E}")
+    return None
+
+
+async def verify_user_pin(user_uuid: uuid7, pin: str) -> bool:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = select(users).where(
+                    and_(users.c.user_uuid == user_uuid, users.c.pin == pin)
+                )
+                result = await session.execute(query)
+                latest_record = result.fetchone()
+                if latest_record is not None:
+                    return latest_record
+            except Exception as E:
+                logging.error(f"Error during verify_user_pin: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after verify_user_pin: {E}")
+    return None
+
+
+async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    update(users)
+                    .where(users.c.user_uuid == user_uuid)
+                    .values(updated_at=local_time(), pin=changed_pin)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully saved reset pin id into database.")
+            except Exception as E:
+                logging.error(f"Error while reset_user_pin: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after reset_user_pin: {E}")
+    return None
+
+
+async def save_phone_number(email: EmailStr, phone_number: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.email == email,
+                    )
+                    .values(phone_number=phone_number)
+                )
+
+                await session.execute(query)
+                await session.commit()
+                logging.info(
+                    f"User {email} successfully update phone number into database."
+                )
+            except Exception as E:
+                logging.error(f"Error while save_phone_number: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_phone_number: {E}")
+    return None
+
+
+async def extract_phone_number_otp_token(user_uuid: uuid7) -> Row | None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(phone_number_otps)
+                    .where(phone_number_otps.c.phone_number_token == user_uuid)
+                    .order_by(phone_number_otps.c.created_at.desc())
+                )
+                result = await session.execute(query)
+                latest_record = result.fetchone()
+                if latest_record:
+                    return latest_record
+
+                logging.error(f"Phone number token {user_uuid} not found.")
+            except Exception as E:
+                logging.error(f"Error during extract_phone_number_token: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except HTTPException as e:
+        raise e
+    except Exception as E:
+        logging.error(f"Error after extract_phone_number_token: {E}")
+    return None
+
+
+async def save_otp_phone_number_verification(
+    phone_number_otp_uuid: uuid7,
+    phone_number: str,
+    otp_number: str = None,
+    save_to_hit_at: datetime = local_time() + timedelta(minutes=1),
+    blacklisted_at: datetime = local_time() + timedelta(minutes=5),
+) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = phone_number_otps.insert().values(
+                    created_at=local_time(),
+                    phone_number_token=phone_number_otp_uuid,
+                    phone_number=phone_number,
+                    otp_number=otp_number,
+                    save_to_hit_at=save_to_hit_at,
+                    blacklisted_at=blacklisted_at,
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully saved otp data into database.")
+            except Exception as E:
+                logging.error(f"Error while save_otp_phone_number_verification: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after save_otp_phone_number_verification: {E}")
+    return None
+
+
+async def extract_phone_number_otp(phone_number_token: uuid7) -> Row | None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(phone_number_otps)
+                    .where(phone_number_otps.c.phone_number_token == phone_number_token)
+                    .order_by(phone_number_otps.c.created_at.desc())
+                )
+                result = await session.execute(query)
+                latest_record = result.fetchone()
+
+                if latest_record is not None:
+                    return latest_record
+
+            except Exception as E:
+                logging.error(f"Error during extract_phone_number_otp: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after extract_phone_number_otp: {E}")
+    return None
+
+
+async def update_phone_number_status(user_uuid: uuid7) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(verified_phone_number=True)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated phone number status.")
+            except Exception as E:
+                logging.error(f"Error update_phone_number_status: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_phone_number_status: {E}")
+    return None
+
+
+async def update_user_google_sso(
+    user_uuid: uuid7, phone_number: str, full_name: str
+) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(phone_number=phone_number, full_name=full_name)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated full name and phone number.")
+            except Exception as E:
+                logging.error(f"Error while update_user_google_sso: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_user_google_sso: {E}")
+    return None
+
+
+async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(phone_number=phone_number)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated phone number.")
+            except Exception as E:
+                logging.error(f"Error update_user_phone_number: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_user_phone_number: {E}")
+    return None
+
+
+async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(pin=pin)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated pin.")
+            except Exception as E:
+                logging.error(f"Error update_user_pin: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_user_pin: {E}")
+    return None
+
+
+async def verify_uuid(unique_id: uuid7) -> UUID:
+    try:
+        valid_uuid = UUID(unique_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
+        )
+    return valid_uuid

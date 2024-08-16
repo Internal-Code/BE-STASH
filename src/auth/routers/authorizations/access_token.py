@@ -3,14 +3,14 @@ from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseToken
-from fastapi import APIRouter, HTTPException, status, Depends
 from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
-from src.auth.utils.jwt.security import (
+from fastapi import APIRouter, HTTPException, status, Depends
+from src.auth.utils.jwt.general import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
 )
-from src.auth.utils.database.general import update_latest_login, save_tokens
+from src.auth.utils.database.general import save_tokens
 
 router = APIRouter(tags=["authorizations"], prefix="/auth")
 
@@ -31,26 +31,21 @@ async def access_token(
         if user_in_db is None:
             raise credentials_error
 
-        latest_login = await update_latest_login(
-            username=user_in_db.username, email=user_in_db.email
+        access_token = await create_access_token(
+            data={
+                "sub": user_in_db.username,
+                "user_uuid": str(user_in_db.user_uuid),
+            },
+            access_token_expires=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED)),
         )
 
-        if latest_login is True:
-            access_token = await create_access_token(
-                data={
-                    "sub": user_in_db.username,
-                    "user_uuid": str(user_in_db.user_uuid),
-                },
-                access_token_expires=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED)),
-            )
-
-            refresh_token = await create_refresh_token(
-                data={
-                    "sub": user_in_db.username,
-                    "user_uuid": str(user_in_db.user_uuid),
-                },
-                refresh_token_expires=timedelta(minutes=int(REFRESH_TOKEN_EXPIRED)),
-            )
+        refresh_token = await create_refresh_token(
+            data={
+                "sub": user_in_db.username,
+                "user_uuid": str(user_in_db.user_uuid),
+            },
+            refresh_token_expires=timedelta(minutes=int(REFRESH_TOKEN_EXPIRED)),
+        )
         await save_tokens(
             user_uuid=user_in_db.user_uuid,
             access_token=access_token,

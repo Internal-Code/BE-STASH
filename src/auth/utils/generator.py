@@ -62,3 +62,9 @@ def random_account(
         "phone_number": phone_number,
         "password": password,
     }
+
+
+def random_sso_username(email: str) -> str:
+    username = email.lower().split("@")[0].split(".")[0]
+    username += str(random_number(4))
+    return username

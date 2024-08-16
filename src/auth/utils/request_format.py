@@ -2,6 +2,7 @@ from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
+from enum import Enum
 
 
 class MoneySpendSchema(BaseModel):
@@ -49,12 +50,12 @@ class CreateSpend(BaseModel):
 
 
 class CreateUser(BaseModel):
-    first_name: str
-    last_name: str | None
-    username: str
-    email: EmailStr
-    phone_number: str | None
-    password: str | None
+    full_name: str
+    phone_number: str
+
+
+class UserPin(BaseModel):
+    pin: str
 
 
 class TokenData(BaseModel):
@@ -72,10 +73,13 @@ class DetailUser(BaseModel):
 class UserInDB(CreateUser):
     user_uuid: UUID
     created_at: datetime
-    updated_at: datetime | None
+    updated_at: datetime | None = None
+    full_name: str | None = None
+    email: EmailStr | None = None
+    phone_number: str | None = None
+    pin: str | None = None
     verified_email: bool
     verified_phone_number: bool
-    pin: str | None
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
@@ -85,3 +89,39 @@ class UserInDB(CreateUser):
             email=self.email,
             phone_number=self.phone_number,
         )
+
+
+class UserForgotPassword(BaseModel):
+    email: EmailStr
+
+
+class SendMethod(str, Enum):
+    PHONE_NUMBER = "phone_number"
+    EMAIL = "email"
+
+
+class SendVerificationLink(BaseModel):
+    method: SendMethod
+
+
+class ForgotPin(BaseModel):
+    pin: str
+    confirm_new_pin: str
+
+
+class GoogleSSOPayload(BaseModel):
+    full_name: str
+    phone_number: str
+
+
+class SendOTPPayload(BaseModel):
+    phoneNumber: str
+    message: str
+
+
+class ChangeUserPhoneNumber(BaseModel):
+    phone_number: str
+
+
+class OTPVerification(BaseModel):
+    otp: str

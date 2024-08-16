@@ -1,10 +1,14 @@
 from pydantic import BaseModel
 
 
+class UniqueID(BaseModel):
+    unique_id: str
+
+
 class ResponseDefault(BaseModel):
     success: bool = False
     message: str = None
-    data: dict | list = None
+    data: list | dict | UniqueID = None
 
 
 class ResponseToken(BaseModel):

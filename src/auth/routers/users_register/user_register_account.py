@@ -4,62 +4,53 @@ from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import local_time
-from src.auth.utils.database.general import (
-    filter_user_register,
-    check_password,
-    check_phone_number,
-    check_username,
-)
 from src.database.connection import database_connection
-from src.auth.utils.jwt.security import get_password_hash
 from fastapi import APIRouter, HTTPException, status
+from src.auth.utils.database.general import (
+    check_fullname,
+    check_phone_number,
+    is_using_registered_phone_number,
+)
 
-router = APIRouter(tags=["users"], prefix="/users")
+router = APIRouter(tags=["users-register"], prefix="/users")
 
 
 async def register_user(schema: CreateUser) -> ResponseDefault:
     """
     Create a new users account with the following information:
 
-    - **first_name**: The first name of the users.
-    - **last_name (optional)**: The last name of the users.
-    - **username**: The username chosen by the users for logging in.
-        - Contain at least 5 character.
-    - **email**: The email address of the users.
+    - **full_name**: The full name of the users.
     - **phone_number**: The phone number of the users.
         - Should be 10 - 13 digit of number.
-    - **password**: The password chosen by the users for account security. It must:
-        - Be at least 8 characters long.
-        - Contain at least one uppercase letter.
-        - Contain at least one lowercase letter.
-        - Contain at least one digit.
-        - Contain at least one special character.
     """
 
     response = ResponseDefault()
-    try:
-        await filter_user_register(
-            username=schema.username,
-            email=schema.email,
-            phone_number=schema.phone_number,
-        )
 
-        await check_phone_number(schema.phone_number)
-        await check_username(schema.username)
-        await check_password(schema.password)
+    try:
+        user_uuid = str(uuid7())
 
         logging.info("Endpoint register account.")
+        already_registered = await is_using_registered_phone_number(
+            phone_number=schema.phone_number
+        )
+
+        if already_registered:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Account already created."
+            )
+
+        logging.info("Creating new user.")
+        validated_phone_number = await check_phone_number(
+            phone_number=schema.phone_number
+        )
+        fullname = await check_fullname(value=schema.full_name)
         async with database_connection().connect() as session:
             try:
                 query = users.insert().values(
-                    user_uuid=uuid7(),
+                    user_uuid=user_uuid,
                     created_at=local_time(),
-                    username=schema.username,
-                    first_name=schema.first_name,
-                    last_name=schema.last_name,
-                    email=schema.email,
-                    phone_number=schema.phone_number,
-                    password=await get_password_hash(schema.password),
+                    full_name=fullname,
+                    phone_number=validated_phone_number,
                 )
                 await session.execute(query)
                 await session.commit()
@@ -75,6 +66,11 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                 )
             finally:
                 await session.close()
+
+        response.success = True
+        response.message = "Account successfully created."
+        response.data = {"register_id": user_uuid}
+
     except HTTPException as E:
         raise E
     except Exception as E:

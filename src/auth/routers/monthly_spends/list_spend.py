@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 from sqlalchemy.sql import and_
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from src.auth.utils.jwt.security import get_current_user
+from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.logging import logging
 from src.auth.utils.database.general import filter_month_year, local_time
 from src.auth.schema.response import ResponseDefault

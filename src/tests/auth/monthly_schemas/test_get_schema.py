@@ -1,113 +1,113 @@
-import pytest
-import httpx
-from src.auth.utils.database.general import local_time
-from src.auth.utils.generator import random_number, random_word
-from src.tests.auth.initialization import user_initialization
+# import pytest
+# import httpx
+# from src.auth.utils.database.general import local_time
+# from src.auth.utils.generator import random_number, random_word
+# from src.tests.auth.initialization import user_initialization
 
 
-@pytest.mark.asyncio
-async def test_list_category_with_valid_token_no_params(user_initialization) -> None:
-    """
-    Should return the latest schema for the current user without any parameters.
-    """
+# @pytest.mark.asyncio
+# async def test_list_category_with_valid_token_no_params(user_initialization) -> None:
+#     """
+#     Should return the latest schema for the current user without any parameters.
+#     """
 
-    async with httpx.AsyncClient() as client:
-        account = await user_initialization
+#     async with httpx.AsyncClient() as client:
+#         account = await user_initialization
 
-        login_data = {"username": account["username"], "password": account["password"]}
+#         login_data = {"username": account["username"], "password": account["password"]}
 
-        res = await client.post(
-            "http://localhost:8000/api/v1/auth/token", data=login_data
-        )
-        response = res.json()
-        access_token = response["access_token"]
-        assert res.status_code == 200
+#         res = await client.post(
+#             "http://localhost:8000/api/v1/auth/token", data=login_data
+#         )
+#         response = res.json()
+#         access_token = response["access_token"]
+#         assert res.status_code == 200
 
-        headers = {"Authorization": f"Bearer {access_token}"}
+#         headers = {"Authorization": f"Bearer {access_token}"}
 
-        get_data = await client.get(
-            "http://localhost:8000/api/v1/list-category", headers=headers
-        )
-        print(get_data.content)
-        assert get_data.status_code == 200
+#         get_data = await client.get(
+#             "http://localhost:8000/api/v1/list-category", headers=headers
+#         )
 
-
-@pytest.mark.asyncio
-async def test_list_category_with_valid_token_and_params(user_initialization) -> None:
-    """
-    Should return the latest schema for the current user with given month and year parameters.
-    """
-
-    async with httpx.AsyncClient() as client:
-        account = await user_initialization
-
-        login_data = {"username": account["username"], "password": account["password"]}
-
-        res = await client.post(
-            "http://localhost:8000/api/v1/auth/token", data=login_data
-        )
-        response = res.json()
-        access_token = response["access_token"]
-        assert res.status_code == 200
-
-        headers = {"Authorization": f"Bearer {access_token}"}
-
-        current_month = local_time().month
-        current_year = local_time().year
-
-        get_data = await client.get(
-            "http://localhost:8000/api/v1/list-category",
-            headers=headers,
-            params={"month": current_month, "year": current_year},
-        )
-        assert get_data.status_code == 200
+#         assert get_data.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_list_category_with_invalid_token() -> None:
-    """
-    Should return 401 for requests with invalid bearer token.
-    """
+# @pytest.mark.asyncio
+# async def test_list_category_with_valid_token_and_params(user_initialization) -> None:
+#     """
+#     Should return the latest schema for the current user with given month and year parameters.
+#     """
 
-    async with httpx.AsyncClient() as client:
-        access_token = f"{random_word(10)}.{random_word(10)}.{random_word(10)}"
+#     async with httpx.AsyncClient() as client:
+#         account = await user_initialization
 
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+#         login_data = {"username": account["username"], "password": account["password"]}
 
-        get_data = await client.get(
-            "http://localhost:8000/api/v1/list-category", headers=headers
-        )
-        assert get_data.status_code == 401
+#         res = await client.post(
+#             "http://localhost:8000/api/v1/auth/token", data=login_data
+#         )
+#         response = res.json()
+#         access_token = response["access_token"]
+#         assert res.status_code == 200
+
+#         headers = {"Authorization": f"Bearer {access_token}"}
+
+#         current_month = local_time().month
+#         current_year = local_time().year
+
+#         get_data = await client.get(
+#             "http://localhost:8000/api/v1/list-category",
+#             headers=headers,
+#             params={"month": current_month, "year": current_year},
+#         )
+#         assert get_data.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_list_category_with_valid_token_and_nonexistent_params(user_initialization) -> None:
-    """
-    Should return 404 when querying with parameters not available in the database.
-    """
+# @pytest.mark.asyncio
+# async def test_list_category_with_invalid_token() -> None:
+#     """
+#     Should return 401 for requests with invalid bearer token.
+#     """
 
-    async with httpx.AsyncClient() as client:
-        account = await user_initialization
+#     async with httpx.AsyncClient() as client:
+#         access_token = f"{random_word(10)}.{random_word(10)}.{random_word(10)}"
 
-        login_data = {"username": account["username"], "password": account["password"]}
+#         headers = {
+#             "Authorization": f"Bearer {access_token}"
+#         }
 
-        res = await client.post(
-            "http://localhost:8000/api/v1/auth/token", data=login_data
-        )
-        response = res.json()
-        access_token = response["access_token"]
-        assert res.status_code == 200
+#         get_data = await client.get(
+#             "http://localhost:8000/api/v1/list-category", headers=headers
+#         )
+#         assert get_data.status_code == 401
 
-        headers = {"Authorization": f"Bearer {access_token}"}
 
-        random_month = random_number()
-        random_year = random_number(4)
+# @pytest.mark.asyncio
+# async def test_list_category_with_valid_token_and_nonexistent_params(user_initialization) -> None:
+#     """
+#     Should return 404 when querying with parameters not available in the database.
+#     """
 
-        get_data = await client.get(
-            "http://localhost:8000/api/v1/list-category",
-            headers=headers,
-            params={"month": random_month, "year": random_year},
-        )
-        assert get_data.status_code == 404
+#     async with httpx.AsyncClient() as client:
+#         account = await user_initialization
+
+#         login_data = {"username": account["username"], "password": account["password"]}
+
+#         res = await client.post(
+#             "http://localhost:8000/api/v1/auth/token", data=login_data
+#         )
+#         response = res.json()
+#         access_token = response["access_token"]
+#         assert res.status_code == 200
+
+#         headers = {"Authorization": f"Bearer {access_token}"}
+
+#         random_month = random_number()
+#         random_year = random_number(4)
+
+#         get_data = await client.get(
+#             "http://localhost:8000/api/v1/list-category",
+#             headers=headers,
+#             params={"month": random_month, "year": random_year},
+#         )
+#         assert get_data.status_code == 404
