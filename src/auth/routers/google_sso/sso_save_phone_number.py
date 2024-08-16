@@ -1,5 +1,5 @@
 from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault
+from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import GoogleSSOPayload
 from src.auth.utils.jwt.general import get_user
 from src.auth.utils.database.general import (
@@ -51,7 +51,7 @@ async def google_sso_save_phone_number_endpoint(
 
         response.success = True
         response.message = "Updated full name and phone number."
-        response.data = {"unique_id": unique_id}
+        response.data = UniqueID(unique_id=unique_id)
 
     except HTTPException as E:
         raise E

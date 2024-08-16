@@ -49,15 +49,15 @@ async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
                 payload = SendOTPPayload(
                     phoneNumber=account.phone_number,
                     message=(
-                        f"Dear {account.full_name},\n\n"
+                        f"Dear *{account.full_name}*,\n\n"
                         f"We would like to inform you that your PIN has been successfully changed.\n\n"
                         f"Please use the following details to log in to your account:\n\n"
-                        f"Phone Number: {account.phone_number}\n"
-                        f"New PIN: {validated_pin}\n\n"
+                        f"Phone Number: *{account.phone_number}*\n"
+                        f"New PIN: *{validated_pin}*\n\n"
                         f"For your security, please ensure you keep this information confidential.\n\n"
                         f"Should you have any questions or require further assistance, feel free to contact our support team.\n\n"
                         f"Best regards,\n"
-                        f"Support Team"
+                        f"*Support Team*"
                     ),
                 )
 

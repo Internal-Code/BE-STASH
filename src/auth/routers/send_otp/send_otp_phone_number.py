@@ -80,7 +80,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                 detail=f"Should wait until {formatted_time}.",
             )
 
-        if now_utc >= valid_save_to_hit_at:
+        if now_utc > valid_save_to_hit_at:
             logging.info("Saved new reset pin request data.")
             async with httpx.AsyncClient() as client:
                 whatsapp_response = await client.post(
@@ -101,7 +101,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
 
             response.success = True
             response.message = "OTP data sent to phone number."
-            response.data = {"unique_id": unique_id}
+            response.data = UniqueID(unique_id=unique_id)
 
             return response
     except HTTPException as E:

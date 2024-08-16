@@ -3,7 +3,7 @@ from uuid_extensions import uuid7
 from starlette.requests import Request
 from src.auth.utils.sso.general import google_oauth_configuration
 from authlib.integrations.starlette_client import OAuthError
-from src.auth.schema.response import ResponseDefault
+from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.jwt.general import get_user
 from src.auth.utils.database.general import (
     is_using_registered_email,
@@ -40,7 +40,7 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseDefault:
                     logging.info("User phone number is not verified.")
                     response.success = True
                     response.message = "Account google sso already saved."
-                    response.data = {"unique_id": account.user_uuid}
+                    response.data = UniqueID(unique_id=account.user_uuid)
                 except Exception as E:
                     logging.error(
                         f"Error while logging in with saved google account: {E}"
@@ -56,7 +56,7 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseDefault:
 
                 response.success = True
                 response.message = "Account google sso successfully created."
-                response.data = {"unique_id": register_account_uuid}
+                response.data = UniqueID(unique_id=register_account_uuid)
 
         except Exception as E:
             logging.error(f"Error while google sso authentication: {E}")

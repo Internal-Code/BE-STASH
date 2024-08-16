@@ -4,13 +4,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseToken
 from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
+from src.auth.utils.database.general import save_tokens
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.jwt.general import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
 )
-from src.auth.utils.database.general import save_tokens
 
 router = APIRouter(tags=["authorizations"], prefix="/auth")
 
@@ -32,18 +32,12 @@ async def access_token(
             raise credentials_error
 
         access_token = await create_access_token(
-            data={
-                "sub": user_in_db.username,
-                "user_uuid": str(user_in_db.user_uuid),
-            },
+            data={"sub": user_in_db.user_uuid},
             access_token_expires=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED)),
         )
 
         refresh_token = await create_refresh_token(
-            data={
-                "sub": user_in_db.username,
-                "user_uuid": str(user_in_db.user_uuid),
-            },
+            data={"sub": user_in_db.user_uuid},
             refresh_token_expires=timedelta(minutes=int(REFRESH_TOKEN_EXPIRED)),
         )
         await save_tokens(
