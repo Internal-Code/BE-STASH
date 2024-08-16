@@ -20,6 +20,12 @@ async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseDefault:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Account not found."
             )
 
+        if account.verified_phone_number is False:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User should validate phone number first.",
+            )
+
         if account.pin is not None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Account already set pin"

@@ -84,16 +84,8 @@ reset_pins = Table(
     Column("user_uuid", UUID(as_uuid=True), nullable=False, unique=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("email", String(255), nullable=True, unique=False, default=None),
-    Column("blacklisted_at", DateTime(timezone=True), nullable=False),
-)
-
-phone_number_tokens = Table(
-    "phone_number_tokens",
-    meta,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("created_at", DateTime(timezone=True), nullable=False),
-    Column("phone_number_token", UUID(as_uuid=True), nullable=False, unique=False),
-    Column("phone_number", String(13), nullable=False, unique=False),
+    Column("save_to_hit_at", DateTime(timezone=True), nullable=True, default=None),
+    Column("blacklisted_at", DateTime(timezone=True), nullable=True, default=None),
 )
 
 
@@ -105,7 +97,7 @@ phone_number_otps = Table(
     Column("phone_number_token", UUID(as_uuid=True), nullable=False, unique=False),
     Column("phone_number", String(13), nullable=True, unique=False, default=None),
     Column("otp_number", String(6), nullable=True, unique=False, default=None),
-    Column("current_api_hit", Integer, nullable=True, unique=False, default=None),
+    Column("save_to_hit_at", DateTime(timezone=True), nullable=True, default=None),
     Column("blacklisted_at", DateTime(timezone=True), nullable=True, default=None),
 )
 

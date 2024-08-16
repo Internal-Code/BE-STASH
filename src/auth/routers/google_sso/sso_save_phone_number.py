@@ -6,7 +6,6 @@ from src.auth.utils.database.general import (
     update_user_google_sso,
     check_phone_number,
     is_using_registered_phone_number,
-    save_otp_phone_number_verification,
     verify_uuid,
     check_fullname,
 )
@@ -15,12 +14,12 @@ from fastapi import APIRouter, status, HTTPException
 router = APIRouter(tags=["google-sso"], prefix="/google")
 
 
-async def google_sso_payload(
+async def google_sso_save_phone_number_endpoint(
     schema: GoogleSSOPayload, unique_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
-
     await verify_uuid(unique_id=unique_id)
+
     try:
         account = await get_user(unique_id=unique_id)
         logging.info("UUID found.")
@@ -45,9 +44,7 @@ async def google_sso_payload(
             )
 
         fullname = await check_fullname(value=schema.full_name)
-        await save_otp_phone_number_verification(
-            phone_number_otp_uuid=unique_id, phone_number=validated_phone_number
-        )
+
         await update_user_google_sso(
             user_uuid=unique_id, phone_number=validated_phone_number, full_name=fullname
         )
@@ -70,7 +67,7 @@ async def google_sso_payload(
 router.add_api_route(
     methods=["POST"],
     path="/account/{unique_id}",
-    endpoint=google_sso_payload,
-    status_code=status.HTTP_200_OK,
+    endpoint=google_sso_save_phone_number_endpoint,
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Verify phone number google sso.",
 )

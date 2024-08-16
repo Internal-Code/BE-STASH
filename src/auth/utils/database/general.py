@@ -17,7 +17,6 @@ from src.database.models import (
     blacklist_tokens,
     user_tokens,
     reset_pins,
-    phone_number_tokens,
     phone_number_otps,
 )
 from src.database.connection import database_connection
@@ -500,7 +499,8 @@ async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:
                     user_uuid=user_uuid,
                     created_at=local_time(),
                     email=email,
-                    blacklisted_at=local_time() + timedelta(minutes=1),
+                    save_to_hit_at=local_time() + timedelta(minutes=1),
+                    blacklisted_at=local_time() + timedelta(minutes=5),
                 )
                 await session.execute(query)
                 await session.commit()
@@ -647,54 +647,25 @@ async def verify_user_pin(user_uuid: uuid7, pin: str) -> bool:
     return None
 
 
-async def reset_user_password(user_uuid: uuid7, changed_password: str) -> None:
+async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
                 query = (
                     update(users)
                     .where(users.c.user_uuid == user_uuid)
-                    .values(updated_at=local_time(), password=changed_password)
+                    .values(updated_at=local_time(), pin=changed_pin)
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info(
-                    f"User {user_uuid} successfully saved reset password id into database."
-                )
+                logging.info("User successfully saved reset pin id into database.")
             except Exception as E:
-                logging.error(f"Error while save_reset_password_id: {E}")
+                logging.error(f"Error while reset_user_pin: {E}")
                 await session.rollback()
             finally:
                 await session.close()
     except Exception as E:
-        logging.error(f"Error after save_reset_password_id: {E}")
-    return None
-
-
-async def save_phone_number_token(
-    phone_number_unique_id: uuid7, phone_number: str
-) -> None:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                save_phone_number_unique_id = phone_number_tokens.insert().values(
-                    created_at=local_time(),
-                    phone_number_token=phone_number_unique_id,
-                    phone_number=phone_number,
-                )
-
-                await session.execute(save_phone_number_unique_id)
-                await session.commit()
-                logging.info(
-                    f"User {phone_number_unique_id} successfully saved verify phone number token into database."
-                )
-            except Exception as E:
-                logging.error(f"Error while save_verify_phone_number_token: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after save_verify_phone_number_token: {E}")
+        logging.error(f"Error after reset_user_pin: {E}")
     return None
 
 
@@ -725,48 +696,21 @@ async def save_phone_number(email: EmailStr, phone_number: str) -> None:
     return None
 
 
-async def extract_phone_number_token(phone_number_unique_id: uuid7) -> Row | None:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                query = (
-                    select(phone_number_tokens)
-                    .where(
-                        phone_number_tokens.c.phone_number_token
-                        == phone_number_unique_id
-                    )
-                    .order_by(phone_number_tokens.c.created_at.desc())
-                )
-                result = await session.execute(query)
-                latest_record = result.fetchone()
-
-                if latest_record is not None:
-                    return latest_record
-            except Exception as E:
-                logging.error(f"Error during extract_phone_number_token: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after extract_phone_number_token: {E}")
-    return None
-
-
-async def extract_phone_number_otp_token(phone_number_token: uuid7) -> Row | None:
+async def extract_phone_number_otp_token(user_uuid: uuid7) -> Row | None:
     try:
         async with database_connection().connect() as session:
             try:
                 query = (
                     select(phone_number_otps)
-                    .where(phone_number_otps.c.phone_number_token == phone_number_token)
+                    .where(phone_number_otps.c.phone_number_token == user_uuid)
                     .order_by(phone_number_otps.c.created_at.desc())
                 )
                 result = await session.execute(query)
                 latest_record = result.fetchone()
                 if latest_record:
                     return latest_record
-                else:
-                    logging.error(f"Phone number token {phone_number_token} not found.")
+
+                logging.error(f"Phone number token {user_uuid} not found.")
             except Exception as E:
                 logging.error(f"Error during extract_phone_number_token: {E}")
                 await session.rollback()
@@ -782,9 +726,9 @@ async def extract_phone_number_otp_token(phone_number_token: uuid7) -> Row | Non
 async def save_otp_phone_number_verification(
     phone_number_otp_uuid: uuid7,
     phone_number: str,
-    current_api_hit: int = None,
     otp_number: str = None,
-    blacklisted_at: datetime = None,
+    save_to_hit_at: datetime = local_time() + timedelta(minutes=1),
+    blacklisted_at: datetime = local_time() + timedelta(minutes=5),
 ) -> None:
     try:
         async with database_connection().connect() as session:
@@ -794,7 +738,7 @@ async def save_otp_phone_number_verification(
                     phone_number_token=phone_number_otp_uuid,
                     phone_number=phone_number,
                     otp_number=otp_number,
-                    current_api_hit=current_api_hit,
+                    save_to_hit_at=save_to_hit_at,
                     blacklisted_at=blacklisted_at,
                 )
                 await session.execute(query)
@@ -882,6 +826,30 @@ async def update_user_google_sso(
                 await session.close()
     except Exception as E:
         logging.error(f"Error after update_user_google_sso: {E}")
+    return None
+
+
+async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(phone_number=phone_number)
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated phone number.")
+            except Exception as E:
+                logging.error(f"Error update_user_phone_number: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_user_phone_number: {E}")
     return None
 
 

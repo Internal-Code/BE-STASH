@@ -17,13 +17,13 @@ from src.auth.utils.database.general import (
 router = APIRouter(tags=["users-forgot-pin"], prefix="/users")
 
 
-async def send_reset_link_endpoints(
+async def send_reset_link_endpoint(
     unique_id: str, schema: SendVerificationLink
 ) -> ResponseDefault:
     response = ResponseDefault()
-    try:
-        await verify_uuid(unique_id=unique_id)
+    await verify_uuid(unique_id=unique_id)
 
+    try:
         account = await get_user(unique_id=unique_id)
 
         if not account:
@@ -54,10 +54,10 @@ async def send_reset_link_endpoints(
                     f"Dear {account.email},<br><br>"
                     f"We received a request to reset your password. Please click the link below to create a new password:<br><br>"
                     f'<a href="{reset_link}">Reset Password</a><br><br>'
-                    f"If you did not request a password reset, please ignore this email.<br><br>"
+                    f"Please note, this password reset link is only valid for <b>5 minutes</b>. If you did not request a password reset, please ignore this email.<br><br>"
                     f"Thank you,<br><br>"
                     f"Best regards,<br>"
-                    f"<b>The Support Team</b>"
+                    f"<b>Support Team</b>"
                 )
 
                 latest_reset_pin_data = await extract_reset_pin_data(
@@ -84,11 +84,11 @@ async def send_reset_link_endpoints(
                 blacklist_time = now_utc + timedelta(minutes=1)
                 if (
                     latest_reset_pin_data is None
-                    or latest_reset_pin_data.blacklisted_at is None
+                    or latest_reset_pin_data.save_to_hit_at is None
                 ):
                     valid_blacklist_time = blacklist_time
                 else:
-                    valid_blacklist_time = latest_reset_pin_data.blacklisted_at
+                    valid_blacklist_time = latest_reset_pin_data.save_to_hit_at
                 times_later_jakarta = valid_blacklist_time.astimezone(jakarta_timezone)
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -137,10 +137,10 @@ async def send_reset_link_endpoints(
                         f"Dear *{account.full_name}*,\n\n"
                         f"We received a request to reset your password. Please click the link below to create a new password:\n\n"
                         f"{reset_link}\n\n"
-                        f"If you did not request a password reset, please ignore this message.\n\n"
+                        f"Please note, this password reset link is only valid for *5 minutes*. If you did not request a password reset, please ignore this message.\n\n"
                         f"Thank you,\n\n"
                         f"Best regards,\n"
-                        "*The Support Team*"
+                        "*Support Team*"
                     ),
                 )
 
@@ -155,18 +155,6 @@ async def send_reset_link_endpoints(
 
                     await save_reset_pin_data(user_uuid=unique_id, email=account.email)
 
-                    payload = SendOTPPayload(
-                        phoneNumber=account.phone_number,
-                        message=(
-                            f"Dear *{account.full_name}*,\n\n"
-                            f"We received a request to reset your password. Please click the link below to create a new password:\n\n"
-                            f"{reset_link}\n\n"
-                            f"If you did not request a password reset, please ignore this message.\n\n"
-                            f"Thank you,\n\n"
-                            f"Best regards,\n"
-                            "*The Support Team*"
-                        ),
-                    )
                     async with httpx.AsyncClient() as client:
                         whatsapp_response = await client.post(
                             LOCAL_WHATSAPP_API, json=dict(payload)
@@ -187,11 +175,11 @@ async def send_reset_link_endpoints(
                 blacklist_time = now_utc + timedelta(minutes=1)
                 if (
                     latest_reset_pin_data is None
-                    or latest_reset_pin_data.blacklisted_at is None
+                    or latest_reset_pin_data.save_to_hit_at is None
                 ):
                     valid_blacklist_time = blacklist_time
                 else:
-                    valid_blacklist_time = latest_reset_pin_data.blacklisted_at
+                    valid_blacklist_time = latest_reset_pin_data.save_to_hit_at
                 times_later_jakarta = valid_blacklist_time.astimezone(jakarta_timezone)
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -238,7 +226,7 @@ router.add_api_route(
     methods=["POST"],
     path="/send-reset-link/{unique_id}",
     response_model=ResponseDefault,
-    endpoint=send_reset_link_endpoints,
+    endpoint=send_reset_link_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Send forgot pin reset link.",
 )

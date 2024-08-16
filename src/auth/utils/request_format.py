@@ -104,9 +104,9 @@ class SendVerificationLink(BaseModel):
     method: SendMethod
 
 
-class ForgotPassword(BaseModel):
-    password: str
-    confirm_new_password: str
+class ForgotPin(BaseModel):
+    pin: str
+    confirm_new_pin: str
 
 
 class GoogleSSOPayload(BaseModel):
@@ -117,6 +117,10 @@ class GoogleSSOPayload(BaseModel):
 class SendOTPPayload(BaseModel):
     phoneNumber: str
     message: str
+
+
+class ChangeUserPhoneNumber(BaseModel):
+    phone_number: str
 
 
 class OTPVerification(BaseModel):

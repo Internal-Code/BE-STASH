@@ -6,10 +6,11 @@ from src.database.connection import database_connection
 from src.database.models import async_main
 from starlette.middleware.sessions import SessionMiddleware
 from src.secret import MIDDLEWARE_SECRET_KEY
-from src.auth.routers.send_otp import save_phone_number
+from src.auth.routers.send_otp import send_otp_phone_number
 from src.auth.routers.google_sso import (
-    authentication,
-    login,
+    sso_authentication,
+    sso_login,
+    sso_save_phone_number,
 )
 from src.auth.routers.monthly_schemas import (
     create_schema,
@@ -23,17 +24,15 @@ from src.auth.routers.monthly_spends import (
     update_monthly_spend,
     delete_monthly_spend,
 )
-from src.auth.routers.users import (
-    create_pin,
-    detail,
-    get_user_login,
-    logout,
-    register,
-    get_user_forgot_pin,
-    send_reset_link,
+from src.auth.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
+from src.auth.routers.users_general import get_user, user_detail, user_logout
+from src.auth.routers.users_register import (
+    user_create_pin,
+    user_register_account,
+    user_change_phone_number,
 )
 from src.auth.routers.authorizations import access_token, refresh_token
-from src.auth.routers.account_verification import verify_phone_number
+from src.auth.routers.account_verification import verify_phone_number, verify_email
 
 app = FastAPI(
     root_path="/api/v1",
@@ -76,14 +75,17 @@ app.include_router(update_monthly_spend.router)
 app.include_router(delete_monthly_spend.router)
 app.include_router(access_token.router)
 app.include_router(refresh_token.router)
-app.include_router(logout.router)
-app.include_router(detail.router)
-app.include_router(get_user_login.router)
-app.include_router(register.router)
-app.include_router(create_pin.router)
-app.include_router(get_user_forgot_pin.router)
-app.include_router(send_reset_link.router)
-app.include_router(login.router)
-app.include_router(authentication.router)
-app.include_router(save_phone_number.router)
+app.include_router(user_logout.router)
+app.include_router(user_detail.router)
+app.include_router(get_user.router)
+app.include_router(user_register_account.router)
+app.include_router(user_create_pin.router)
+app.include_router(user_send_reset_link.router)
+app.include_router(sso_login.router)
+app.include_router(sso_authentication.router)
+app.include_router(send_otp_phone_number.router)
 app.include_router(verify_phone_number.router)
+app.include_router(verify_email.router)
+app.include_router(user_change_phone_number.router)
+app.include_router(sso_save_phone_number.router)
+app.include_router(user_reset_pin.router)
