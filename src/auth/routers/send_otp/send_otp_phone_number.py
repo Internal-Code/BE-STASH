@@ -8,9 +8,11 @@ from src.auth.utils.generator import random_number
 from src.auth.utils.request_format import SendOTPPayload
 from src.auth.utils.jwt.general import get_user
 from fastapi import APIRouter, status, HTTPException
+from src.database.models import phone_number_otps
+from sqlalchemy.sql import select
+from src.database.connection import database_connection
 from src.auth.utils.database.general import (
-    extract_phone_number_otp_token,
-    save_otp_phone_number_verification,
+    local_time,
     verify_uuid,
 )
 
@@ -19,105 +21,126 @@ router = APIRouter(tags=["send-otp"], prefix="/send-otp")
 
 async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
     response = ResponseDefault()
+    now_utc = datetime.now(timezone("UTC"))
+    account = await get_user(unique_id=unique_id)
+    generated_otp = str(random_number(6))
     await verify_uuid(unique_id=unique_id)
 
     try:
-        latest_data = await extract_phone_number_otp_token(user_uuid=unique_id)
-        account = await get_user(unique_id=unique_id)
-        otp_number = str(random_number(6))
-
-        if account.verified_phone_number:
-            logging.info("User phone number already verified.")
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Account phone number already verified.",
-            )
-
-        logging.info("User phone number is not verified.")
-        payload = SendOTPPayload(
-            phoneNumber=account.phone_number,
-            message=f"""Your verification code is *{otp_number}*. Please enter this code to complete your verification. Kindly note that this code will expire in 5 minutes.""",
-        )
-
-        if latest_data is None:
-            logging.info("Initialized send OTP API hit.")
-            async with httpx.AsyncClient() as client:
-                whatsapp_response = await client.post(
-                    LOCAL_WHATSAPP_API, json=dict(payload)
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    select(phone_number_otps)
+                    .where(phone_number_otps.c.user_uuid == unique_id)
+                    .order_by(phone_number_otps.c.created_at.desc())
+                    .with_for_update()
                 )
 
-            if whatsapp_response.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to send OTP via WhatsApp.",
+                result = await session.execute(query)
+
+                latest_record = result.fetchone()
+                jakarta_timezone = timezone("Asia/Jakarta")
+                times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
+                    jakarta_timezone
                 )
+                formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
-            await save_otp_phone_number_verification(
-                phone_number_otp_uuid=unique_id,
-                phone_number=account.phone_number,
-                otp_number=otp_number,
-            )
+                if (
+                    now_utc > latest_record.save_to_hit_at
+                    and latest_record.current_api_hit % 4 != 0
+                    or now_utc > latest_record.hit_tomorrow_at
+                    and latest_record.current_api_hit % 4 == 0
+                ):
+                    logging.info("Matched condition. Sending OTP using whatsapp API.")
+                    current_api_hit = (
+                        latest_record.current_api_hit + 1
+                        if latest_record.current_api_hit
+                        else 1
+                    )
+                    valid_per_day = (
+                        phone_number_otps.update()
+                        .where(phone_number_otps.c.user_uuid == unique_id)
+                        .values(
+                            updated_at=local_time(),
+                            otp_number=generated_otp,
+                            current_api_hit=current_api_hit,
+                            saved_by_system=False,
+                            save_to_hit_at=local_time() + timedelta(minutes=1),
+                            blacklisted_at=local_time() + timedelta(minutes=3),
+                            hit_tomorrow_at=local_time() + timedelta(days=1),
+                        )
+                    )
 
-            response.success = True
-            response.message = "Initialized send OTP data."
-            response.data = UniqueID(unique_id=unique_id)
-            return response
+                    await session.execute(valid_per_day)
+                    response.success = True
+                    response.message = "OTP data sent to phone number."
+                    response.data = UniqueID(unique_id=unique_id)
 
-        now_utc = datetime.now(timezone("UTC"))
-        jakarta_timezone = timezone("Asia/Jakarta")
-        save_to_hit_at = now_utc + timedelta(minutes=1)
-        if latest_data.save_to_hit_at is None:
-            valid_save_to_hit_at = save_to_hit_at
-        else:
-            valid_save_to_hit_at = latest_data.save_to_hit_at
-        times_later_jakarta = valid_save_to_hit_at.astimezone(jakarta_timezone)
-        formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
+                    payload = SendOTPPayload(
+                        phoneNumber=account.phone_number,
+                        message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
+                    )
 
-        if latest_data is not None and now_utc < valid_save_to_hit_at:
-            logging.info("User should wait API cooldown.")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Should wait until {formatted_time}.",
-            )
+                    async with httpx.AsyncClient() as client:
+                        whatsapp_response = await client.post(
+                            LOCAL_WHATSAPP_API, json=dict(payload)
+                        )
 
-        if now_utc > valid_save_to_hit_at:
-            logging.info("Saved new reset pin request data.")
-            async with httpx.AsyncClient() as client:
-                whatsapp_response = await client.post(
-                    LOCAL_WHATSAPP_API, json=dict(payload)
-                )
+                    if whatsapp_response.status_code != 200:
+                        raise HTTPException(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to send OTP via WhatsApp.",
+                        )
 
-            if whatsapp_response.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to send OTP via WhatsApp.",
-                )
+                if latest_record.current_api_hit % 4 == 0:
+                    logging.info("User should only hit API again tomorrow.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
+                    )
 
-            await save_otp_phone_number_verification(
-                phone_number_otp_uuid=unique_id,
-                phone_number=account.phone_number,
-                otp_number=otp_number,
-            )
+                if now_utc < latest_record.save_to_hit_at:
+                    logging.info("User should wait API cooldown.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Should wait in 1 minutes.",
+                    )
 
-            response.success = True
-            response.message = "OTP data sent to phone number."
-            response.data = UniqueID(unique_id=unique_id)
+                if not account:
+                    logging.info("Data otp found.")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
+                    )
 
-            return response
+                if account.verified_phone_number:
+                    logging.info("User phone number already verified.")
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Account phone number already verified.",
+                    )
+
+            except HTTPException as E:
+                await session.rollback()
+                raise E
+            finally:
+                await session.commit()
+                await session.close()
     except HTTPException as E:
         raise E
     except Exception as E:
-        logging.error(f"Exception error in verify_phone_number: {E}.")
+        logging.error(f"Exception error in send_otp_phone_number_endpoint: {E}.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal Server Error: {E}.",
         )
+    return response
 
 
 router.add_api_route(
     methods=["POST"],
     path="/phone-number/{unique_id}",
     endpoint=send_otp_phone_number_endpoint,
+    response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,
     summary="Send otp phone number.",
 )

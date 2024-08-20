@@ -159,3 +159,36 @@ async def get_current_user(
         logging.error(f"JWTError: {e}")
         raise credentials_exception
     return users
+
+
+async def verify_email_status(token: Annotated[str, Depends(oauth2_scheme)]) -> bool:
+    already_verified = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="User email already verified.",
+    )
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "bearer"},
+    )
+
+    try:
+        payload = jwt.decode(
+            token=token,
+            key=ACCESS_TOKEN_SECRET_KEY,
+            algorithms=[ACCESS_TOKEN_ALGORITHM],
+        )
+
+        user_uuid = payload.get("sub")
+
+        token_data = TokenData(user_uuid=user_uuid)
+        users = await get_user(unique_id=token_data.user_uuid)
+        email_status = users.verified_email
+
+        if email_status:
+            raise already_verified
+    except JWTError as e:
+        logging.error(f"JWTError: {e}")
+        raise credentials_exception
+    return email_status

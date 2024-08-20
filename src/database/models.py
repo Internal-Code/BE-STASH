@@ -94,11 +94,14 @@ phone_number_otps = Table(
     meta,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
-    Column("phone_number_token", UUID(as_uuid=True), nullable=False, unique=False),
-    Column("phone_number", String(13), nullable=True, unique=False, default=None),
-    Column("otp_number", String(6), nullable=True, unique=False, default=None),
+    Column("updated_at", DateTime(timezone=True), nullable=True, default=None),
+    Column("user_uuid", UUID(as_uuid=True), nullable=False),
+    Column("otp_number", String(6), nullable=True, default=None),
+    Column("current_api_hit", Integer, nullable=True, default=None),
+    Column("saved_by_system", Boolean, nullable=False, default=False),
     Column("save_to_hit_at", DateTime(timezone=True), nullable=True, default=None),
     Column("blacklisted_at", DateTime(timezone=True), nullable=True, default=None),
+    Column("hit_tomorrow_at", DateTime(timezone=True), nullable=True, default=None),
 )
 
 

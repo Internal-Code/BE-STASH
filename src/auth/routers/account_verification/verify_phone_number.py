@@ -22,7 +22,7 @@ async def verify_phone_number_endpoint(
     await verify_uuid(unique_id=unique_id)
 
     try:
-        initials_account = await extract_phone_number_otp(phone_number_token=unique_id)
+        initials_account = await extract_phone_number_otp(user_uuid=unique_id)
         now_utc = datetime.now(timezone("UTC"))
 
         if not initials_account:

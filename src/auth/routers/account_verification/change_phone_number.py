@@ -1,15 +1,17 @@
+# TODO user should in logged in state to change valid phone number
 from typing import Annotated
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import OTPVerification
-from src.auth.utils.jwt.general import verify_email_status
+from src.auth.utils.jwt.general import get_current_user
 from fastapi import APIRouter, status, Depends
 
-router = APIRouter(tags=["account-verification"], prefix="/verify")
+router = APIRouter(tags=["account-verification"], prefix="/change")
 
 
-async def verify_email_endpoint(
+async def change_email_endpoint(
+    unique_id: str,
     schema: OTPVerification,
-    email_status: Annotated[dict, Depends(verify_email_status)],
+    current_user: Annotated[dict, Depends(get_current_user)],
 ) -> ResponseDefault:
     response = ResponseDefault()
 
@@ -23,8 +25,8 @@ async def verify_email_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/email/{unique_id}",
-    endpoint=verify_email_endpoint,
+    path="/phone-number/{unique_id}",
+    endpoint=change_email_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="User email verification.",
+    summary="Send otp to user email.",
 )
