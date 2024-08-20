@@ -30,38 +30,37 @@ async def verify_phone_number_endpoint(
                 status_code=status.HTTP_404_NOT_FOUND, detail="UUID data not found."
             )
 
-        account = await get_user(phone_number=initials_account.phone_number)
+        account = await get_user(unique_id=unique_id)
 
-        if not account.verified_phone_number:
-            logging.info("User phone number not verified.")
-
-            await check_otp(otp=schema.otp)
-            if now_utc > initials_account.blacklisted_at:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="OTP already expired.",
-                )
-
-            if initials_account.otp_number != schema.otp:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP code."
-                )
-
-            if (
-                now_utc < initials_account.blacklisted_at
-                and initials_account.otp_number == schema.otp
-            ):
-                await update_phone_number_status(user_uuid=unique_id)
-
-                response.success = True
-                response.message = "Account phone number verified."
-                response.data = UniqueID(unique_id=unique_id)
-        else:
+        if account.verified_phone_number:
             logging.info("User phone number already verified.")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Account phone number already verified.",
             )
+
+        logging.info("User phone number not verified.")
+        await check_otp(otp=schema.otp)
+        if now_utc > initials_account.blacklisted_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OTP already expired.",
+            )
+
+        if initials_account.otp_number != schema.otp:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP code."
+            )
+
+        if (
+            now_utc < initials_account.blacklisted_at
+            and initials_account.otp_number == schema.otp
+        ):
+            await update_phone_number_status(user_uuid=unique_id)
+
+            response.success = True
+            response.message = "Account phone number verified."
+            response.data = UniqueID(unique_id=unique_id)
 
     except HTTPException as E:
         raise E
