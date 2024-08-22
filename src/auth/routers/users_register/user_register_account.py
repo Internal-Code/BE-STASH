@@ -10,8 +10,8 @@ from src.auth.utils.database.general import (
     check_fullname,
     check_phone_number,
     is_using_registered_phone_number,
-    extract_phone_number_otp,
-    save_otp_phone_number_verification,
+    extract_data_otp,
+    save_otp_data,
 )
 
 router = APIRouter(tags=["users-register"], prefix="/users")
@@ -41,7 +41,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                 status_code=status.HTTP_409_CONFLICT, detail="Account already created."
             )
 
-        initial_data = await extract_phone_number_otp(user_uuid=user_uuid)
+        initial_data = await extract_data_otp(user_uuid=user_uuid)
 
         logging.info("Creating new user.")
         validated_phone_number = await check_phone_number(
@@ -73,7 +73,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
 
         if not initial_data:
             logging.info("Initialized OTP save data.")
-            await save_otp_phone_number_verification(
+            await save_otp_data(
                 user_uuid=user_uuid,
                 current_api_hit=1,
                 saved_by_system=True,

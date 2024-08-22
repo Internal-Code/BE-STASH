@@ -6,7 +6,7 @@ from src.auth.utils.request_format import OTPVerification
 from src.auth.utils.jwt.general import get_user
 from fastapi import APIRouter, status, HTTPException
 from src.auth.utils.database.general import (
-    extract_phone_number_otp,
+    extract_data_otp,
     update_phone_number_status,
     verify_uuid,
     check_otp,
@@ -22,7 +22,7 @@ async def verify_phone_number_endpoint(
     await verify_uuid(unique_id=unique_id)
 
     try:
-        initials_account = await extract_phone_number_otp(user_uuid=unique_id)
+        initials_account = await extract_data_otp(user_uuid=unique_id)
         now_utc = datetime.now(timezone("UTC"))
 
         if not initials_account:

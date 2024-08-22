@@ -5,7 +5,7 @@ from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.generator import random_number
 from src.auth.utils.jwt.general import get_user
 from fastapi import APIRouter, status, HTTPException
-from src.database.models import phone_number_otps
+from src.database.models import send_otps
 from sqlalchemy.sql import select
 from src.database.connection import database_connection
 from src.auth.utils.database.general import (
@@ -27,9 +27,9 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
         async with database_connection().connect() as session:
             try:
                 query = (
-                    select(phone_number_otps)
-                    .where(phone_number_otps.c.user_uuid == unique_id)
-                    .order_by(phone_number_otps.c.created_at.desc())
+                    select(send_otps)
+                    .where(send_otps.c.user_uuid == unique_id)
+                    .order_by(send_otps.c.created_at.desc())
                     .with_for_update()
                 )
 
@@ -55,8 +55,8 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                         else 1
                     )
                     valid_per_day = (
-                        phone_number_otps.update()
-                        .where(phone_number_otps.c.user_uuid == unique_id)
+                        send_otps.update()
+                        .where(send_otps.c.user_uuid == unique_id)
                         .values(
                             updated_at=local_time(),
                             otp_number=generated_otp,

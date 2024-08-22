@@ -17,7 +17,7 @@ from src.database.models import (
     blacklist_tokens,
     user_tokens,
     reset_pins,
-    phone_number_otps,
+    send_otps,
 )
 from src.database.connection import database_connection
 
@@ -696,7 +696,7 @@ async def save_phone_number(email: EmailStr, phone_number: str) -> None:
     return None
 
 
-async def save_otp_phone_number_verification(
+async def save_otp_data(
     user_uuid: uuid7,
     current_api_hit: int = None,
     otp_number: str = None,
@@ -706,7 +706,7 @@ async def save_otp_phone_number_verification(
     try:
         async with database_connection().connect() as session:
             try:
-                query = phone_number_otps.insert().values(
+                query = send_otps.insert().values(
                     created_at=local_time(),
                     updated_at=None,
                     user_uuid=user_uuid,
@@ -745,8 +745,8 @@ async def update_otp_phone_number_verification(
             async with session.begin():
                 try:
                     query = (
-                        phone_number_otps.update()
-                        .where(phone_number_otps.c.user_uuid == user_uuid)
+                        send_otps.update()
+                        .where(send_otps.c.user_uuid == user_uuid)
                         .values(
                             created_at=local_time(),
                             current_api_hit=current_api_hit,
@@ -770,15 +770,15 @@ async def update_otp_phone_number_verification(
     return None
 
 
-async def extract_phone_number_otp(user_uuid: uuid7) -> Row | None:
+async def extract_data_otp(user_uuid: uuid7) -> Row | None:
     try:
         async with database_connection().connect() as session:
             async with session.begin():  # Start a transaction block
                 try:
                     query = (
-                        select(phone_number_otps)
-                        .where(phone_number_otps.c.user_uuid == user_uuid)
-                        .order_by(phone_number_otps.c.created_at.desc())
+                        select(send_otps)
+                        .where(send_otps.c.user_uuid == user_uuid)
+                        .order_by(send_otps.c.created_at.desc())
                         .with_for_update()
                     )
                     result = await session.execute(query)

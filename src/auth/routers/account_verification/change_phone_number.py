@@ -9,8 +9,8 @@ from src.auth.utils.database.general import (
     check_phone_number,
     is_using_registered_phone_number,
     update_user_phone_number,
-    save_otp_phone_number_verification,
-    extract_phone_number_otp,
+    save_otp_data,
+    extract_data_otp,
 )
 
 router = APIRouter(tags=["account-verification"], prefix="/change")
@@ -26,7 +26,7 @@ async def change_phone_number_endpoint(
     registered_phone_number = await is_using_registered_phone_number(
         phone_number=validated_phone_number
     )
-    initial_data = await extract_phone_number_otp(user_uuid=current_user.user_uuid)
+    initial_data = await extract_data_otp(user_uuid=current_user.user_uuid)
 
     try:
         if validated_phone_number == current_user.phone_number:
@@ -48,7 +48,7 @@ async def change_phone_number_endpoint(
 
         if not initial_data:
             logging.info("Initialized OTP save data.")
-            await save_otp_phone_number_verification(
+            await save_otp_data(
                 user_uuid=current_user.user_uuid,
                 current_api_hit=1,
                 saved_by_system=True,
