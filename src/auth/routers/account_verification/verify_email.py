@@ -1,3 +1,4 @@
+# TODO: user should be in logged in state to verify valid email
 from typing import Annotated
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import OTPVerification
