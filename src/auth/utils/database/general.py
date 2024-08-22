@@ -808,7 +808,7 @@ async def update_phone_number_status(user_uuid: uuid7) -> None:
                     .where(
                         users.c.user_uuid == user_uuid,
                     )
-                    .values(verified_phone_number=True)
+                    .values(verified_phone_number=True, updated_at=local_time())
                 )
                 await session.execute(query)
                 await session.commit()
@@ -858,7 +858,7 @@ async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:
                     .where(
                         users.c.user_uuid == user_uuid,
                     )
-                    .values(phone_number=phone_number)
+                    .values(phone_number=phone_number, updated_at=local_time())
                 )
                 await session.execute(query)
                 await session.commit()

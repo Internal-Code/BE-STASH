@@ -23,7 +23,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
     response = ResponseDefault()
     now_utc = datetime.now(timezone("UTC"))
     account = await get_user(unique_id=unique_id)
-    generated_otp = str(random_number(6))
+    generated_otp = str(await random_number(6))
     await verify_uuid(unique_id=unique_id)
 
     try:
