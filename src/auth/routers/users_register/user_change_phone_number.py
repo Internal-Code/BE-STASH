@@ -69,7 +69,7 @@ async def change_phone_number_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/change-phone-number/{unique_id}",
     response_model=ResponseDefault,
     endpoint=change_phone_number_endpoint,

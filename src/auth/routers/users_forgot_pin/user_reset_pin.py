@@ -90,7 +90,7 @@ async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/reset-pin/{unique_id}",
     response_model=ResponseDefault,
     endpoint=reset_password,

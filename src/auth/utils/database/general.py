@@ -882,7 +882,7 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
                     .where(
                         users.c.user_uuid == user_uuid,
                     )
-                    .values(pin=pin)
+                    .values(pin=pin, updated_at=local_time())
                 )
                 await session.execute(query)
                 await session.commit()
@@ -894,6 +894,30 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after update_user_pin: {E}")
+    return None
+
+
+async def update_user_email(user_uuid: uuid7, email: EmailStr) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(email=email, updated_at=local_time())
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully added email.")
+            except Exception as E:
+                logging.error(f"Error update_user_email: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_user_email: {E}")
     return None
 
 

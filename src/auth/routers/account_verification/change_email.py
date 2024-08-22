@@ -24,7 +24,7 @@ async def change_email_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/email/{unique_id}",
     endpoint=change_email_endpoint,
     status_code=status.HTTP_200_OK,

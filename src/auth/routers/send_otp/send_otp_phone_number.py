@@ -1,11 +1,8 @@
-import httpx
 from pytz import timezone
 from datetime import timedelta, datetime
-from src.secret import LOCAL_WHATSAPP_API
 from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.generator import random_number
-from src.auth.utils.request_format import SendOTPPayload
 from src.auth.utils.jwt.general import get_user
 from fastapi import APIRouter, status, HTTPException
 from src.database.models import phone_number_otps
@@ -76,21 +73,21 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     response.message = "OTP data sent to phone number."
                     response.data = UniqueID(unique_id=unique_id)
 
-                    payload = SendOTPPayload(
-                        phoneNumber=account.phone_number,
-                        message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
-                    )
+                    # payload = SendOTPPayload(
+                    #     phoneNumber=account.phone_number,
+                    #     message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
+                    # )
 
-                    async with httpx.AsyncClient() as client:
-                        whatsapp_response = await client.post(
-                            LOCAL_WHATSAPP_API, json=dict(payload)
-                        )
+                    # async with httpx.AsyncClient() as client:
+                    #     whatsapp_response = await client.post(
+                    #         LOCAL_WHATSAPP_API, json=dict(payload)
+                    #     )
 
-                    if whatsapp_response.status_code != 200:
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Failed to send OTP via WhatsApp.",
-                        )
+                    # if whatsapp_response.status_code != 200:
+                    #     raise HTTPException(
+                    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    #         detail="Failed to send OTP via WhatsApp.",
+                    #     )
 
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")

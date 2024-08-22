@@ -63,7 +63,7 @@ class TokenData(BaseModel):
 
 class DetailUser(BaseModel):
     full_name: str
-    email: EmailStr
+    email: EmailStr | None = None
     phone_number: str
 
 
@@ -120,3 +120,7 @@ class ChangeUserPhoneNumber(BaseModel):
 
 class OTPVerification(BaseModel):
     otp: str
+
+
+class AddEmail(BaseModel):
+    email: EmailStr
