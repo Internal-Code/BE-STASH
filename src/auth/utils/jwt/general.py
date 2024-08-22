@@ -49,7 +49,6 @@ async def get_user(
 
                 if not filters:
                     logging.error("No valid filter provided.")
-                    return None
 
                 query = select(users).where(and_(*filters))
                 result = await session.execute(query)
@@ -68,9 +67,8 @@ async def get_user(
                         verified_phone_number=checked.verified_phone_number,
                     )
                     return user_data
-                else:
-                    logging.error("User not found.")
-                    return None
+
+                logging.warning("User not found.")
             except Exception as E:
                 logging.error(f"Error during get_user: {E}.")
                 await session.rollback()
