@@ -26,6 +26,7 @@ users = Table(
     Column("pin", String(255), nullable=True, unique=False, default=None),
     Column("verified_email", Boolean, nullable=False, default=False),
     Column("verified_phone_number", Boolean, nullable=False, default=False),
+    Column("account_type", String(13), nullable=False),
 )
 
 

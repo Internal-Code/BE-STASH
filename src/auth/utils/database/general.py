@@ -570,6 +570,7 @@ async def extract_tokens(user_uuid: uuid7) -> Row | None:
 async def save_google_sso_account(
     user_uuid: uuid7,
     email: EmailStr,
+    account_type: str,
     full_name: str = None,
     phone_number: str = None,
     pin: str = None,
@@ -588,10 +589,11 @@ async def save_google_sso_account(
                     pin=pin,
                     verified_email=is_email_verified,
                     verified_phone_number=is_phone_number_verified,
+                    account_type=account_type,
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info("User google ss0 successfully saved data into database.")
+                logging.info("User google sso successfully saved data into database.")
             except Exception as E:
                 logging.error(f"Error while save_google_sso_account: {E}")
                 await session.rollback()

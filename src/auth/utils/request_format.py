@@ -99,6 +99,15 @@ class SendVerificationLink(BaseModel):
     method: SendMethod
 
 
+class AccountType(str, Enum):
+    GOOGLE = "google_sso"
+    BASIC = "form_account"
+
+
+class AccountCreationType(BaseModel):
+    account_type: AccountType
+
+
 class ForgotPin(BaseModel):
     pin: str
     confirm_new_pin: str
