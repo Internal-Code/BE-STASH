@@ -10,11 +10,7 @@ from src.auth.routers.send_otp import send_otp_phone_number, send_otp_email
 from src.auth.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
 from src.auth.routers.authorizations import access_token, refresh_token
 from src.auth.routers.users_general import get_user, user_detail, user_logout
-from src.auth.routers.google_sso import (
-    sso_authentication,
-    sso_login,
-    sso_save_phone_number,
-)
+from src.auth.routers.google_sso import sso_authentication, sso_login
 from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,
@@ -93,7 +89,6 @@ app.include_router(send_otp_phone_number.router)
 app.include_router(verify_phone_number.router)
 app.include_router(verify_email.router)
 app.include_router(user_change_phone_number.router)
-app.include_router(sso_save_phone_number.router)
 app.include_router(user_reset_pin.router)
 app.include_router(send_otp_email.router)
 app.include_router(add_email.router)

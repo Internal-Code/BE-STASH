@@ -591,7 +591,7 @@ async def save_google_sso_account(
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info("User google ss0 successfully saved data into database.")
+                logging.info("User google sso successfully saved data into database.")
             except Exception as E:
                 logging.error(f"Error while save_google_sso_account: {E}")
                 await session.rollback()

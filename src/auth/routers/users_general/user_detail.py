@@ -12,7 +12,6 @@ async def users(
 ) -> ResponseDefault:
     response = ResponseDefault()
     try:
-        print(current_user)
         response.success = True
         response.message = f"Extracting account {current_user.full_name}."
         response.data = current_user.to_detail_user().dict()

@@ -1,62 +1,109 @@
+from datetime import timedelta
 from src.auth.utils.logging import logging
 from uuid_extensions import uuid7
 from starlette.requests import Request
+from src.auth.utils.forgot_password.general import send_gmail
 from src.auth.utils.sso.general import google_oauth_configuration
 from authlib.integrations.starlette_client import OAuthError
-from src.auth.schema.response import ResponseDefault, UniqueID
-from src.auth.utils.jwt.general import get_user
-from src.auth.utils.database.general import (
-    is_using_registered_email,
-    save_google_sso_account,
-)
+from src.auth.schema.response import ResponseToken
+from src.auth.utils.database.general import save_google_sso_account, check_fullname
 from fastapi import APIRouter, status, HTTPException
+from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
+from src.auth.utils.generator import generate_full_name, random_number
+from src.auth.utils.jwt.general import (
+    get_user,
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+)
 
 
 router = APIRouter(tags=["google-sso"], prefix="/google")
 
 
-async def google_sso_auth_endpoint(request: Request) -> ResponseDefault:
+async def google_sso_auth_endpoint(request: Request) -> ResponseToken:
     try:
-        response = ResponseDefault()
+        response = ResponseToken()
         oauth = await google_oauth_configuration()
         token = await oauth.google.authorize_access_token(request)
-        register_account_uuid = str(uuid7())
 
         user_info = token.get("userinfo")
         if not user_info:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Google login failed."
+                status_code=status.HTTP_417_EXPECTATION_FAILED,
+                detail="Google login failed.",
             )
 
         request.session["userinfo"] = dict(user_info)
-        registered_email = await is_using_registered_email(email=user_info.email)
+        registered_account = await get_user(email=user_info.email)
 
         try:
-            if registered_email is True:
+            if registered_account:
                 logging.info("User already created.")
-                account = await get_user(email=user_info.email)
 
-                try:
-                    logging.info("User phone number is not verified.")
-                    response.success = True
-                    response.message = "Account google sso already saved."
-                    response.data = UniqueID(unique_id=account.user_uuid)
-                except Exception as E:
-                    logging.error(
-                        f"Error while logging in with saved google account: {E}"
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Please perform relogin.",
-                    )
-            else:
-                await save_google_sso_account(
-                    user_uuid=register_account_uuid, email=user_info.email
+                access_token = await create_access_token(
+                    data={"sub": registered_account.user_uuid},
+                    access_token_expires=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED)),
                 )
+                refresh_token = await create_refresh_token(
+                    data={"sub": registered_account.user_uuid},
+                    refresh_token_expires=timedelta(minutes=int(REFRESH_TOKEN_EXPIRED)),
+                )
+                response.access_token = access_token
+                response.refresh_token = refresh_token
+                return response
 
-                response.success = True
-                response.message = "Account google sso successfully created."
-                response.data = UniqueID(unique_id=register_account_uuid)
+            logging.info("Creating new user using google sso.")
+            register_account_uuid = str(uuid7())
+            random_pin = str(await random_number(6))
+            random_phone_nuber = str(await random_number(10))
+            hashed_pin = await get_password_hash(password=random_pin)
+            fullname = await generate_full_name(
+                first_name=user_info.given_name, last_name=user_info.family_name
+            )
+            validated_fullname = await check_fullname(value=fullname)
+
+            await save_google_sso_account(
+                user_uuid=register_account_uuid,
+                email=user_info.email,
+                full_name=validated_fullname,
+                phone_number=random_phone_nuber,
+                pin=hashed_pin,
+            )
+
+            access_token = await create_access_token(
+                data={"sub": register_account_uuid},
+                access_token_expires=timedelta(minutes=int(ACCESS_TOKEN_EXPIRED)),
+            )
+            refresh_token = await create_refresh_token(
+                data={"sub": register_account_uuid},
+                refresh_token_expires=timedelta(minutes=int(REFRESH_TOKEN_EXPIRED)),
+            )
+
+            email_body = (
+                f"Dear {validated_fullname},<br><br>"
+                f"We are pleased to inform you that your new account has been successfully created.<br><br>"
+                f"You can now log in using the following credentials:<br><br>"
+                f"Phone Number: <strong>{random_phone_nuber}</strong><br>"
+                f"PIN: <strong>{random_pin}</strong><br><br>"
+                f"Please note that the phone number has been automatically generated by our system."
+                f"We recommend updating and verifying your phone number at your earliest convenience to ensure a smooth experience.<br><br>"
+                f"Thank you.<br><br>"
+                f"Best regards,<br>"
+                f"The Support Team"
+            )
+
+            await send_gmail(
+                email_subject="Registered New Finance Tracker Account.",
+                email_receiver=user_info.email,
+                email_body=email_body,
+            )
+
+            response.access_token = access_token
+            response.refresh_token = refresh_token
+
+        except HTTPException as E:
+            raise E
 
         except Exception as E:
             logging.error(f"Error while google sso authentication: {E}")
@@ -65,15 +112,15 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseDefault:
                 detail=f"Error while google sso authentication: {E}",
             )
 
+    except HTTPException as E:
+        raise E
+
     except OAuthError as OauthErr:
         logging.error(f"Oauth error in google_sso_auth: {OauthErr}.")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_417_EXPECTATION_FAILED,
             detail="SSO error, please perform relogin.",
         )
-
-    except HTTPException as E:
-        raise E
 
     except Exception as E:
         logging.error(f"Exception error in google_sso_auth: {E}.")
@@ -89,6 +136,7 @@ router.add_api_route(
     path="/auth",
     endpoint=google_sso_auth_endpoint,
     status_code=status.HTTP_201_CREATED,
+    response_model=ResponseToken,
     summary="Authorization using google sso.",
     name="google_sso_auth",
 )
