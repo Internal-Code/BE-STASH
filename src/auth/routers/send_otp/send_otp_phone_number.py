@@ -68,11 +68,6 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                         )
                     )
 
-                    await session.execute(valid_per_day)
-                    response.success = True
-                    response.message = "OTP data sent to phone number."
-                    response.data = UniqueID(unique_id=unique_id)
-
                     # payload = SendOTPPayload(
                     #     phoneNumber=account.phone_number,
                     #     message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
@@ -88,6 +83,11 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     #         detail="Failed to send OTP via WhatsApp.",
                     #     )
+
+                    await session.execute(valid_per_day)
+                    response.success = True
+                    response.message = "OTP data sent to phone number."
+                    response.data = UniqueID(unique_id=unique_id)
 
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")
@@ -112,13 +112,19 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                 if account.verified_phone_number:
                     logging.info("User phone number already verified.")
                     raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="Account phone number already verified.",
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="User phone number already verified.",
                     )
 
             except HTTPException as E:
-                await session.rollback()
                 raise E
+            except Exception as E:
+                logging.error(f"Exception error during send otp phone number: {E}")
+                await session.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Server error during send otp phone number: {E}.",
+                )
             finally:
                 await session.commit()
                 await session.close()
