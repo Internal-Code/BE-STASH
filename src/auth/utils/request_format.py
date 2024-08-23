@@ -72,6 +72,11 @@ class DetailUserPhoneNumber(BaseModel):
     verified_phone_number: bool
 
 
+class DetailUserEmail(BaseModel):
+    email: EmailStr | None = None
+    verified_email: bool
+
+
 class UserInDB(CreateUser):
     user_uuid: str
     created_at: datetime
@@ -95,6 +100,9 @@ class UserInDB(CreateUser):
             email=self.email,
             phone_number=self.phone_number,
         )
+
+    def to_detail_email(self) -> "DetailUserEmail":
+        return DetailUserEmail(email=self.email, verified_email=self.verified_email)
 
 
 class UserForgotPassword(BaseModel):
