@@ -72,7 +72,7 @@ async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseDefault:
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/create-pin/{unique_id}",
     response_model=ResponseDefault,
     endpoint=create_user_pin,

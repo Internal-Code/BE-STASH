@@ -89,8 +89,8 @@ reset_pins = Table(
 )
 
 
-phone_number_otps = Table(
-    "phone_number_otps",
+send_otps = Table(
+    "send_otps",
     meta,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
