@@ -823,6 +823,30 @@ async def update_phone_number_status(user_uuid: uuid7) -> None:
     return None
 
 
+async def update_verify_email_status(user_uuid: uuid7) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(verified_email=True, updated_at=local_time())
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated email status.")
+            except Exception as E:
+                logging.error(f"Error update_verify_email_status: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_verify_email_status: {E}")
+    return None
+
+
 async def update_user_google_sso(
     user_uuid: uuid7, phone_number: str, full_name: str
 ) -> None:

@@ -26,8 +26,9 @@ async def verify_phone_number_endpoint(
         now_utc = datetime.now(timezone("UTC"))
 
         if not initials_account:
+            logging.info("OTP data not found.")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="UUID data not found."
+                status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
             )
 
         account = await get_user(unique_id=unique_id)
@@ -35,8 +36,8 @@ async def verify_phone_number_endpoint(
         if account.verified_phone_number:
             logging.info("User phone number already verified.")
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Account phone number already verified.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User phone number already verified.",
             )
 
         logging.info("User phone number not verified.")
@@ -59,7 +60,7 @@ async def verify_phone_number_endpoint(
             await update_phone_number_status(user_uuid=unique_id)
 
             response.success = True
-            response.message = "Account phone number verified."
+            response.message = "User phone number verified."
             response.data = UniqueID(unique_id=unique_id)
 
     except HTTPException as E:
@@ -77,6 +78,7 @@ router.add_api_route(
     methods=["POST"],
     path="/phone-number/{unique_id}",
     endpoint=verify_phone_number_endpoint,
+    response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,
     summary="User phone number verification.",
 )
