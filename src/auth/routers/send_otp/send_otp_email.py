@@ -1,40 +1,38 @@
 from pytz import timezone
-from datetime import timedelta, datetime
-from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault, UniqueID
-from src.auth.utils.generator import random_number
-from src.auth.utils.jwt.general import get_user
-from fastapi import APIRouter, status, HTTPException
-from src.database.models import send_otps
+from typing import Annotated
 from sqlalchemy.sql import select
+from datetime import timedelta, datetime
+from src.database.models import send_otps
+from src.auth.utils.logging import logging
+from src.auth.utils.generator import random_number
+from src.auth.schema.response import ResponseDefault
+from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
-from src.auth.utils.database.general import (
-    local_time,
-    verify_uuid,
-)
+from src.auth.utils.jwt.general import get_current_user
+from src.auth.utils.forgot_password.general import send_gmail
+from fastapi import APIRouter, status, Depends, HTTPException
 
 router = APIRouter(tags=["send-otp"], prefix="/send-otp")
 
 
-async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
+async def send_otp_email_endpoint(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> ResponseDefault:
     response = ResponseDefault()
     now_utc = datetime.now(timezone("UTC"))
-    account = await get_user(unique_id=unique_id)
     generated_otp = str(await random_number(6))
-    await verify_uuid(unique_id=unique_id)
 
     try:
         async with database_connection().connect() as session:
             try:
                 query = (
                     select(send_otps)
-                    .where(send_otps.c.user_uuid == unique_id)
+                    .where(send_otps.c.user_uuid == current_user.user_uuid)
                     .order_by(send_otps.c.created_at.desc())
                     .with_for_update()
                 )
 
                 result = await session.execute(query)
-
                 latest_record = result.fetchone()
                 jakarta_timezone = timezone("Asia/Jakarta")
                 times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
@@ -48,7 +46,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     or now_utc > latest_record.hit_tomorrow_at
                     and latest_record.current_api_hit % 4 == 0
                 ):
-                    logging.info("Matched condition. Sending OTP using whatsapp API.")
+                    logging.info("Matched condition. Sending OTP using email services.")
                     current_api_hit = (
                         latest_record.current_api_hit + 1
                         if latest_record.current_api_hit
@@ -56,7 +54,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     )
                     valid_per_day = (
                         send_otps.update()
-                        .where(send_otps.c.user_uuid == unique_id)
+                        .where(send_otps.c.user_uuid == current_user.user_uuid)
                         .values(
                             updated_at=local_time(),
                             otp_number=generated_otp,
@@ -68,26 +66,25 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                         )
                     )
 
-                    # payload = SendOTPPayload(
-                    #     phoneNumber=account.phone_number,
-                    #     message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
-                    # )
+                    email_body = (
+                        f"Dear <b>{current_user.full_name}</b>,<br><br>"
+                        f"We received a request to verify email address. Please enter the following code to verify your account:<br><br>"
+                        f"Your verification code is <b>{generated_otp}</b>. Please enter this code to complete your verification<br><br>"
+                        f"Please note, that this code will expire in <b>3 minutes</b>.<br><br>"
+                        f"Thank you,<br><br>"
+                        f"Best regards,<br>"
+                        f"<b>Support Team</b>"
+                    )
 
-                    # async with httpx.AsyncClient() as client:
-                    #     whatsapp_response = await client.post(
-                    #         LOCAL_WHATSAPP_API, json=dict(payload)
-                    #     )
-
-                    # if whatsapp_response.status_code != 200:
-                    #     raise HTTPException(
-                    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    #         detail="Failed to send OTP via WhatsApp.",
-                    #     )
+                    await send_gmail(
+                        email_subject="OTP Email Verification.",
+                        email_receiver=current_user.email,
+                        email_body=email_body,
+                    )
 
                     await session.execute(valid_per_day)
                     response.success = True
-                    response.message = "OTP data sent to phone number."
-                    response.data = UniqueID(unique_id=unique_id)
+                    response.message = "OTP data sent to email."
 
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")
@@ -103,27 +100,20 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                         detail="Should wait in 1 minutes.",
                     )
 
-                if not account:
-                    logging.info("Data otp found.")
+                if current_user.verified_email:
+                    logging.info("User email  already verified.")
                     raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="User email already verified.",
                     )
-
-                if account.verified_phone_number:
-                    logging.info("User phone number already verified.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="User phone number already verified.",
-                    )
-
             except HTTPException as E:
                 raise E
             except Exception as E:
-                logging.error(f"Exception error during send otp phone number: {E}")
+                logging.error(f"Exception error during send otp email: {E}")
                 await session.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during send otp phone number: {E}.",
+                    detail=f"Server error during send otp email: {E}.",
                 )
             finally:
                 await session.commit()
@@ -136,14 +126,14 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal Server Error: {E}.",
         )
+
     return response
 
 
 router.add_api_route(
     methods=["POST"],
-    path="/phone-number/{unique_id}",
-    endpoint=send_otp_phone_number_endpoint,
-    response_model=ResponseDefault,
+    path="/email",
+    endpoint=send_otp_email_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Send otp phone number.",
+    summary="Send otp to validate user email.",
 )

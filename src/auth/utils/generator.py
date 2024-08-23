@@ -6,7 +6,7 @@ from faker import Faker
 faker = Faker()
 
 
-def random_number(length: int = 1) -> int:
+async def random_number(length: int = 1) -> int:
     if length < 1:
         raise ValueError("length parameter should be more than 0")
 
@@ -16,7 +16,7 @@ def random_number(length: int = 1) -> int:
     return random.randint(lower_bound, upper_bound)
 
 
-def random_word(length: int = 4) -> str:
+async def random_word(length: int = 4) -> str:
     if length < 1:
         raise ValueError("length parameter should be more than 0")
 
@@ -26,7 +26,7 @@ def random_word(length: int = 4) -> str:
     return word
 
 
-def random_password(length: int = 8) -> str:
+async def random_password(length: int = 8) -> str:
     lower = string.ascii_lowercase
     upper = string.ascii_uppercase
     digits = string.digits
@@ -46,25 +46,22 @@ def random_password(length: int = 8) -> str:
     return "".join(password)
 
 
-def random_account(
+async def random_account(
     first_name: str = faker.first_name(),
     last_name: str = faker.last_name(),
     username: str = f"testing-{faker.first_name()}",
     email: EmailStr = faker.email(),
-    phone_number: str = f"{random_number(10)}",
-    password: str = random_password(),
 ) -> dict:
     return {
         "first_name": first_name,
         "last_name": last_name,
         "username": username,
         "email": email,
-        "phone_number": phone_number,
-        "password": password,
+        "phone_number": await random_number(10),
+        "password": await random_password(),
     }
 
 
-def random_sso_username(email: str) -> str:
-    username = email.lower().split("@")[0].split(".")[0]
-    username += str(random_number(4))
-    return username
+async def generate_full_name(first_name: str, last_name: str) -> str:
+    full_name = first_name + " " + last_name
+    return full_name

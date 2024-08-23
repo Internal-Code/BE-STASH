@@ -13,7 +13,8 @@ router = APIRouter(tags=["money-schemas"])
 
 
 async def update_category_schema(
-    schema: DeleteCategorySchema, users: Annotated[dict, Depends(get_current_user)]
+    schema: DeleteCategorySchema,
+    current_user: Annotated[dict, Depends(get_current_user)],
 ) -> ResponseDefault:
     """
     Delete a spesific category of schema:
@@ -26,7 +27,7 @@ async def update_category_schema(
     response = ResponseDefault()
 
     is_available = await filter_month_year_category(
-        user_uuid=users.user_uuid,
+        user_uuid=current_user.user_uuid,
         month=schema.month,
         year=schema.year,
         category=schema.category,
@@ -34,7 +35,7 @@ async def update_category_schema(
 
     if is_available is False:
         logging.info(
-            f"User {users.username} does not have the category {schema.category} in {schema.month}/{schema.year}."
+            f"User {current_user.full_name} does not have the category {schema.category} in {schema.month}/{schema.year}."
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -47,7 +48,7 @@ async def update_category_schema(
             try:
                 query = money_spend_schemas.delete().where(
                     and_(
-                        money_spend_schemas.c.user_uuid == users.user_uuid,
+                        money_spend_schemas.c.user_uuid == current_user.user_uuid,
                         money_spend_schemas.c.month == schema.month,
                         money_spend_schemas.c.year == schema.year,
                         money_spend_schemas.c.category == schema.category,

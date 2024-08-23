@@ -46,7 +46,7 @@ async def user_logout(
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info(f"User {current_user.username} logged out successfully.")
+                logging.info(f"User {current_user.full_name} logged out successfully.")
                 response.message = "Logout successful."
                 response.success = True
             except Exception as E:

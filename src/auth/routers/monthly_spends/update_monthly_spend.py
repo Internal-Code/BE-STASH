@@ -3,7 +3,10 @@ from sqlalchemy.sql import update, and_
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import filter_daily_spending
+from src.auth.utils.database.general import (
+    filter_daily_spending,
+    filter_spesific_category,
+)
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import UpdateCategorySpending, local_time
 from src.database.connection import database_connection
@@ -13,7 +16,8 @@ router = APIRouter(tags=["money-spends"])
 
 
 async def update_monthly_spend(
-    schema: UpdateCategorySpending, users: Annotated[dict, Depends(get_current_user)]
+    schema: UpdateCategorySpending,
+    current_user: Annotated[dict, Depends(get_current_user)],
 ) -> ResponseDefault:
     """
     Update category information for a specific month and year.
@@ -36,8 +40,18 @@ async def update_monthly_spend(
 
     response = ResponseDefault()
 
+    category_already_saved = await filter_spesific_category(
+        category=schema.changed_category_into, user_uuid=current_user.user_uuid
+    )
+
+    if not category_already_saved:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Category {schema.changed_category_into} is not created on database. You should reate first.",
+        )
+
     spending_is_available = await filter_daily_spending(
-        user_uuid=users.user_uuid,
+        user_uuid=current_user.user_uuid,
         amount=schema.amount,
         description=schema.description,
         category=schema.category,
@@ -46,7 +60,7 @@ async def update_monthly_spend(
         spend_year=schema.spend_year,
     )
 
-    if spending_is_available is None:
+    if not spending_is_available:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Data daily spending on {schema.spend_day}/{schema.spend_month}/{schema.spend_year} with category {schema.category} not found. Please create first.",

@@ -1,4 +1,3 @@
-from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from src.auth.utils.database.general import local_time
@@ -59,19 +58,17 @@ class UserPin(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: str = None
+    user_uuid: str = None
 
 
 class DetailUser(BaseModel):
-    first_name: str
-    last_name: str
-    username: str
-    email: EmailStr
-    phone_number: str | None
+    full_name: str
+    email: EmailStr | None = None
+    phone_number: str
 
 
 class UserInDB(CreateUser):
-    user_uuid: UUID
+    user_uuid: str
     created_at: datetime
     updated_at: datetime | None = None
     full_name: str | None = None
@@ -83,9 +80,7 @@ class UserInDB(CreateUser):
 
     def to_detail_user(self) -> "DetailUser":
         return DetailUser(
-            first_name=self.first_name,
-            last_name=self.last_name,
-            username=self.username,
+            full_name=self.full_name,
             email=self.email,
             phone_number=self.phone_number,
         )
@@ -125,3 +120,7 @@ class ChangeUserPhoneNumber(BaseModel):
 
 class OTPVerification(BaseModel):
     otp: str
+
+
+class AddEmail(BaseModel):
+    email: EmailStr

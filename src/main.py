@@ -6,12 +6,11 @@ from src.database.connection import database_connection
 from src.database.models import async_main
 from starlette.middleware.sessions import SessionMiddleware
 from src.secret import MIDDLEWARE_SECRET_KEY
-from src.auth.routers.send_otp import send_otp_phone_number
-from src.auth.routers.google_sso import (
-    sso_authentication,
-    sso_login,
-    sso_save_phone_number,
-)
+from src.auth.routers.send_otp import send_otp_phone_number, send_otp_email
+from src.auth.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
+from src.auth.routers.authorizations import access_token, refresh_token
+from src.auth.routers.users_general import get_user, user_detail, user_logout
+from src.auth.routers.google_sso import sso_authentication, sso_login
 from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,
@@ -24,15 +23,18 @@ from src.auth.routers.monthly_spends import (
     update_monthly_spend,
     delete_monthly_spend,
 )
-from src.auth.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
-from src.auth.routers.users_general import get_user, user_detail, user_logout
 from src.auth.routers.users_register import (
     user_create_pin,
     user_register_account,
-    user_change_phone_number,
+    user_wrong_phone_number,
 )
-from src.auth.routers.authorizations import access_token, refresh_token
-from src.auth.routers.account_verification import verify_phone_number, verify_email
+from src.auth.routers.account_verification import (
+    change_verified_email,
+    verify_phone_number,
+    verify_email,
+    add_email,
+    change_phone_number,
+)
 
 app = FastAPI(
     root_path="/api/v1",
@@ -86,6 +88,9 @@ app.include_router(sso_authentication.router)
 app.include_router(send_otp_phone_number.router)
 app.include_router(verify_phone_number.router)
 app.include_router(verify_email.router)
-app.include_router(user_change_phone_number.router)
-app.include_router(sso_save_phone_number.router)
+app.include_router(user_wrong_phone_number.router)
 app.include_router(user_reset_pin.router)
+app.include_router(send_otp_email.router)
+app.include_router(add_email.router)
+app.include_router(change_verified_email.router)
+app.include_router(change_phone_number.router)

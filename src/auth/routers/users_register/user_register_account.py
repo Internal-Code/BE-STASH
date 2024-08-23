@@ -1,7 +1,7 @@
 from uuid_extensions import uuid7
 from src.database.models import users
 from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault
+from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
@@ -10,6 +10,8 @@ from src.auth.utils.database.general import (
     check_fullname,
     check_phone_number,
     is_using_registered_phone_number,
+    extract_data_otp,
+    save_otp_data,
 )
 
 router = APIRouter(tags=["users-register"], prefix="/users")
@@ -39,6 +41,8 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                 status_code=status.HTTP_409_CONFLICT, detail="Account already created."
             )
 
+        initial_data = await extract_data_otp(user_uuid=user_uuid)
+
         logging.info("Creating new user.")
         validated_phone_number = await check_phone_number(
             phone_number=schema.phone_number
@@ -67,9 +71,18 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
             finally:
                 await session.close()
 
+        if not initial_data:
+            logging.info("Initialized OTP save data.")
+            await save_otp_data(
+                user_uuid=user_uuid,
+                current_api_hit=1,
+                saved_by_system=True,
+                save_to_hit_at=local_time(),
+            )
+
         response.success = True
         response.message = "Account successfully created."
-        response.data = {"register_id": user_uuid}
+        response.data = UniqueID(unique_id=user_uuid)
 
     except HTTPException as E:
         raise E

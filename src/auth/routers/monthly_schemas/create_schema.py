@@ -34,7 +34,7 @@ async def create_schema(
 
     if is_available:
         logging.info(
-            f"User: {current_user.username} already have category {schema.category} in {schema.month}/{schema.year}."
+            f"User: {current_user.full_name} already have category {schema.category} in {schema.month}/{schema.year}."
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

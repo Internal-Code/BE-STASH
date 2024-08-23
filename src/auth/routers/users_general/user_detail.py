@@ -1,4 +1,3 @@
-# TODO: implement get detail current logged in user
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
@@ -14,7 +13,7 @@ async def users(
     response = ResponseDefault()
     try:
         response.success = True
-        response.message = f"Extracting account {current_user.username}."
+        response.message = f"Extracting account {current_user.full_name}."
         response.data = current_user.to_detail_user().dict()
     except HTTPException as e:
         logging.error(f"Error while extracting current users detail: {e}.")
@@ -24,7 +23,7 @@ async def users(
 
 router.add_api_route(
     methods=["GET"],
-    path="/detail",
+    path="/detail/general-info",
     response_model=ResponseDefault,
     endpoint=users,
     status_code=status.HTTP_200_OK,
