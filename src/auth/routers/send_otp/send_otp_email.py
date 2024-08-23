@@ -40,6 +40,34 @@ async def send_otp_email_endpoint(
                 )
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
+                if not current_user.email:
+                    logging.info("User is not filled email yet.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="User should add email first.",
+                    )
+
+                if latest_record.current_api_hit % 4 == 0:
+                    logging.info("User should only hit API again tomorrow.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
+                    )
+
+                if now_utc < latest_record.save_to_hit_at:
+                    logging.info("User should wait API cooldown.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Should wait in 1 minutes.",
+                    )
+
+                if current_user.verified_email:
+                    logging.info("User email  already verified.")
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="User email already verified.",
+                    )
+
                 if (
                     now_utc > latest_record.save_to_hit_at
                     and latest_record.current_api_hit % 4 != 0
@@ -86,26 +114,6 @@ async def send_otp_email_endpoint(
                     response.success = True
                     response.message = "OTP data sent to email."
 
-                if latest_record.current_api_hit % 4 == 0:
-                    logging.info("User should only hit API again tomorrow.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
-                    )
-
-                if now_utc < latest_record.save_to_hit_at:
-                    logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Should wait in 1 minutes.",
-                    )
-
-                if current_user.verified_email:
-                    logging.info("User email  already verified.")
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="User email already verified.",
-                    )
             except HTTPException as E:
                 raise E
             except Exception as E:
