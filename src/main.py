@@ -26,13 +26,13 @@ from src.auth.routers.monthly_spends import (
 from src.auth.routers.users_register import (
     user_create_pin,
     user_register_account,
-    user_change_phone_number,
+    user_wrong_phone_number,
 )
 from src.auth.routers.account_verification import (
+    change_verified_email,
     verify_phone_number,
     verify_email,
     add_email,
-    change_email,
     change_phone_number,
 )
 
@@ -88,9 +88,9 @@ app.include_router(sso_authentication.router)
 app.include_router(send_otp_phone_number.router)
 app.include_router(verify_phone_number.router)
 app.include_router(verify_email.router)
-app.include_router(user_change_phone_number.router)
+app.include_router(user_wrong_phone_number.router)
 app.include_router(user_reset_pin.router)
 app.include_router(send_otp_email.router)
 app.include_router(add_email.router)
-app.include_router(change_email.router)
+app.include_router(change_verified_email.router)
 app.include_router(change_phone_number.router)

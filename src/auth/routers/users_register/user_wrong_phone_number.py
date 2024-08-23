@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 router = APIRouter(tags=["users-register"], prefix="/users")
 
 
-async def change_phone_number_endpoint(
+async def wrong_phone_number_endpoint(
     schema: ChangeUserPhoneNumber, unique_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
@@ -69,10 +69,10 @@ async def change_phone_number_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
-    path="/change-phone-number/{unique_id}",
+    methods=["PATCH"],
+    path="/wrong-phone-number/{unique_id}",
     response_model=ResponseDefault,
-    endpoint=change_phone_number_endpoint,
+    endpoint=wrong_phone_number_endpoint,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Change registered account phone number.",
+    summary="Wrong registered account phone number.",
 )

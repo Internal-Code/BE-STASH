@@ -17,7 +17,7 @@ from src.database.models import (
     blacklist_tokens,
     user_tokens,
     reset_pins,
-    phone_number_otps,
+    send_otps,
 )
 from src.database.connection import database_connection
 
@@ -696,7 +696,7 @@ async def save_phone_number(email: EmailStr, phone_number: str) -> None:
     return None
 
 
-async def save_otp_phone_number_verification(
+async def save_otp_data(
     user_uuid: uuid7,
     current_api_hit: int = None,
     otp_number: str = None,
@@ -706,7 +706,7 @@ async def save_otp_phone_number_verification(
     try:
         async with database_connection().connect() as session:
             try:
-                query = phone_number_otps.insert().values(
+                query = send_otps.insert().values(
                     created_at=local_time(),
                     updated_at=None,
                     user_uuid=user_uuid,
@@ -716,6 +716,40 @@ async def save_otp_phone_number_verification(
                     save_to_hit_at=save_to_hit_at,
                     blacklisted_at=local_time() + timedelta(minutes=3),
                     hit_tomorrow_at=local_time() + timedelta(days=1),
+                )
+
+                await session.execute(query)
+                await session.commit()
+
+            except Exception as E:
+                logging.error(f"Error while save_otp_phone_number_verification: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+
+    except Exception as E:
+        logging.error(f"Error after save_otp_phone_number_verification: {E}")
+    return None
+
+
+async def update_otp_data(
+    user_uuid: uuid7,
+    save_to_hit_at: datetime = local_time(),
+    blacklisted_at: datetime = local_time(),
+    hit_tomorrow_at: datetime = local_time(),
+) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    send_otps.update()
+                    .where(send_otps.c.user_uuid == user_uuid)
+                    .values(
+                        current_api_hit=1,
+                        save_to_hit_at=save_to_hit_at,
+                        blacklisted_at=blacklisted_at,
+                        hit_tomorrow_at=hit_tomorrow_at,
+                    )
                 )
 
                 await session.execute(query)
@@ -745,8 +779,8 @@ async def update_otp_phone_number_verification(
             async with session.begin():
                 try:
                     query = (
-                        phone_number_otps.update()
-                        .where(phone_number_otps.c.user_uuid == user_uuid)
+                        send_otps.update()
+                        .where(send_otps.c.user_uuid == user_uuid)
                         .values(
                             created_at=local_time(),
                             current_api_hit=current_api_hit,
@@ -770,15 +804,15 @@ async def update_otp_phone_number_verification(
     return None
 
 
-async def extract_phone_number_otp(user_uuid: uuid7) -> Row | None:
+async def extract_data_otp(user_uuid: uuid7) -> Row | None:
     try:
         async with database_connection().connect() as session:
             async with session.begin():  # Start a transaction block
                 try:
                     query = (
-                        select(phone_number_otps)
-                        .where(phone_number_otps.c.user_uuid == user_uuid)
-                        .order_by(phone_number_otps.c.created_at.desc())
+                        select(send_otps)
+                        .where(send_otps.c.user_uuid == user_uuid)
+                        .order_by(send_otps.c.created_at.desc())
                         .with_for_update()
                     )
                     result = await session.execute(query)
@@ -820,6 +854,30 @@ async def update_phone_number_status(user_uuid: uuid7) -> None:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after update_phone_number_status: {E}")
+    return None
+
+
+async def update_verify_email_status(user_uuid: uuid7) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(verified_email=True, updated_at=local_time())
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully updated email status.")
+            except Exception as E:
+                logging.error(f"Error update_verify_email_status: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_verify_email_status: {E}")
     return None
 
 
@@ -882,7 +940,7 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
                     .where(
                         users.c.user_uuid == user_uuid,
                     )
-                    .values(pin=pin)
+                    .values(pin=pin, updated_at=local_time())
                 )
                 await session.execute(query)
                 await session.commit()
@@ -894,6 +952,36 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
                 await session.close()
     except Exception as E:
         logging.error(f"Error after update_user_pin: {E}")
+    return None
+
+
+async def update_user_email(
+    user_uuid: uuid7, email: EmailStr, verified_email: bool
+) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    users.update()
+                    .where(
+                        users.c.user_uuid == user_uuid,
+                    )
+                    .values(
+                        email=email,
+                        updated_at=local_time(),
+                        verified_email=verified_email,
+                    )
+                )
+                await session.execute(query)
+                await session.commit()
+                logging.info("User successfully added email.")
+            except Exception as E:
+                logging.error(f"Error update_user_email: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+    except Exception as E:
+        logging.error(f"Error after update_user_email: {E}")
     return None
 
 

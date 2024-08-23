@@ -6,7 +6,7 @@ from src.auth.utils.request_format import OTPVerification
 from src.auth.utils.jwt.general import get_user
 from fastapi import APIRouter, status, HTTPException
 from src.auth.utils.database.general import (
-    extract_phone_number_otp,
+    extract_data_otp,
     update_phone_number_status,
     verify_uuid,
     check_otp,
@@ -22,12 +22,13 @@ async def verify_phone_number_endpoint(
     await verify_uuid(unique_id=unique_id)
 
     try:
-        initials_account = await extract_phone_number_otp(user_uuid=unique_id)
+        initials_account = await extract_data_otp(user_uuid=unique_id)
         now_utc = datetime.now(timezone("UTC"))
 
         if not initials_account:
+            logging.info("OTP data not found.")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="UUID data not found."
+                status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
             )
 
         account = await get_user(unique_id=unique_id)
@@ -35,8 +36,8 @@ async def verify_phone_number_endpoint(
         if account.verified_phone_number:
             logging.info("User phone number already verified.")
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Account phone number already verified.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User phone number already verified.",
             )
 
         logging.info("User phone number not verified.")
@@ -59,7 +60,7 @@ async def verify_phone_number_endpoint(
             await update_phone_number_status(user_uuid=unique_id)
 
             response.success = True
-            response.message = "Account phone number verified."
+            response.message = "User phone number verified."
             response.data = UniqueID(unique_id=unique_id)
 
     except HTTPException as E:
@@ -77,6 +78,7 @@ router.add_api_route(
     methods=["POST"],
     path="/phone-number/{unique_id}",
     endpoint=verify_phone_number_endpoint,
+    response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,
     summary="User phone number verification.",
 )
