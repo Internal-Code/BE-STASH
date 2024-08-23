@@ -732,6 +732,40 @@ async def save_otp_data(
     return None
 
 
+async def update_otp_data(
+    user_uuid: uuid7,
+    save_to_hit_at: datetime = local_time(),
+    blacklisted_at: datetime = local_time(),
+    hit_tomorrow_at: datetime = local_time(),
+) -> None:
+    try:
+        async with database_connection().connect() as session:
+            try:
+                query = (
+                    send_otps.update()
+                    .where(send_otps.c.user_uuid == user_uuid)
+                    .values(
+                        current_api_hit=1,
+                        save_to_hit_at=save_to_hit_at,
+                        blacklisted_at=blacklisted_at,
+                        hit_tomorrow_at=hit_tomorrow_at,
+                    )
+                )
+
+                await session.execute(query)
+                await session.commit()
+
+            except Exception as E:
+                logging.error(f"Error while save_otp_phone_number_verification: {E}")
+                await session.rollback()
+            finally:
+                await session.close()
+
+    except Exception as E:
+        logging.error(f"Error after save_otp_phone_number_verification: {E}")
+    return None
+
+
 async def update_otp_phone_number_verification(
     user_uuid: uuid7,
     current_api_hit: int = None,
@@ -921,7 +955,9 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
     return None
 
 
-async def update_user_email(user_uuid: uuid7, email: EmailStr) -> None:
+async def update_user_email(
+    user_uuid: uuid7, email: EmailStr, verified_email: bool
+) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -930,7 +966,11 @@ async def update_user_email(user_uuid: uuid7, email: EmailStr) -> None:
                     .where(
                         users.c.user_uuid == user_uuid,
                     )
-                    .values(email=email, updated_at=local_time())
+                    .values(
+                        email=email,
+                        updated_at=local_time(),
+                        verified_email=verified_email,
+                    )
                 )
                 await session.execute(query)
                 await session.commit()

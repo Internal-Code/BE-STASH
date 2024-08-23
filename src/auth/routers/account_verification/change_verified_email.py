@@ -10,12 +10,13 @@ from src.auth.utils.database.general import (
     extract_data_otp,
     save_otp_data,
     local_time,
+    update_otp_data,
 )
 
-router = APIRouter(tags=["account-verification"], prefix="/add")
+router = APIRouter(tags=["account-verification"], prefix="/change")
 
 
-async def add_email_endpoint(
+async def change_email_verified_endpoint(
     schema: AddEmail,
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> ResponseDefault:
@@ -24,22 +25,10 @@ async def add_email_endpoint(
     initial_data = await extract_data_otp(user_uuid=current_user.user_uuid)
 
     try:
-        if registered_email:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already taken. Please use another email.",
-            )
-
-        if current_user.verified_email:
+        if not current_user.verified_email:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User already have an verified email.",
-            )
-
-        if current_user.email:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User already have an email.",
+                detail="User email should be verified first.",
             )
 
         if current_user.email == schema.email:
@@ -47,9 +36,19 @@ async def add_email_endpoint(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Cannot use same email."
             )
 
+        if registered_email:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already taken. Please use another email.",
+            )
+
         await update_user_email(
             user_uuid=current_user.user_uuid, email=schema.email, verified_email=False
         )
+
+        if initial_data.current_api_hit != 1:
+            logging.info("Re-initialized OTP save data.")
+            await update_otp_data(user_uuid=current_user.user_uuid)
 
         if not initial_data:
             logging.info("Initialized OTP save data.")
@@ -61,13 +60,13 @@ async def add_email_endpoint(
             )
 
         response.success = True
-        response.message = "Success add new email."
+        response.message = "Success update user email."
 
     except HTTPException as E:
         raise E
 
     except Exception as E:
-        logging.error(f"Error while adding new email: {E}.")
+        logging.error(f"Error while change verified email: {E}.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal Server Error: {E}.",
@@ -78,9 +77,9 @@ async def add_email_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/email",
+    path="/verified-email",
+    endpoint=change_email_verified_endpoint,
+    status_code=status.HTTP_200_OK,
     response_model=ResponseDefault,
-    endpoint=add_email_endpoint,
-    status_code=status.HTTP_201_CREATED,
-    summary="Add email to current validated user.",
+    summary="Change current user validated email.",
 )
