@@ -143,3 +143,7 @@ class ChangePin(BaseModel):
     current_pin: str
     change_pin: str
     confirmed_changed_pin: str
+
+
+class ChangeUserFullName(BaseModel):
+    full_name: str

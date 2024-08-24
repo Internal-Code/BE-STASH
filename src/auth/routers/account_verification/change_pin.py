@@ -93,7 +93,7 @@ async def change_pin_endpoint(
                 f"Please ensure that you keep your account information secure.<br><br>"
                 f"Thank you.<br><br>"
                 f"Best regards,<br>"
-                f"<strong>The Support Team</strong>"
+                f"<strong>Support Team</strong>"
             )
 
             await send_gmail(

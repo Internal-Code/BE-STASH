@@ -90,7 +90,7 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseToken:
                 f"We recommend updating and verifying your phone number at your earliest convenience to ensure a smooth experience.<br><br>"
                 f"Thank you.<br><br>"
                 f"Best regards,<br>"
-                f"The Support Team"
+                f"Support Team"
             )
 
             await send_gmail(
