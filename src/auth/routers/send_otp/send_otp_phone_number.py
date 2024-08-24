@@ -42,6 +42,13 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                 )
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
+                if not account.phone_number:
+                    logging.info("User should filled phone number yet.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="User should fill phone number first.",
+                    )
+
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")
                     raise HTTPException(
