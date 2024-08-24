@@ -81,5 +81,5 @@ router.add_api_route(
     endpoint=change_email_verified_endpoint,
     status_code=status.HTTP_200_OK,
     response_model=ResponseDefault,
-    summary="Change current user validated email.",
+    summary="Change user email.",
 )

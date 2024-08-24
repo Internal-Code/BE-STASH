@@ -137,3 +137,9 @@ class OTPVerification(BaseModel):
 
 class AddEmail(BaseModel):
     email: EmailStr
+
+
+class ChangePin(BaseModel):
+    current_pin: str
+    change_pin: str
+    confirmed_changed_pin: str

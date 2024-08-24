@@ -96,7 +96,7 @@ async def authenticate_user(user_uuid: uuid7, pin: str) -> Row | None:
             return None
         if not await verify_pin(pin=pin, hashed_pin=users.pin):
             logging.error(
-                f"Authentication failed, invalid password for users {users.full_name}."
+                f"Authentication failed, invalid pin for users {users.full_name}."
             )
             return None
     except Exception as E:

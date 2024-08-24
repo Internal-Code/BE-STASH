@@ -72,5 +72,5 @@ router.add_api_route(
     path="/phone-number",
     endpoint=change_phone_number_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Change user valid phone number endpoint.",
+    summary="Change user phone number.",
 )
