@@ -1,16 +1,22 @@
 from fastapi import FastAPI
+from src.secret import MIDDLEWARE_SECRET_KEY
+from src.auth.routers import health_check
+from src.database.models import async_main
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
-from src.auth.routers import health_check
 from src.database.connection import database_connection
-from src.database.models import async_main
 from starlette.middleware.sessions import SessionMiddleware
-from src.secret import MIDDLEWARE_SECRET_KEY
 from src.auth.routers.send_otp import send_otp_phone_number, send_otp_email
 from src.auth.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
-from src.auth.routers.authorizations import access_token, refresh_token
-from src.auth.routers.users_general import get_user, user_detail, user_logout
 from src.auth.routers.google_sso import sso_authentication, sso_login
+from src.auth.routers.authorizations import access_token, refresh_token
+from src.auth.routers.users_general import (
+    get_user,
+    user_detail_full_name,
+    user_logout,
+    user_detail_phone_number,
+    user_detail_email,
+)
 from src.auth.routers.monthly_schemas import (
     create_schema,
     list_schema,
@@ -78,7 +84,7 @@ app.include_router(delete_monthly_spend.router)
 app.include_router(access_token.router)
 app.include_router(refresh_token.router)
 app.include_router(user_logout.router)
-app.include_router(user_detail.router)
+app.include_router(user_detail_full_name.router)
 app.include_router(get_user.router)
 app.include_router(user_register_account.router)
 app.include_router(user_create_pin.router)
@@ -94,3 +100,5 @@ app.include_router(send_otp_email.router)
 app.include_router(add_email.router)
 app.include_router(change_verified_email.router)
 app.include_router(change_phone_number.router)
+app.include_router(user_detail_phone_number.router)
+app.include_router(user_detail_email.router)

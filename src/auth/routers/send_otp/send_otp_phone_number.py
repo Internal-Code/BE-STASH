@@ -42,6 +42,40 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                 )
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
+                if not account.phone_number:
+                    logging.info("User should filled phone number yet.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="User should fill phone number first.",
+                    )
+
+                if latest_record.current_api_hit % 4 == 0:
+                    logging.info("User should only hit API again tomorrow.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
+                    )
+
+                if now_utc < latest_record.save_to_hit_at:
+                    logging.info("User should wait API cooldown.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Should wait in 1 minutes.",
+                    )
+
+                if not account:
+                    logging.info("Data otp found.")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
+                    )
+
+                if account.verified_phone_number:
+                    logging.info("User phone number already verified.")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="User phone number already verified.",
+                    )
+
                 if (
                     now_utc > latest_record.save_to_hit_at
                     and latest_record.current_api_hit % 4 != 0
@@ -88,33 +122,6 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     response.success = True
                     response.message = "OTP data sent to phone number."
                     response.data = UniqueID(unique_id=unique_id)
-
-                if latest_record.current_api_hit % 4 == 0:
-                    logging.info("User should only hit API again tomorrow.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
-                    )
-
-                if now_utc < latest_record.save_to_hit_at:
-                    logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Should wait in 1 minutes.",
-                    )
-
-                if not account:
-                    logging.info("Data otp found.")
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
-                    )
-
-                if account.verified_phone_number:
-                    logging.info("User phone number already verified.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="User phone number already verified.",
-                    )
 
             except HTTPException as E:
                 raise E

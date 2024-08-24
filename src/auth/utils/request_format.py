@@ -61,10 +61,18 @@ class TokenData(BaseModel):
     user_uuid: str = None
 
 
-class DetailUser(BaseModel):
+class DetailUserFullName(BaseModel):
     full_name: str
-    email: EmailStr | None = None
+
+
+class DetailUserPhoneNumber(BaseModel):
     phone_number: str
+    verified_phone_number: bool
+
+
+class DetailUserEmail(BaseModel):
+    email: EmailStr | None = None
+    verified_email: bool
 
 
 class UserInDB(CreateUser):
@@ -78,12 +86,17 @@ class UserInDB(CreateUser):
     verified_email: bool
     verified_phone_number: bool
 
-    def to_detail_user(self) -> "DetailUser":
-        return DetailUser(
-            full_name=self.full_name,
-            email=self.email,
+    def to_detail_user_phone_number(self) -> "DetailUserPhoneNumber":
+        return DetailUserPhoneNumber(
             phone_number=self.phone_number,
+            verified_phone_number=self.verified_phone_number,
         )
+
+    def to_detail_user_full_name(self) -> "DetailUserFullName":
+        return DetailUserFullName(full_name=self.full_name)
+
+    def to_detail_email(self) -> "DetailUserEmail":
+        return DetailUserEmail(email=self.email, verified_email=self.verified_email)
 
 
 class UserForgotPassword(BaseModel):

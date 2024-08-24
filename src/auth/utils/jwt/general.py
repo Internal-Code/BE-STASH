@@ -13,7 +13,13 @@ from src.auth.utils.database.general import local_time, is_access_token_blacklis
 from src.database.connection import database_connection
 from src.database.models import users
 from src.auth.utils.database.general import check_pin, verify_uuid
-from src.auth.utils.request_format import TokenData, UserInDB, DetailUser
+from src.auth.utils.request_format import (
+    TokenData,
+    UserInDB,
+    DetailUserFullName,
+    DetailUserPhoneNumber,
+    DetailUserEmail,
+)
 from src.secret import (
     ACCESS_TOKEN_SECRET_KEY,
     ACCESS_TOKEN_ALGORITHM,
@@ -121,7 +127,7 @@ async def get_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-) -> DetailUser | None:
+) -> DetailUserFullName | DetailUserPhoneNumber | DetailUserEmail | None:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
