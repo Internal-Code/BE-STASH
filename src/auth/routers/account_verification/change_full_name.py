@@ -18,7 +18,6 @@ async def change_full_name_endpoint(
     validated_full_name = await check_fullname(value=schema.full_name)
 
     try:
-        print(current_user)
         if current_user.full_name == validated_full_name:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
