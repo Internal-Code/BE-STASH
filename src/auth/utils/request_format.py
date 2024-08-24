@@ -61,10 +61,8 @@ class TokenData(BaseModel):
     user_uuid: str = None
 
 
-class DetailUserGeneral(BaseModel):
+class DetailUserFullName(BaseModel):
     full_name: str
-    email: EmailStr | None = None
-    phone_number: str
 
 
 class DetailUserPhoneNumber(BaseModel):
@@ -94,12 +92,8 @@ class UserInDB(CreateUser):
             verified_phone_number=self.verified_phone_number,
         )
 
-    def to_detail_user_general(self) -> "DetailUserGeneral":
-        return DetailUserGeneral(
-            full_name=self.full_name,
-            email=self.email,
-            phone_number=self.phone_number,
-        )
+    def to_detail_user_full_name(self) -> "DetailUserFullName":
+        return DetailUserFullName(full_name=self.full_name)
 
     def to_detail_email(self) -> "DetailUserEmail":
         return DetailUserEmail(email=self.email, verified_email=self.verified_email)

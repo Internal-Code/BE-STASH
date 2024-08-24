@@ -13,8 +13,10 @@ async def user_detail_general_endpoint(
     response = ResponseDefault()
     try:
         response.success = True
-        response.message = f"Extracting account {current_user.full_name} general info."
-        response.data = current_user.to_detail_user_general().dict()
+        response.message = (
+            f"Extracting account {current_user.full_name} full name info."
+        )
+        response.data = current_user.to_detail_user_full_name().dict()
     except HTTPException as e:
         logging.error(f"Error while extracting current users general information: {e}.")
         raise e
@@ -23,7 +25,7 @@ async def user_detail_general_endpoint(
 
 router.add_api_route(
     methods=["GET"],
-    path="/detail/general",
+    path="/detail/full-name",
     response_model=ResponseDefault,
     endpoint=user_detail_general_endpoint,
     status_code=status.HTTP_200_OK,

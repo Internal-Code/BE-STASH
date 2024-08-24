@@ -12,7 +12,7 @@ from src.auth.routers.google_sso import sso_authentication, sso_login
 from src.auth.routers.authorizations import access_token, refresh_token
 from src.auth.routers.users_general import (
     get_user,
-    user_detail_general,
+    user_detail_full_name,
     user_logout,
     user_detail_phone_number,
     user_detail_email,
@@ -84,7 +84,7 @@ app.include_router(delete_monthly_spend.router)
 app.include_router(access_token.router)
 app.include_router(refresh_token.router)
 app.include_router(user_logout.router)
-app.include_router(user_detail_general.router)
+app.include_router(user_detail_full_name.router)
 app.include_router(get_user.router)
 app.include_router(user_register_account.router)
 app.include_router(user_create_pin.router)
