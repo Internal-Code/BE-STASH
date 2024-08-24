@@ -84,7 +84,6 @@ async def change_pin_endpoint(
 
         if current_user.verified_email:
             logging.info("Account update information sent into email.")
-
             email_body = (
                 f"Dear {current_user.full_name},<br><br>"
                 f"We are pleased to inform you that your new account has been successfully updated pin.<br><br>"
@@ -106,7 +105,7 @@ async def change_pin_endpoint(
             response.success = True
             response.message = "User successfully changed pin. Account information already sent into email."
 
-        if current_user.verified_phone_number:
+        elif current_user.verified_phone_number:
             logging.info("Account update information sent into phone number.")
             payload = SendOTPPayload(
                 phoneNumber=current_user.phone_number,
@@ -144,7 +143,6 @@ async def change_pin_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal Server Error: {E}.",
         )
-
     return response
 
 
