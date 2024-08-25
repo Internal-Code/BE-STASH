@@ -35,19 +35,28 @@ async def send_reset_link_endpoint(
         reset_link = f"http://localhost:8000/api/v1/users/reset-pin/{unique_id}"
 
         if schema.method == schema.method.EMAIL:
-            if account.verified_email is False and account.email is not None:
+            if not account.verified_email and account.email:
                 logging.info("User email is not verified.")
-                response.message = "User email is not verified."
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User email is not verified.",
+                )
 
-            if account.pin is None:
+            if not account.email:
+                logging.info("User is not input email yet.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User should add email first.",
+                )
+
+            if not account.pin:
                 logging.info("User is not created pin.")
-                response.message = "User is not created account pin."
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User is not created account pin.",
+                )
 
-            if account.email is None:
-                logging.info("User is not added email.")
-                response.message = "User is not added email."
-
-            if account.verified_email is True:
+            if account.verified_email:
                 logging.info("User account email validated.")
 
                 email_body = (
@@ -64,7 +73,7 @@ async def send_reset_link_endpoint(
                     user_uuid=unique_id
                 )
 
-                if latest_reset_pin_data is None:
+                if not latest_reset_pin_data:
                     logging.info("Initialized send reset password link via email.")
 
                     await save_reset_pin_data(user_uuid=unique_id, email=account.email)
@@ -116,17 +125,26 @@ async def send_reset_link_endpoint(
             return response
 
         if schema.method == schema.method.PHONE_NUMBER:
-            if account.pin is None:
+            if not account.pin:
                 logging.info("User is not created pin.")
-                response.message = "User is not created account pin."
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User is not created account pin.",
+                )
 
-            if account.phone_number and account.verified_phone_number is False:
+            if account.phone_number and not account.verified_phone_number:
                 logging.info("User phone number not verified.")
-                response.message = "User phone number not verified."
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User phone number not verified",
+                )
 
-            if account.phone_number is None:
+            if not account.phone_number:
                 logging.info("User phone number empty.")
-                response.message = "User is not added phone number."
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User is not added phone number.",
+                )
 
             if account.verified_phone_number is True:
                 logging.info("User phone number validated.")
@@ -148,7 +166,7 @@ async def send_reset_link_endpoint(
                     user_uuid=unique_id
                 )
 
-                if latest_reset_pin_data is None:
+                if not latest_reset_pin_data:
                     logging.info(
                         "Initialized send reset password link via phone nnumber."
                     )
