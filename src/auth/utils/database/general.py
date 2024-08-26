@@ -359,6 +359,9 @@ async def is_using_registered_field(
 
 
 async def is_using_registered_email(email: EmailStr) -> bool:
+    if not email:
+        return False
+
     try:
         async with database_connection().connect() as session:
             try:

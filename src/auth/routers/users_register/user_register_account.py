@@ -10,6 +10,7 @@ from src.auth.utils.database.general import (
     check_fullname,
     check_phone_number,
     is_using_registered_phone_number,
+    is_using_registered_email,
     extract_data_otp,
     save_otp_data,
 )
@@ -27,26 +28,31 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
     """
 
     response = ResponseDefault()
+    validated_phone_number = await check_phone_number(phone_number=schema.phone_number)
+    registered_phone_number = await is_using_registered_phone_number(
+        phone_number=validated_phone_number
+    )
+    registered_email = await is_using_registered_email(email=schema.email)
 
     try:
         user_uuid = str(uuid7())
 
         logging.info("Endpoint register account.")
-        already_registered = await is_using_registered_phone_number(
-            phone_number=schema.phone_number
-        )
-
-        if already_registered:
+        if registered_phone_number:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Account already created."
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Phone number already registered.",
+            )
+
+        if registered_email:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Email already registered."
             )
 
         initial_data = await extract_data_otp(user_uuid=user_uuid)
 
         logging.info("Creating new user.")
-        validated_phone_number = await check_phone_number(
-            phone_number=schema.phone_number
-        )
+
         fullname = await check_fullname(value=schema.full_name)
         async with database_connection().connect() as session:
             try:
@@ -55,6 +61,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
                     created_at=local_time(),
                     full_name=fullname,
                     phone_number=validated_phone_number,
+                    email=schema.email,
                 )
                 await session.execute(query)
                 await session.commit()

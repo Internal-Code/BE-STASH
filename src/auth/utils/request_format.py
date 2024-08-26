@@ -51,6 +51,7 @@ class CreateSpend(BaseModel):
 class CreateUser(BaseModel):
     full_name: str
     phone_number: str
+    email: EmailStr | None = None
 
 
 class UserPin(BaseModel):
@@ -137,3 +138,13 @@ class OTPVerification(BaseModel):
 
 class AddEmail(BaseModel):
     email: EmailStr
+
+
+class ChangePin(BaseModel):
+    current_pin: str
+    change_pin: str
+    confirmed_changed_pin: str
+
+
+class ChangeUserFullName(BaseModel):
+    full_name: str

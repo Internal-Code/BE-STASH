@@ -31,6 +31,13 @@ async def verify_email_endpoint(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
             )
 
+        if not current_user.email:
+            logging.info("User is not input email yet.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User should add email first.",
+            )
+
         if current_user.verified_email:
             logging.info("User email already verified.")
             raise HTTPException(

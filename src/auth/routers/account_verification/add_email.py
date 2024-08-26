@@ -82,5 +82,5 @@ router.add_api_route(
     response_model=ResponseDefault,
     endpoint=add_email_endpoint,
     status_code=status.HTTP_201_CREATED,
-    summary="Add email to current validated user.",
+    summary="User add new email.",
 )

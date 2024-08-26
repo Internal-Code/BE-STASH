@@ -25,6 +25,13 @@ async def change_email_verified_endpoint(
     initial_data = await extract_data_otp(user_uuid=current_user.user_uuid)
 
     try:
+        if not current_user.email:
+            logging.info("User is not input email yet.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User should add email first.",
+            )
+
         if not current_user.verified_email:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -81,5 +88,5 @@ router.add_api_route(
     endpoint=change_email_verified_endpoint,
     status_code=status.HTTP_200_OK,
     response_model=ResponseDefault,
-    summary="Change current user validated email.",
+    summary="Change user email.",
 )

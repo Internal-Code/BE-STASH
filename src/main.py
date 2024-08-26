@@ -40,6 +40,8 @@ from src.auth.routers.account_verification import (
     verify_email,
     add_email,
     change_phone_number,
+    change_pin,
+    change_full_name,
 )
 
 app = FastAPI(
@@ -102,3 +104,5 @@ app.include_router(change_verified_email.router)
 app.include_router(change_phone_number.router)
 app.include_router(user_detail_phone_number.router)
 app.include_router(user_detail_email.router)
+app.include_router(change_pin.router)
+app.include_router(change_full_name.router)

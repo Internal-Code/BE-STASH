@@ -13,6 +13,13 @@ async def get_user_endpoint(phone_number: str) -> ResponseDefault:
         validated_phone_number = await check_phone_number(phone_number=phone_number)
         account = await get_user(phone_number=validated_phone_number)
 
+        if not account.verified_phone_number:
+            response.success = True
+            response.message = "User should validate phone number first."
+            response.data = UniqueID(unique_id=str(account.user_uuid))
+
+            return response
+
         if not account:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -20,7 +27,7 @@ async def get_user_endpoint(phone_number: str) -> ResponseDefault:
             )
 
         response.success = True
-        response.message = f"User {validated_phone_number} found."
+        response.message = "User found."
         response.data = UniqueID(unique_id=str(account.user_uuid))
 
     except HTTPException as e:

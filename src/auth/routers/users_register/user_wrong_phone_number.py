@@ -1,11 +1,12 @@
 from src.auth.utils.logging import logging
 from src.auth.utils.jwt.general import get_user
-from src.auth.schema.response import ResponseDefault
+from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import ChangeUserPhoneNumber
 from src.auth.utils.database.general import (
     update_user_phone_number,
     verify_uuid,
     check_phone_number,
+    update_otp_data,
 )
 from fastapi import APIRouter, HTTPException, status
 
@@ -55,8 +56,12 @@ async def wrong_phone_number_endpoint(
             await update_user_phone_number(
                 user_uuid=unique_id, phone_number=schema.phone_number
             )
+            logging.info("Re-initialized OTP save data.")
+            await update_otp_data(user_uuid=unique_id)
+
             response.success = True
             response.message = "Phone number successfully updated."
+            response.data = UniqueID(unique_id=account.user_uuid)
     except HTTPException as e:
         raise e
     except Exception as e:
