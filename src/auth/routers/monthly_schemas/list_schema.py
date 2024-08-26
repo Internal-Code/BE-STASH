@@ -1,12 +1,18 @@
 from sqlalchemy.sql import and_
 from typing import Annotated, Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import filter_month_year, local_time
-from src.auth.schema.response import ResponseDefault
-from src.database.connection import database_connection
 from src.database.models import money_spend_schemas
+from src.auth.schema.response import ResponseDefault
+from fastapi import APIRouter, status, Depends, Query
+from src.auth.utils.jwt.general import get_current_user
+from src.database.connection import database_connection
+from src.auth.utils.database.general import filter_month_year, local_time
+from src.auth.routers.exceptions import (
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+    EntityDoesNotExistError,
+)
 
 router = APIRouter(tags=["money-schemas"])
 
@@ -37,9 +43,8 @@ async def list_schema(
         logging.info(
             f"User {users.username} has not created a schema in {month}/{year}."
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User {users.username} has not created a schema in {month}/{year}.",
+        raise EntityDoesNotExistError(
+            detail=f"User {users.username} has not created a schema in {month}/{year}."
         )
 
     try:
@@ -64,20 +69,16 @@ async def list_schema(
             except Exception as E:
                 logging.error(f"Error during get category: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during get category: {E}",
+                raise DatabaseError(
+                    detail=f"Database error: {E}",
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error after getting category: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

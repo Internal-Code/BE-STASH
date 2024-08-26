@@ -1,12 +1,18 @@
 from typing import Annotated
-from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import filter_daily_spending
+from src.database.models import money_spends
+from fastapi import APIRouter, status, Depends
 from src.auth.schema.response import ResponseDefault
+from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.request_format import CreateSpend
 from src.database.connection import database_connection
-from src.database.models import money_spends
+from src.auth.utils.database.general import filter_daily_spending
+from src.auth.routers.exceptions import (
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+    EntityDoesNotExistError,
+)
 
 router = APIRouter(tags=["money-spends"])
 
@@ -38,9 +44,8 @@ async def create_spend(
     )
 
     if not is_available:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Data is not found. Ensure data already created on database.",
+        raise EntityDoesNotExistError(
+            detail="Data is not found. Please ensure data already created on database."
         )
 
     try:
@@ -66,20 +71,16 @@ async def create_spend(
             except Exception as E:
                 logging.error(f"Error during delete daily spend money data: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during delete daily spend money data: {E}.",
+                raise DatabaseError(
+                    detail=f"Database error: {E}.",
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error after deleting daily spend money data: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

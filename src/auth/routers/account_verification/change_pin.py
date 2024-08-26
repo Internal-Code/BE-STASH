@@ -1,15 +1,22 @@
 import httpx
 from typing import Annotated
-from src.database.models import users, blacklist_tokens
 from src.secret import LOCAL_WHATSAPP_API
 from src.auth.utils.logging import logging
+from fastapi import APIRouter, status, Depends
 from src.auth.schema.response import ResponseDefault
+from src.database.models import users, blacklist_tokens
 from src.database.connection import database_connection
-from fastapi import APIRouter, status, Depends, HTTPException
 from src.auth.utils.forgot_password.general import send_gmail
-from src.auth.utils.database.general import local_time, check_pin, extract_tokens
 from src.auth.utils.request_format import ChangePin, SendOTPPayload
+from src.auth.utils.database.general import local_time, check_pin, extract_tokens
 from src.auth.utils.jwt.general import get_current_user, verify_pin, get_password_hash
+from src.auth.routers.exceptions import (
+    EntityForceInputSameDataError,
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+    EntityDoesNotMatchedError,
+)
 
 router = APIRouter(tags=["account-verification"], prefix="/change")
 
@@ -32,21 +39,18 @@ async def change_pin_endpoint(
 
     try:
         if not valid_existing_pin:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid pin. Please input valid existing pin.",
+            raise EntityDoesNotMatchedError(
+                detail="Invalid pin. Please input valid existing pin."
             )
 
         if new_pin != confirmed_pin:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="The new PIN and confirmation PIN do not match. Please ensure both PINs are the same.",
+            raise EntityDoesNotMatchedError(
+                detail="The new PIN and confirmation PIN do not match. Please ensure both PINs are the same."
             )
 
         if duplicated_changed_pin and duplicated_confirmed_pin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="New PIN cannot be the same as the current PIN. Please choose a different PIN.",
+            raise EntityForceInputSameDataError(
+                detail="New PIN cannot be the same as the current PIN. Please choose a different PIN."
             )
 
         hashed_pin = await get_password_hash(password=schema.change_pin)
@@ -70,14 +74,13 @@ async def change_pin_endpoint(
                 await session.execute(query)
                 await session.commit()
                 logging.info("Success changed user pin and blacklisted current token.")
-            except HTTPException as E:
-                raise E
+            except FinanceTrackerApiError as FE:
+                raise FE
             except Exception as E:
                 logging.error(f"Error while change_pin_endpoint: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Internal Server Error: {E}.",
+                raise DatabaseError(
+                    detail=f"Database error: {E}.",
                 )
             finally:
                 await session.close()
@@ -127,22 +130,19 @@ async def change_pin_endpoint(
                 )
 
             if whatsapp_response.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to send OTP via WhatsApp.",
+                raise ServiceError(
+                    detail="Failed to send OTP via WhatsApp.", name="Whatsapp API"
                 )
+
             response.success = True
             response.message = "User successfully changed pin. Account information already sent into phone number."
 
-    except HTTPException as e:
-        raise e
+    except FinanceTrackerApiError as FTE:
+        raise FTE
 
     except Exception as E:
-        logging.error(f"Error after change_pin_endpoint: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+
     return response
 
 

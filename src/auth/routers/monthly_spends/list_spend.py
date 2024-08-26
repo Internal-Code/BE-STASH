@@ -1,12 +1,18 @@
-from typing import Annotated, Optional
 from sqlalchemy.sql import and_
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from src.auth.utils.jwt.general import get_current_user
+from typing import Annotated, Optional
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import filter_month_year, local_time
-from src.auth.schema.response import ResponseDefault
-from src.database.connection import database_connection
 from src.database.models import money_spends
+from src.auth.schema.response import ResponseDefault
+from fastapi import APIRouter, status, Depends, Query
+from src.auth.utils.jwt.general import get_current_user
+from src.database.connection import database_connection
+from src.auth.utils.database.general import filter_month_year, local_time
+from src.auth.routers.exceptions import (
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+    EntityDoesNotExistError,
+)
 
 router = APIRouter(tags=["money-spends"])
 
@@ -34,8 +40,7 @@ async def list_spending(
     )
 
     if not is_available:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise EntityDoesNotExistError(
             detail=f"Schema on {month}/{year} is not created yet.",
         )
 
@@ -61,20 +66,16 @@ async def list_spending(
             except Exception as E:
                 logging.error(f"Error during getting money spend per month: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during getting money spend per month: {E}",
+                raise DatabaseError(
+                    detail=f"Database error: {E}",
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error after getting money spend per month: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

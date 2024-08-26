@@ -1,13 +1,21 @@
 from pytz import timezone
+from sqlalchemy.sql import select
+from fastapi import APIRouter, status
 from datetime import timedelta, datetime
 from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault, UniqueID
-from src.auth.utils.generator import random_number
-from src.auth.utils.jwt.general import get_user
-from fastapi import APIRouter, status, HTTPException
 from src.database.models import send_otps
-from sqlalchemy.sql import select
+from src.auth.utils.jwt.general import get_user
+from src.auth.utils.generator import random_number
 from src.database.connection import database_connection
+from src.auth.schema.response import ResponseDefault, UniqueID
+from src.auth.routers.exceptions import (
+    ServiceError,
+    FinanceTrackerApiError,
+    EntityAlreadyVerifiedError,
+    MandatoryInputError,
+    EntityDoesNotExistError,
+    InvalidOperationError,
+)
 from src.auth.utils.database.general import (
     local_time,
     verify_uuid,
@@ -39,10 +47,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
 
                 if not latest_record:
                     logging.info("OTP data initialization not found.")
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Data not found.",
-                    )
+                    raise EntityDoesNotExistError(detail="Data not found.")
 
                 jakarta_timezone = timezone("Asia/Jakarta")
                 times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
@@ -52,36 +57,30 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
 
                 if not account.phone_number:
                     logging.info("User should filled phone number yet.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="User should fill phone number first.",
+                    raise MandatoryInputError(
+                        detail="User should fill phone number first."
                     )
 
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
+                    raise InvalidOperationError(
+                        detail=f"Maximum API hit reached. You can try again after {formatted_time}."
                     )
 
                 if now_utc < latest_record.save_to_hit_at:
                     logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
+                    raise InvalidOperationError(
                         detail="Should wait in 1 minutes.",
                     )
 
                 if not account:
                     logging.info("Data otp found.")
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, detail="Data not found."
-                    )
+                    raise EntityDoesNotExistError(detail="Data not found.")
 
                 if account.verified_phone_number:
                     logging.info("User phone number already verified.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="User phone number already verified.",
+                    raise EntityAlreadyVerifiedError(
+                        detail="User phone number already verified."
                     )
 
                 if (
@@ -121,36 +120,30 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     #     )
 
                     # if whatsapp_response.status_code != 200:
-                    #     raise HTTPException(
-                    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    #         detail="Failed to send OTP via WhatsApp.",
-                    #     )
+                    #     raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
 
                     await session.execute(valid_per_day)
                     response.success = True
                     response.message = "OTP data sent to phone number."
                     response.data = UniqueID(unique_id=unique_id)
 
-            except HTTPException as E:
-                raise E
+            except FinanceTrackerApiError as FTE:
+                raise FTE
+
             except Exception as E:
-                logging.error(f"Exception error during send otp phone number: {E}")
-                await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during send otp phone number: {E}.",
+                logging.error(f"Error during send otp email: {E}")
+                raise ServiceError(
+                    detail=f"Service error during send otp to phone number: {E}.",
+                    name="Whatsapp API",
                 )
             finally:
                 await session.commit()
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Exception error in send_otp_phone_number_endpoint: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
     return response
 
 

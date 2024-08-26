@@ -75,3 +75,5 @@ For Windows users, you'll also need to install either MinGW or Cygwin to run the
 
 # Repo Owner? #
 * Bastian Armananta
+* Andika Dwi Santoso
+* Lizamuddin Al Hasan

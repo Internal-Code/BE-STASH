@@ -1,11 +1,17 @@
 from uuid_extensions import uuid7
 from src.database.models import users
+from fastapi import APIRouter, status
 from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import CreateUser
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
-from fastapi import APIRouter, HTTPException, status
+from src.auth.schema.response import ResponseDefault, UniqueID
+from src.auth.routers.exceptions import (
+    EntityAlreadyExistError,
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+)
 from src.auth.utils.database.general import (
     check_fullname,
     check_phone_number,
@@ -39,15 +45,10 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
 
         logging.info("Endpoint register account.")
         if registered_phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Phone number already registered.",
-            )
+            raise EntityAlreadyExistError(detail="Phone number already registered.")
 
         if registered_email:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Email already registered."
-            )
+            raise EntityAlreadyExistError(detail="Email already registered.")
 
         initial_data = await extract_data_otp(user_uuid=user_uuid)
 
@@ -71,10 +72,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
             except Exception as E:
                 logging.error(f"Error during creating account: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during creating account: {E}.",
-                )
+                raise DatabaseError(detail=f"Database error: {E}.")
             finally:
                 await session.close()
 
@@ -91,14 +89,10 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
         response.message = "Account successfully created."
         response.data = UniqueID(unique_id=user_uuid)
 
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
     except Exception as E:
-        logging.error(f"Error after creating account: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
     return response
 
 

@@ -1,12 +1,18 @@
 from typing import Annotated
-from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
-from src.auth.utils.jwt.general import get_current_user
-from src.auth.utils.database.general import filter_month_year_category, local_time
-from src.auth.schema.response import ResponseDefault
-from src.auth.utils.request_format import MoneySpendSchema
-from src.database.connection import database_connection
+from fastapi import APIRouter, status, Depends
 from src.database.models import money_spend_schemas
+from src.auth.schema.response import ResponseDefault
+from src.auth.utils.jwt.general import get_current_user
+from src.database.connection import database_connection
+from src.auth.utils.request_format import MoneySpendSchema
+from src.auth.utils.database.general import filter_month_year_category, local_time
+from src.auth.routers.exceptions import (
+    EntityAlreadyExistError,
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+)
 
 router = APIRouter(tags=["money-schemas"])
 
@@ -36,8 +42,7 @@ async def create_schema(
         logging.info(
             f"User: {current_user.full_name} already have category {schema.category} in {schema.month}/{schema.year}."
         )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise EntityAlreadyExistError(
             detail=f"Category {schema.category} already saved.",
         )
 
@@ -64,20 +69,17 @@ async def create_schema(
                     f"Error during creating category inside transaction: {E}."
                 )
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during creating new category: {E}.",
+                raise DatabaseError(
+                    detail=f"Database error: {E}.",
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error after creating category: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+
     return response
 
 

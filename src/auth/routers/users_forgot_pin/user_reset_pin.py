@@ -1,12 +1,18 @@
 import httpx
-from datetime import datetime
 from pytz import timezone
+from datetime import datetime
+from fastapi import APIRouter, status
 from src.secret import LOCAL_WHATSAPP_API
-from src.auth.utils.logging import logging
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import ForgotPin, SendOTPPayload
 from src.auth.utils.jwt.general import get_user, get_password_hash
-from fastapi import APIRouter, HTTPException, status
+from src.auth.routers.exceptions import (
+    ServiceError,
+    FinanceTrackerApiError,
+    EntityDoesNotMatchedError,
+    EntityDoesNotExistError,
+    InvalidOperationError,
+)
 from src.auth.utils.database.general import (
     extract_reset_pin_data,
     verify_uuid,
@@ -25,23 +31,18 @@ async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
 
         latest_data = await extract_reset_pin_data(user_uuid=unique_id)
         if not latest_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise EntityDoesNotExistError(detail="User not found")
 
         now_utc = datetime.now(timezone("UTC"))
 
         if now_utc > latest_data.blacklisted_at:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Reset pin token expired."
-            )
+            raise InvalidOperationError(detail="Reset pin token expired.")
 
         if now_utc < latest_data.blacklisted_at:
             validated_pin = await check_pin(pin=schema.pin)
 
             if schema.pin != schema.confirm_new_pin:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                raise EntityDoesNotMatchedError(
                     detail="Passwords is not match.",
                 )
 
@@ -70,22 +71,18 @@ async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
                     )
 
                 if whatsapp_response.status_code != 200:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Failed to send OTP via WhatsApp.",
+                    raise ServiceError(
+                        detail="Failed to send OTP via WhatsApp.", name="Whatsapp API"
                     )
 
                 response.success = True
                 response.message = "Pin successfully reset."
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logging.error(f"Server error resetting password: {e}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {e}.",
-        )
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
+    except Exception as E:
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
     return response
 
 

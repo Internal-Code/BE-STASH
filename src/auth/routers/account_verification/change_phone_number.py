@@ -1,9 +1,15 @@
 from typing import Annotated
 from src.auth.utils.logging import logging
+from fastapi import APIRouter, status, Depends
 from src.auth.utils.jwt.general import get_current_user
-from fastapi import APIRouter, status, Depends, HTTPException
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import ChangeUserPhoneNumber
+from src.auth.routers.exceptions import (
+    EntityForceInputSameDataError,
+    EntityAlreadyExistError,
+    ServiceError,
+    FinanceTrackerApiError,
+)
 from src.auth.utils.database.general import (
     local_time,
     check_phone_number,
@@ -30,14 +36,10 @@ async def change_phone_number_endpoint(
 
     try:
         if validated_phone_number == current_user.phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot use same phone number.",
-            )
+            raise EntityForceInputSameDataError(detail="Cannot use same phone number.")
 
         if registered_phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+            raise EntityAlreadyExistError(
                 detail="Phone number already used.",
             )
 
@@ -59,10 +61,11 @@ async def change_phone_number_endpoint(
         response.message = "Update phone number success."
         response.data = UniqueID(unique_id=current_user.user_uuid)
 
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        raise E
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

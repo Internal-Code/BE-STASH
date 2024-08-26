@@ -2,7 +2,11 @@
 name = "dependencies-finance-bas"
 version = "0.1.0"
 description = "A package management tool Proof of Concept (POC) for private money management system developed using fastapi for development stages."
-authors = ["armananta <armanantabastian@gmail.com>"]
+authors = [
+    "Bastian Armananta <armanantabastian@gmail.com>",
+    "Andika Dwi Santoso <andikasantos19@gmail.com>",
+    "Lizamuddin Al Hasan <test@gmail.com>"
+]
 license = "MIT"
 readme = "README.md"
 package-mode = false

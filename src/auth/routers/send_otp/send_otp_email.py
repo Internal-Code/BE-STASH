@@ -4,13 +4,20 @@ from sqlalchemy.sql import select
 from datetime import timedelta, datetime
 from src.database.models import send_otps
 from src.auth.utils.logging import logging
+from fastapi import APIRouter, status, Depends
 from src.auth.utils.generator import random_number
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
 from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.forgot_password.general import send_gmail
-from fastapi import APIRouter, status, Depends, HTTPException
+from src.auth.routers.exceptions import (
+    ServiceError,
+    FinanceTrackerApiError,
+    EntityAlreadyVerifiedError,
+    MandatoryInputError,
+    InvalidOperationError,
+)
 
 router = APIRouter(tags=["send-otp"], prefix="/send-otp")
 
@@ -42,30 +49,22 @@ async def send_otp_email_endpoint(
 
                 if not current_user.email:
                     logging.info("User is not filled email yet.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="User should add email first.",
-                    )
+                    raise MandatoryInputError(detail="User should add email first.")
 
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Maximum API hit reached. You can try again after {formatted_time}.",
+                    raise InvalidOperationError(
+                        detail=f"Maximum API hit reached. You can try again after {formatted_time}."
                     )
 
                 if now_utc < latest_record.save_to_hit_at:
                     logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Should wait in 1 minutes.",
-                    )
+                    raise InvalidOperationError(detail="Should wait in 1 minutes.")
 
                 if current_user.verified_email:
                     logging.info("User email  already verified.")
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="User email already verified.",
+                    raise EntityAlreadyVerifiedError(
+                        detail="User email already verified."
                     )
 
                 if (
@@ -114,26 +113,23 @@ async def send_otp_email_endpoint(
                     response.success = True
                     response.message = "OTP data sent to email."
 
-            except HTTPException as E:
-                raise E
+            except FinanceTrackerApiError as FTE:
+                raise FTE
+
             except Exception as E:
-                logging.error(f"Exception error during send otp email: {E}")
-                await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during send otp email: {E}.",
+                logging.error(f"Error during send otp email: {E}")
+                raise ServiceError(
+                    detail=f"Service error during send otp email: {E}.",
+                    name="Google SMTP",
                 )
             finally:
                 await session.commit()
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Exception error in send_otp_phone_number_endpoint: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

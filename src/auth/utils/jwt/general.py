@@ -1,18 +1,22 @@
-from sqlalchemy import and_, select
-from uuid_extensions import uuid7
-from pydantic import EmailStr
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import timedelta
 from typing import Annotated
+from pydantic import EmailStr
+from datetime import timedelta
+from jose import JWTError, jwt
+from uuid_extensions import uuid7
+from sqlalchemy import and_, select
+from src.database.models import users
+from sqlalchemy.engine.row import Row
+from passlib.context import CryptContext
+from src.auth.utils.logging import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.engine.row import Row
-from src.auth.utils.logging import logging
-from src.auth.utils.database.general import local_time, is_access_token_blacklisted
 from src.database.connection import database_connection
-from src.database.models import users
-from src.auth.utils.database.general import check_pin, verify_uuid
+from src.auth.utils.database.general import (
+    check_pin,
+    verify_uuid,
+    local_time,
+    is_access_token_blacklisted,
+)
 from src.auth.utils.request_format import (
     TokenData,
     UserInDB,

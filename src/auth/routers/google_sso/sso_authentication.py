@@ -1,13 +1,14 @@
 from datetime import timedelta
 from uuid_extensions import uuid7
+from fastapi import APIRouter, status
 from starlette.requests import Request
 from src.auth.utils.logging import logging
-from fastapi import APIRouter, status, HTTPException
+from src.auth.utils.generator import generate_full_name
 from authlib.integrations.starlette_client import OAuthError
 from src.auth.utils.sso.general import google_oauth_configuration
 from src.secret import ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED
-from src.auth.utils.generator import generate_full_name
 from src.auth.schema.response import ResponseDefault, UniqueID, ResponseToken
+from src.auth.routers.exceptions import ServiceError, FinanceTrackerApiError
 from src.auth.utils.database.general import (
     save_google_sso_account,
     check_fullname,
@@ -31,10 +32,7 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseToken | Response
     try:
         user_info = token.get("userinfo")
         if not user_info:
-            raise HTTPException(
-                status_code=status.HTTP_417_EXPECTATION_FAILED,
-                detail="Google login failed.",
-            )
+            raise ServiceError(detail="Google login failed.", name="Google SSO")
 
         request.session["userinfo"] = dict(user_info)
         registered_account = await get_user(email=user_info.email)
@@ -104,32 +102,23 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseToken | Response
                 )
                 return response
 
-        except HTTPException as E:
-            raise E
+        except FinanceTrackerApiError as FTE:
+            raise FTE
 
         except Exception as E:
-            logging.error(f"Error while google sso authentication: {E}")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Error while google sso authentication: {E}",
-            )
+            raise ServiceError(detail=f"Service error: {E}.", name="Google SSO")
 
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
 
     except OAuthError as OauthErr:
         logging.error(f"Oauth error in google_sso_auth: {OauthErr}.")
-        raise HTTPException(
-            status_code=status.HTTP_417_EXPECTATION_FAILED,
+        raise ServiceError(
             detail="SSO error, please perform relogin.",
         )
 
     except Exception as E:
-        logging.error(f"Exception error in google_sso_auth: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
 
 router.add_api_route(

@@ -1,14 +1,23 @@
+from fastapi import APIRouter, status
 from src.auth.utils.logging import logging
 from src.auth.utils.jwt.general import get_user
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import ChangeUserPhoneNumber
+from src.auth.routers.exceptions import (
+    EntityForceInputSameDataError,
+    EntityAlreadyExistError,
+    ServiceError,
+    FinanceTrackerApiError,
+    MandatoryInputError,
+    EntityDoesNotExistError,
+    EntityAlreadyFilledError,
+)
 from src.auth.utils.database.general import (
     update_user_phone_number,
     verify_uuid,
     check_phone_number,
     update_otp_data,
 )
-from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(tags=["users-register"], prefix="/users")
 
@@ -24,32 +33,23 @@ async def wrong_phone_number_endpoint(
         registered_phone_number = await get_user(phone_number=schema.phone_number)
 
         if account.phone_number == schema.phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise EntityForceInputSameDataError(
                 detail="Cannot changed into same phone number.",
             )
 
         if registered_phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Phone number already taken.",
-            )
+            raise EntityAlreadyExistError(detail="Phone number already registered.")
 
         if not account.full_name:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise MandatoryInputError(
                 detail="User should fill full name first.",
             )
 
         if not account:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Account not found."
-            )
+            raise EntityDoesNotExistError(detail="Account not found.")
 
-        if account.pin is not None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Account already set pin"
-            )
+        if account.pin:
+            raise EntityAlreadyFilledError(detail="Account already set pin.")
 
         if account:
             logging.info("Update registered phone number.")
@@ -62,14 +62,10 @@ async def wrong_phone_number_endpoint(
             response.success = True
             response.message = "Phone number successfully updated."
             response.data = UniqueID(unique_id=account.user_uuid)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logging.error(f"Server error creating user pin: {e}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {e}.",
-        )
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+    except Exception as E:
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
     return response
 
 
