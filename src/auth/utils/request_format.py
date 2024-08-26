@@ -51,6 +51,7 @@ class CreateSpend(BaseModel):
 class CreateUser(BaseModel):
     full_name: str
     phone_number: str
+    email: EmailStr | None = None
 
 
 class UserPin(BaseModel):

@@ -36,6 +36,14 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                 result = await session.execute(query)
 
                 latest_record = result.fetchone()
+
+                if not latest_record:
+                    logging.info("OTP data initialization not found.")
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Data not found.",
+                    )
+
                 jakarta_timezone = timezone("Asia/Jakarta")
                 times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
                     jakarta_timezone
