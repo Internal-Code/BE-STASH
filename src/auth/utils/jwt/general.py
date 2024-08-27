@@ -11,9 +11,8 @@ from src.auth.utils.logging import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from src.database.connection import database_connection
+from src.auth.utils.validator import check_pin, check_uuid
 from src.auth.utils.database.general import (
-    check_pin,
-    verify_uuid,
     local_time,
     is_access_token_blacklisted,
 )
@@ -90,7 +89,7 @@ async def get_user(
 
 
 async def authenticate_user(user_uuid: uuid7, pin: str) -> Row | None:
-    await verify_uuid(unique_id=user_uuid)
+    await check_uuid(unique_id=user_uuid)
     await check_pin(pin=pin)
 
     try:

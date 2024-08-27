@@ -3,12 +3,13 @@ from typing import Annotated
 from src.secret import LOCAL_WHATSAPP_API
 from src.auth.utils.logging import logging
 from fastapi import APIRouter, status, Depends
+from src.auth.utils.validator import check_pin
 from src.auth.schema.response import ResponseDefault
 from src.database.models import users, blacklist_tokens
 from src.database.connection import database_connection
 from src.auth.utils.forgot_password.general import send_gmail
 from src.auth.utils.request_format import ChangePin, SendOTPPayload
-from src.auth.utils.database.general import local_time, check_pin, extract_tokens
+from src.auth.utils.database.general import local_time, extract_tokens
 from src.auth.utils.jwt.general import get_current_user, verify_pin, get_password_hash
 from src.auth.routers.exceptions import (
     EntityForceInputSameDataError,
@@ -39,9 +40,7 @@ async def change_pin_endpoint(
 
     try:
         if not valid_existing_pin:
-            raise EntityDoesNotMatchedError(
-                detail="Invalid pin. Please input valid existing pin."
-            )
+            raise EntityDoesNotMatchedError(detail="Invalid existing pin.")
 
         if new_pin != confirmed_pin:
             raise EntityDoesNotMatchedError(
@@ -100,7 +99,7 @@ async def change_pin_endpoint(
             )
 
             await send_gmail(
-                email_subject="Registered New Finance Tracker Account.",
+                email_subject="Success Updated New Pin!",
                 email_receiver=current_user.email,
                 email_body=email_body,
             )

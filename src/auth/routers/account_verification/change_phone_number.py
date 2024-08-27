@@ -2,6 +2,7 @@ from typing import Annotated
 from src.auth.utils.logging import logging
 from fastapi import APIRouter, status, Depends
 from src.auth.utils.jwt.general import get_current_user
+from src.auth.utils.validator import check_phone_number
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.request_format import ChangeUserPhoneNumber
 from src.auth.routers.exceptions import (
@@ -12,7 +13,6 @@ from src.auth.routers.exceptions import (
 )
 from src.auth.utils.database.general import (
     local_time,
-    check_phone_number,
     is_using_registered_phone_number,
     update_user_phone_number,
     save_otp_data,

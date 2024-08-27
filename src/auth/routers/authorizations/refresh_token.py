@@ -36,16 +36,15 @@ async def refresh_access_token(
             key=REFRESH_TOKEN_SECRET_KEY,
             algorithms=[ACCESS_TOKEN_ALGORITHM],
         )
-        username = payload.get("sub")
-        user_uuid = payload.get("user_uuid")
-        if user_uuid is None or username is None:
+        user_uuid = payload.get("sub")
+        print(user_uuid)
+        if not user_uuid:
             raise InvalidTokenError(detail="Invalid refresh token.")
 
         access_token_exp = timedelta(minutes=int(ACCESS_TOKEN_EXPIRED))
         new_access_token = jwt.encode(
             {
-                "sub": username,
-                "user_uuid": user_uuid,
+                "sub": user_uuid,
                 "exp": local_time() + access_token_exp,
             },
             key=ACCESS_TOKEN_SECRET_KEY,

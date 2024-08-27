@@ -41,10 +41,10 @@ async def list_schema(
 
     if is_available is False:
         logging.info(
-            f"User {users.username} has not created a schema in {month}/{year}."
+            f"User {users.full_name} has not created a schema in {month}/{year}."
         )
         raise EntityDoesNotExistError(
-            detail=f"User {users.username} has not created a schema in {month}/{year}."
+            detail=f"User {users.full_name} has not created a schema in {month}/{year}."
         )
 
     try:

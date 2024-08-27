@@ -2,6 +2,7 @@ from fastapi import APIRouter, status
 from src.auth.utils.logging import logging
 from src.auth.utils.jwt.general import get_user
 from src.auth.schema.response import ResponseDefault, UniqueID
+from src.auth.utils.validator import check_uuid, check_phone_number
 from src.auth.utils.request_format import ChangeUserPhoneNumber
 from src.auth.routers.exceptions import (
     EntityForceInputSameDataError,
@@ -14,8 +15,6 @@ from src.auth.routers.exceptions import (
 )
 from src.auth.utils.database.general import (
     update_user_phone_number,
-    verify_uuid,
-    check_phone_number,
     update_otp_data,
 )
 
@@ -26,7 +25,7 @@ async def wrong_phone_number_endpoint(
     schema: ChangeUserPhoneNumber, unique_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
-    await verify_uuid(unique_id=unique_id)
+    await check_uuid(unique_id=unique_id)
     await check_phone_number(phone_number=schema.phone_number)
     try:
         account = await get_user(unique_id=unique_id)

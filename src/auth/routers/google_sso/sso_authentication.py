@@ -3,6 +3,7 @@ from uuid_extensions import uuid7
 from fastapi import APIRouter, status
 from starlette.requests import Request
 from src.auth.utils.logging import logging
+from src.auth.utils.validator import check_fullname
 from src.auth.utils.generator import generate_full_name
 from authlib.integrations.starlette_client import OAuthError
 from src.auth.utils.sso.general import google_oauth_configuration
@@ -11,7 +12,6 @@ from src.auth.schema.response import ResponseDefault, UniqueID, ResponseToken
 from src.auth.routers.exceptions import ServiceError, FinanceTrackerApiError
 from src.auth.utils.database.general import (
     save_google_sso_account,
-    check_fullname,
     save_otp_data,
     local_time,
 )

@@ -1,6 +1,6 @@
-from src.auth.utils.jwt.general import get_user
 from fastapi import APIRouter, status
-from src.auth.utils.database.general import check_phone_number
+from src.auth.utils.jwt.general import get_user
+from src.auth.utils.validator import check_phone_number
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.routers.exceptions import (
     EntityDoesNotExistError,

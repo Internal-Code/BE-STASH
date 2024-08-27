@@ -2,11 +2,12 @@ from typing import Annotated
 from src.database.models import users
 from src.auth.utils.logging import logging
 from fastapi import APIRouter, status, Depends
+from src.auth.utils.validator import check_fullname
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.jwt.general import get_current_user
 from src.database.connection import database_connection
 from src.auth.utils.request_format import ChangeUserFullName
-from src.auth.utils.database.general import local_time, check_fullname
+from src.auth.utils.database.general import local_time
 from src.auth.routers.exceptions import (
     DatabaseError,
     EntityForceInputSameDataError,

@@ -62,9 +62,9 @@ from src.auth.routers.account_verification import (
 
 app = FastAPI(
     root_path="/api/v1",
-    title="FastAPI Backend Application",
+    title="Finance Tracker Backend Application",
     description="Backend application for finance-tracker.",
-    version="1.0",
+    version="1.0.0",
 )
 app.openapi_scheme = {
     "type": "oauth2",
@@ -159,7 +159,7 @@ app.add_exception_handler(
     exc_class_or_status_code=EntityDoesNotMatchedError,
     handler=create_exception_handler(
         status.HTTP_400_BAD_REQUEST,
-        "User input data that does not matched on saved data on database..",
+        "User input data that does not matched on saved data on database.",
     ),
 )
 

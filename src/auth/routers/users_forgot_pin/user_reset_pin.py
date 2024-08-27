@@ -4,8 +4,10 @@ from datetime import datetime
 from fastapi import APIRouter, status
 from src.secret import LOCAL_WHATSAPP_API
 from src.auth.schema.response import ResponseDefault
+from src.auth.utils.validator import check_uuid, check_pin
 from src.auth.utils.request_format import ForgotPin, SendOTPPayload
 from src.auth.utils.jwt.general import get_user, get_password_hash
+from src.auth.utils.database.general import extract_reset_pin_data, reset_user_pin
 from src.auth.routers.exceptions import (
     ServiceError,
     FinanceTrackerApiError,
@@ -13,25 +15,19 @@ from src.auth.routers.exceptions import (
     EntityDoesNotExistError,
     InvalidOperationError,
 )
-from src.auth.utils.database.general import (
-    extract_reset_pin_data,
-    verify_uuid,
-    reset_user_pin,
-    check_pin,
-)
 
 router = APIRouter(tags=["users-forgot-pin"], prefix="/users")
 
 
 async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
     response = ResponseDefault()
-    await verify_uuid(unique_id=unique_id)
+    await check_uuid(unique_id=unique_id)
     try:
         account = await get_user(unique_id=unique_id)
 
         latest_data = await extract_reset_pin_data(user_uuid=unique_id)
         if not latest_data:
-            raise EntityDoesNotExistError(detail="User not found")
+            raise EntityDoesNotExistError(detail="User not found.")
 
         now_utc = datetime.now(timezone("UTC"))
 

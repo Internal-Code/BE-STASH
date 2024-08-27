@@ -97,7 +97,7 @@ async def send_otp_email_endpoint(
                         f"Dear <b>{current_user.full_name}</b>,<br><br>"
                         f"We received a request to verify email address. Please enter the following code to verify your account:<br><br>"
                         f"Your verification code is <b>{generated_otp}</b>. Please enter this code to complete your verification<br><br>"
-                        f"Please note, that this code will expire in <b>3 minutes</b>.<br><br>"
+                        f"Please note, that this code will expire in <b>3 minutes</b>.<br>"
                         f"Thank you,<br><br>"
                         f"Best regards,<br>"
                         f"<b>Support Team</b>"

@@ -46,7 +46,7 @@ class EntityAlreadyFilledError(FinanceTrackerApiError):
 
 
 class EntityDoesNotMatchedError(FinanceTrackerApiError):
-    """user inpur data that not matched into saved record"""
+    """user input data that not matched into saved record"""
 
     pass
 

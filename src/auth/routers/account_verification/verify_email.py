@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated
 from src.auth.utils.logging import logging
 from fastapi import APIRouter, status, Depends
+from src.auth.utils.validator import check_otp
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.request_format import OTPVerification
@@ -16,7 +17,6 @@ from src.auth.routers.exceptions import (
 )
 from src.auth.utils.database.general import (
     extract_data_otp,
-    check_otp,
     update_verify_email_status,
 )
 

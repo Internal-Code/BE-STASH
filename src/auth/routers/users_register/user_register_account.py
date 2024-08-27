@@ -3,6 +3,7 @@ from src.database.models import users
 from fastapi import APIRouter, status
 from src.auth.utils.logging import logging
 from src.auth.utils.request_format import CreateUser
+from src.auth.utils.validator import check_fullname, check_phone_number
 from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
 from src.auth.schema.response import ResponseDefault, UniqueID
@@ -13,8 +14,6 @@ from src.auth.routers.exceptions import (
     FinanceTrackerApiError,
 )
 from src.auth.utils.database.general import (
-    check_fullname,
-    check_phone_number,
     is_using_registered_phone_number,
     is_using_registered_email,
     extract_data_otp,

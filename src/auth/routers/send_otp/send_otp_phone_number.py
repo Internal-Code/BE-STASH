@@ -5,7 +5,9 @@ from datetime import timedelta, datetime
 from src.auth.utils.logging import logging
 from src.database.models import send_otps
 from src.auth.utils.jwt.general import get_user
+from src.auth.utils.validator import check_uuid
 from src.auth.utils.generator import random_number
+from src.auth.utils.database.general import local_time
 from src.database.connection import database_connection
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.routers.exceptions import (
@@ -16,20 +18,17 @@ from src.auth.routers.exceptions import (
     EntityDoesNotExistError,
     InvalidOperationError,
 )
-from src.auth.utils.database.general import (
-    local_time,
-    verify_uuid,
-)
 
 router = APIRouter(tags=["send-otp"], prefix="/send-otp")
 
 
 async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
     response = ResponseDefault()
+    await check_uuid(unique_id=unique_id)
+
     now_utc = datetime.now(timezone("UTC"))
     account = await get_user(unique_id=unique_id)
     generated_otp = str(await random_number(6))
-    await verify_uuid(unique_id=unique_id)
 
     try:
         async with database_connection().connect() as session:

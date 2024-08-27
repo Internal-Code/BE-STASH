@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, status
 from src.auth.utils.logging import logging
 from src.auth.utils.jwt.general import get_user
+from src.auth.utils.validator import check_uuid, check_otp
 from src.auth.utils.request_format import OTPVerification
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.routers.exceptions import (
@@ -15,8 +16,6 @@ from src.auth.routers.exceptions import (
 from src.auth.utils.database.general import (
     extract_data_otp,
     update_phone_number_status,
-    verify_uuid,
-    check_otp,
 )
 
 router = APIRouter(tags=["account-verification"], prefix="/verify")
@@ -26,7 +25,7 @@ async def verify_phone_number_endpoint(
     schema: OTPVerification, unique_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
-    await verify_uuid(unique_id=unique_id)
+    await check_uuid(unique_id=unique_id)
 
     try:
         initials_account = await extract_data_otp(user_uuid=unique_id)

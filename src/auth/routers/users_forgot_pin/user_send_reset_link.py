@@ -4,6 +4,7 @@ from fastapi import APIRouter, status
 from datetime import datetime, timedelta
 from src.secret import LOCAL_WHATSAPP_API
 from src.auth.utils.logging import logging
+from src.auth.utils.validator import check_uuid
 from src.auth.utils.jwt.general import get_user
 from src.auth.schema.response import ResponseDefault, UniqueID
 from src.auth.utils.forgot_password.general import send_gmail
@@ -18,7 +19,6 @@ from src.auth.routers.exceptions import (
 from src.auth.utils.database.general import (
     save_reset_pin_data,
     extract_reset_pin_data,
-    verify_uuid,
 )
 
 router = APIRouter(tags=["users-forgot-pin"], prefix="/users")
@@ -28,7 +28,7 @@ async def send_reset_link_endpoint(
     unique_id: str, schema: SendVerificationLink
 ) -> ResponseDefault:
     response = ResponseDefault()
-    await verify_uuid(unique_id=unique_id)
+    await check_uuid(unique_id=unique_id)
 
     try:
         account = await get_user(unique_id=unique_id)
@@ -60,7 +60,7 @@ async def send_reset_link_endpoint(
                     f"Dear {account.email},<br><br>"
                     f"We received a request to reset your password. Please click the link below to create a new password:<br><br>"
                     f'<a href="{reset_link}">Reset Password</a><br><br>'
-                    f"Please note, this password reset link is only valid for <b>5 minutes</b>. If you did not request a password reset, please ignore this email.<br><br>"
+                    f"Please note, this password reset link is only valid for <b>5 minutes</b>. If you did not request a password reset, please ignore this email.<br>"
                     f"Thank you,<br><br>"
                     f"Best regards,<br>"
                     f"<b>Support Team</b>"

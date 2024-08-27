@@ -48,7 +48,7 @@ async def update_category_schema(
 
     if is_available is False:
         logging.info(
-            f"User {current_users.username} is not created schema in {schema.month}/{schema.year}."
+            f"User {current_users.full_name} is not created schema in {schema.month}/{schema.year}."
         )
         raise EntityDoesNotExistError(
             detail=f"Category {schema.category} not found. Please create category first."
