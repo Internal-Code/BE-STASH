@@ -1,16 +1,22 @@
 from typing import Annotated
 from sqlalchemy.sql import update, and_
-from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.logging import logging
+from src.database.models import money_spends
+from fastapi import APIRouter, status, Depends
+from src.auth.schema.response import ResponseDefault
+from src.auth.utils.jwt.general import get_current_user
+from src.database.connection import database_connection
+from src.auth.utils.request_format import UpdateCategorySpending, local_time
+from src.auth.routers.exceptions import (
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+    EntityDoesNotExistError,
+)
 from src.auth.utils.database.general import (
     filter_daily_spending,
     filter_spesific_category,
 )
-from src.auth.schema.response import ResponseDefault
-from src.auth.utils.request_format import UpdateCategorySpending, local_time
-from src.database.connection import database_connection
-from src.database.models import money_spends
 
 router = APIRouter(tags=["money-spends"])
 
@@ -45,9 +51,8 @@ async def update_monthly_spend(
     )
 
     if not category_already_saved:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Category {schema.changed_category_into} is not created on database. You should reate first.",
+        raise EntityDoesNotExistError(
+            detail=f"Category {schema.changed_category_into} is not found on database. You should create it first."
         )
 
     spending_is_available = await filter_daily_spending(
@@ -61,9 +66,8 @@ async def update_monthly_spend(
     )
 
     if not spending_is_available:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Data daily spending on {schema.spend_day}/{schema.spend_month}/{schema.spend_year} with category {schema.category} not found. Please create first.",
+        raise EntityDoesNotExistError(
+            detail=f"Data daily spending on {schema.spend_day}/{schema.spend_month}/{schema.spend_year} with category {schema.category} not found. Please create first."
         )
 
     try:
@@ -98,20 +102,16 @@ async def update_monthly_spend(
             except Exception as E:
                 logging.error(f"Error while daily spending data: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server Error during daily spending creation: {E}.",
+                raise DatabaseError(
+                    detail=f"Database error: {E}.",
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error while updating category: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

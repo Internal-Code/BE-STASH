@@ -1,9 +1,16 @@
 from typing import Annotated
 from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault
+from fastapi import APIRouter, status, Depends
 from src.auth.utils.request_format import AddEmail
+from src.auth.schema.response import ResponseDefault
 from src.auth.utils.jwt.general import get_current_user
-from fastapi import APIRouter, status, Depends, HTTPException
+from src.auth.routers.exceptions import (
+    EntityForceInputSameDataError,
+    EntityAlreadyExistError,
+    ServiceError,
+    FinanceTrackerApiError,
+    MandatoryInputError,
+)
 from src.auth.utils.database.general import (
     is_using_registered_email,
     update_user_email,
@@ -27,26 +34,17 @@ async def change_email_verified_endpoint(
     try:
         if not current_user.email:
             logging.info("User is not input email yet.")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User should add email first.",
-            )
+            raise MandatoryInputError(detail="User should add email first.")
 
         if not current_user.verified_email:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User email should be verified first.",
-            )
+            raise MandatoryInputError(detail="User email should be verified first.")
 
         if current_user.email == schema.email:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot use same email."
-            )
+            raise EntityForceInputSameDataError(detail="Cannot use same email.")
 
         if registered_email:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already taken. Please use another email.",
+            raise EntityAlreadyExistError(
+                detail="Email already taken. Please use another email."
             )
 
         await update_user_email(
@@ -69,15 +67,11 @@ async def change_email_verified_endpoint(
         response.success = True
         response.message = "Success update user email."
 
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
 
     except Exception as E:
-        logging.error(f"Error while change verified email: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

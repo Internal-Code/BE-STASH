@@ -1,13 +1,19 @@
 from typing import Annotated
 from sqlalchemy.sql import and_
-from fastapi import APIRouter, HTTPException, status, Depends
 from src.auth.utils.logging import logging
-from src.auth.utils.jwt.general import get_current_user
-from src.auth.utils.database.general import filter_month_year_category
-from src.auth.schema.response import ResponseDefault
-from src.auth.utils.request_format import DeleteCategorySchema
-from src.database.connection import database_connection
+from fastapi import APIRouter, status, Depends
 from src.database.models import money_spend_schemas
+from src.auth.schema.response import ResponseDefault
+from src.database.connection import database_connection
+from src.auth.utils.jwt.general import get_current_user
+from src.auth.utils.request_format import DeleteCategorySchema
+from src.auth.utils.database.general import filter_month_year_category
+from src.auth.routers.exceptions import (
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+    EntityDoesNotExistError,
+)
 
 router = APIRouter(tags=["money-schemas"])
 
@@ -37,8 +43,7 @@ async def update_category_schema(
         logging.info(
             f"User {current_user.full_name} does not have the category {schema.category} in {schema.month}/{schema.year}."
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise EntityDoesNotExistError(
             detail=f"Category {schema.category} not found. Please create category first.",
         )
 
@@ -62,20 +67,16 @@ async def update_category_schema(
             except Exception as E:
                 logging.error(f"Error during deleting category: {E}.")
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during deleting category: {E}.",
+                raise DatabaseError(
+                    detail=f"Database error: {E}.",
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error after updating category: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

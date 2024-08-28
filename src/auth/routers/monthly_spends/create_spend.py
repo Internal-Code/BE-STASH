@@ -1,12 +1,17 @@
 from typing import Annotated
-from fastapi import APIRouter, HTTPException, status, Depends
-from src.auth.utils.jwt.general import get_current_user
 from src.auth.utils.logging import logging
-from src.auth.utils.database.general import filter_month_year_category, local_time
+from fastapi import APIRouter, status, Depends
 from src.auth.schema.response import ResponseDefault
 from src.auth.utils.request_format import CreateSpend
+from src.auth.utils.jwt.general import get_current_user
 from src.database.connection import database_connection
 from src.database.models import money_spends, money_spend_schemas
+from src.auth.utils.database.general import filter_month_year_category, local_time
+from src.auth.routers.exceptions import (
+    ServiceError,
+    DatabaseError,
+    FinanceTrackerApiError,
+)
 
 router = APIRouter(tags=["money-spends"])
 
@@ -75,10 +80,7 @@ async def create_spend(
                             f"Error during creating new spend money and schema: {E}."
                         )
                         await session.rollback()
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Server error during creating new spend money and schema: {E}.",
-                        )
+                        raise DatabaseError(detail=f"Database error: {E}.")
                 else:
                     try:
                         logging.info(
@@ -103,29 +105,22 @@ async def create_spend(
                     except Exception as E:
                         logging.error(f"Error during creating new spend money: {E}.")
                         await session.rollback()
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Server error during creating new spend money: {E}.",
-                        )
+                        raise DatabaseError(detail=f"Database error: {E}.")
             except Exception as E:
                 logging.error(
                     f"Error during creating spend money or with adding money schema: {E}."
                 )
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Server error during creating spend money or with adding money schema: {E}.",
+                raise DatabaseError(
+                    detail=f"Database error during creating spend money or with adding money schema: {E}."
                 )
             finally:
                 await session.close()
-    except HTTPException as E:
-        raise E
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
     except Exception as E:
-        logging.error(f"Error after creating spend money: {E}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {E}.",
-        )
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
     return response
 

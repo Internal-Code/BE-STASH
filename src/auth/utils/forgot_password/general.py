@@ -1,10 +1,9 @@
-import smtplib
 import ssl
+import smtplib
+from pydantic import EmailStr
 from email.mime.text import MIMEText
 from email.message import EmailMessage
-from pydantic import EmailStr
 from src.auth.utils.logging import logging
-from fastapi import HTTPException, status
 from src.secret import (
     GOOGLE_DEFAULT_EMAIL,
     GOOGLE_APP_PASSWORD,
@@ -19,50 +18,12 @@ from smtplib import (
     SMTPDataError,
     SMTPConnectError,
 )
-
-
-# async def twilio_account(account_sid: str = TWILLIO_ACCOUNT_SID, account_auth_token: str = TWILLIO_AUTH_TOKEN) -> Client:
-#     try:
-#         twillio_client = await Client(account_sid, account_auth_token)
-#         logging.info("Twilio client successfully authenticated.")
-#     except TwilioRestException as e:
-#         logging.error(f"Twilio REST API error: {e}")
-#         raise HTTPException(
-#             status_code=status.HTTP_502_BAD_GATEWAY,
-#             detail="Failed to authenticate with Twilio. Please try again later.",
-#         )
-#     except TwilioException as e:
-#         logging.error(f"Twilio error: {e}")
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail="An internal server error occurred with Twilio. Please try again later.",
-#         )
-#     except HTTPException as e:
-#         raise e
-#     except Exception as e:
-#         logging.error(f"Unexpected error during Twilio authentication: {e}")
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail="An unexpected error occurred. Please try again later.",
-#         )
-#     return twillio_client
-
-# async def send_twillio_messages(
-#     message_receiver: str,
-#     messages: str,
-#     message_sender: str = TWILLIO_PHONE_NUMBER,
-#     twillio_client: Client = twilio_account()
-# ) -> str:
-#     try:
-#         messages = twillio_client.messages.create(
-#             to=message_receiver,
-#             from_=message_sender,
-#             body=messages
-#         )
-#         return messages
-#     except Exception as E:
-#         pass
-#     return None
+from src.auth.routers.exceptions import (
+    AuthenticationFailed,
+    FinanceTrackerApiError,
+    ServiceError,
+    EntityDoesNotMatchedError,
+)
 
 
 async def send_gmail(
@@ -94,54 +55,46 @@ async def send_gmail(
                     )
                 except Exception as E:
                     logging.error(f"Error during sending smtp email: {E}")
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Internal Server Error: {E}.",
-                    )
+                    raise ServiceError(detail=f"SMTP Error: {E}.", name="Google SMTP")
                 finally:
                     smtp.close()
         except SMTPAuthenticationError as e:
             logging.error(f"SMTPAuthenticationError: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="SMTP Authentication failed. Please check your credentials.",
+            raise AuthenticationFailed(
+                detail="SMTP Authentication failed. Please check your credentials."
             )
         except SMTPRecipientsRefused as e:
             logging.error(f"SMTPRecipientsRefused: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="SMTP Recipients refused. The email address might be invalid.",
+            raise EntityDoesNotMatchedError(
+                detail="SMTP Recipients refused. The email address might be invalid."
             )
         except SMTPSenderRefused as e:
             logging.error(f"SMTPSenderRefused: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="SMTP Sender refused. The sender's email address might be invalid.",
+            raise EntityDoesNotMatchedError(
+                detail="SMTP Sender refused. The sender's email address might be invalid."
             )
         except SMTPDataError as e:
             logging.error(f"SMTPDataError: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServiceError(
                 detail="SMTP Data error occurred while sending the email.",
+                name="Google SMTP",
             )
         except SMTPConnectError as e:
             logging.error(f"SMTPConnectError: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Failed to connect to the SMTP server.",
+            raise ServiceError(
+                detail="Failed to connect to the SMTP server.", name="Google SMTP"
             )
         except SMTPException as e:
             logging.error(f"SMTPException: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"SMTP error occurred: {str(e)}",
+            raise ServiceError(
+                detail=f"SMTP error occurred: {str(e)}", name="Google SMTP"
             )
-    except HTTPException as e:
-        raise e
+    except FinanceTrackerApiError as FTE:
+        raise FTE
     except Exception as E:
         logging.error(f"Unexpected error during Gmail SMTP authentication: {E}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        raise ServiceError(
             detail="An unexpected error occurred. Please try again later",
+            name="Google SMTP",
         )
     return smtp

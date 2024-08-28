@@ -1,15 +1,13 @@
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.schema import Table
-from sqlalchemy.engine.row import Row
-from uuid_extensions import uuid7
-from sqlalchemy.sql import and_, update
-from pydantic import EmailStr
 from pytz import timezone
+from pydantic import EmailStr
 from sqlalchemy import select
+from uuid_extensions import uuid7
+from sqlalchemy.engine.row import Row
+from sqlalchemy.sql.schema import Table
+from sqlalchemy.sql import and_, update
 from datetime import datetime, timedelta
-from fastapi import HTTPException, status
 from src.auth.utils.logging import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.models import (
     money_spend_schemas,
     money_spends,
@@ -27,70 +25,7 @@ def local_time(zone: str = "UTC") -> datetime:
     return time
 
 
-async def create_category_format(
-    category: str,
-    user_uuid: uuid7,
-    month: int = local_time().month,
-    year: int = local_time().year,
-    budget: int = 0,
-    updated_at: datetime = None,
-) -> dict:
-    return {
-        "created_at": local_time(),
-        "updated_at": updated_at,
-        "user_uuid": user_uuid,
-        "month": month,
-        "year": year,
-        "category": category,
-        "budget": budget,
-    }
-
-
-def create_spending_format(
-    user_uuid: uuid7,
-    category: str,
-    description: str,
-    amount: int = 0,
-    spend_day: int = local_time().day,
-    spend_month: int = local_time().month,
-    spend_year: int = local_time().year,
-    updated_at: datetime = None,
-) -> dict:
-    return {
-        "created_at": local_time(),
-        "updated_at": updated_at,
-        "user_uuid": user_uuid,
-        "spend_day": spend_day,
-        "spend_month": spend_month,
-        "spend_year": spend_year,
-        "category": category,
-        "description": description,
-        "amount": amount,
-    }
-
-
-def register_account_format(
-    first_name: str,
-    last_name: str,
-    username: str,
-    email: EmailStr,
-    password: str,
-    updated_at: datetime = None,
-) -> dict:
-    return {
-        "user_uuid": uuid7(),
-        "created_at": local_time(),
-        "updated_at": updated_at,
-        "first_name": first_name,
-        "last_name": last_name,
-        "username": username,
-        "email": email,
-        "password": password,
-        "last_login": local_time(),
-    }
-
-
-async def filter_spesific_category(user_uuid: uuid7, category: str) -> bool:
+async def filter_spesific_category(user_uuid: uuid7, category: str) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -118,7 +53,7 @@ async def filter_month_year_category(
     category: str,
     month: int = local_time().month,
     year: int = local_time().year,
-) -> bool:
+) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -153,7 +88,7 @@ async def filter_daily_spending(
     spend_day: int = local_time().day,
     spend_month: int = local_time().month,
     spend_year: int = local_time().year,
-) -> Row | None:
+) -> Row | None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -190,7 +125,7 @@ async def filter_daily_spending(
 
 async def filter_month_year(
     user_uuid: uuid7, month: int = local_time().month, year: int = local_time().year
-) -> bool:
+) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -218,135 +153,9 @@ async def filter_month_year(
     return False
 
 
-# async def filter_user_register(username: str, email: EmailStr) -> None:
-#     try:
-#         logging.info("Filtering username, email and phone number.")
-
-#         if await is_using_registered_email(email=email):
-#             raise HTTPException(
-#                 status_code=status.HTTP_409_CONFLICT,
-#                 detail="Email already taken. Please use another email.",
-#             )
-#         if await is_using_registered_username(username=username):
-#             raise HTTPException(
-#                 status_code=status.HTTP_409_CONFLICT,
-#                 detail="Username already taken. Please use another username.",
-#             )
-
-#     except HTTPException as e:
-#         raise e
-
-#     except Exception as e:
-#         logging.error(f"Error while filter_registered_user availability: {e}.")
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"Internal Server Error: {e}.",
-#         )
-
-
-async def check_phone_number(phone_number: str) -> str:
-    if not phone_number.isdigit():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number must contain only digits.",
-        )
-
-    if not (10 <= len(phone_number) <= 13):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number must be between 10 or 13 digits long.",
-        )
-
-    return phone_number
-
-
-async def check_pin(pin: str) -> str:
-    if not pin.isdigit():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Pin number must contain only digits.",
-        )
-
-    if len(pin) != 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Pin number must be 6 digits long.",
-        )
-    return pin
-
-
-async def check_otp(otp: str) -> str:
-    if not otp.isdigit():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP number must contain only digits.",
-        )
-
-    if len(otp) != 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP number must be 6 digits long.",
-        )
-    return otp
-
-
-async def check_fullname(value: str) -> str:
-    value = " ".join(value.split())
-
-    if not all(char.isalpha() or char.isspace() for char in value):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Fullname should contain only letters and spaces.",
-        )
-
-    if len(value) > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Fullname should be less than 100 character.",
-        )
-
-    fullname = value.title()
-
-    return fullname
-
-
-# async def check_password(value: str) -> str:
-#     if len(value) == 0:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Password cannot be empty.",
-#         )
-#     if len(value) < 8:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Password must be at least 8 characters long.",
-#         )
-#     if not re.search(r"[A-Z]", value):
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Password must contain at least one uppercase letter.",
-#         )
-#     if not re.search(r"[a-z]", value):
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Password must contain at least one lowercase letter.",
-#         )
-#     if not re.search(r"[0-9]", value):
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Password must contain at least one number.",
-#         )
-#     if not re.search(r"[\W_]", value):
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Password must contain at least one special character.",
-#         )
-#     return value
-
-
 async def is_using_registered_field(
     session: AsyncSession, table_name: Table, field: str, value: str
-) -> bool:
+) -> bool:  # used
     try:
         query = select(table_name).where(getattr(table_name.c, field) == value)
         result = await session.execute(query)
@@ -358,7 +167,7 @@ async def is_using_registered_field(
     return False
 
 
-async def is_using_registered_email(email: EmailStr) -> bool:
+async def is_using_registered_email(email: EmailStr) -> bool:  # used
     if not email:
         return False
 
@@ -381,7 +190,7 @@ async def is_using_registered_email(email: EmailStr) -> bool:
     return False
 
 
-async def is_using_registered_phone_number(phone_number: str) -> bool:
+async def is_using_registered_phone_number(phone_number: str) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -404,27 +213,7 @@ async def is_using_registered_phone_number(phone_number: str) -> bool:
     return False
 
 
-async def is_using_registered_username(username: str) -> bool:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                result = await is_using_registered_field(
-                    session=session, table_name=users, field="username", value=username
-                )
-                if result:
-                    return True
-            except Exception as E:
-                logging.error(f"Error while is_using_registered_username: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after is_using_registered_username: {E}")
-
-    return False
-
-
-async def is_access_token_blacklisted(access_token: str) -> bool:
+async def is_access_token_blacklisted(access_token: str) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -446,7 +235,7 @@ async def is_access_token_blacklisted(access_token: str) -> bool:
     return False
 
 
-async def is_refresh_token_blacklisted(refresh_token: str) -> bool:
+async def is_refresh_token_blacklisted(refresh_token: str) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -469,7 +258,9 @@ async def is_refresh_token_blacklisted(refresh_token: str) -> bool:
     return False
 
 
-async def save_tokens(user_uuid: uuid7, access_token: str, refresh_token: str) -> None:
+async def save_tokens(
+    user_uuid: uuid7, access_token: str, refresh_token: str
+) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -494,7 +285,7 @@ async def save_tokens(user_uuid: uuid7, access_token: str, refresh_token: str) -
     return None
 
 
-async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:
+async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -522,7 +313,7 @@ async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:
     return None
 
 
-async def extract_reset_pin_data(user_uuid: uuid7) -> Row | None:
+async def extract_reset_pin_data(user_uuid: uuid7) -> Row | None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -547,7 +338,7 @@ async def extract_reset_pin_data(user_uuid: uuid7) -> Row | None:
     return None
 
 
-async def extract_tokens(user_uuid: uuid7) -> Row | None:
+async def extract_tokens(user_uuid: uuid7) -> Row | None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -578,7 +369,7 @@ async def save_google_sso_account(
     pin: str = None,
     is_email_verified: bool = True,
     is_phone_number_verified: bool = False,
-) -> None:
+) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -605,52 +396,7 @@ async def save_google_sso_account(
     return None
 
 
-async def save_user_pin(user_uuid: uuid7, user_pin: str) -> None:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                query = (
-                    users.update()
-                    .where(
-                        users.c.user_uuid == user_uuid,
-                    )
-                    .values(pin=user_pin)
-                )
-                await session.execute(query)
-                await session.commit()
-                logging.info(f"User {user_uuid} successfully saved pin into database.")
-            except Exception as E:
-                logging.error(f"Error while save_user_pin: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after save_user_pin: {E}")
-    return None
-
-
-async def verify_user_pin(user_uuid: uuid7, pin: str) -> bool:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                query = select(users).where(
-                    and_(users.c.user_uuid == user_uuid, users.c.pin == pin)
-                )
-                result = await session.execute(query)
-                latest_record = result.fetchone()
-                if latest_record is not None:
-                    return latest_record
-            except Exception as E:
-                logging.error(f"Error during verify_user_pin: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after verify_user_pin: {E}")
-    return None
-
-
-async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:
+async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -672,40 +418,13 @@ async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:
     return None
 
 
-async def save_phone_number(email: EmailStr, phone_number: str) -> None:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                query = (
-                    users.update()
-                    .where(
-                        users.c.email == email,
-                    )
-                    .values(phone_number=phone_number)
-                )
-
-                await session.execute(query)
-                await session.commit()
-                logging.info(
-                    f"User {email} successfully update phone number into database."
-                )
-            except Exception as E:
-                logging.error(f"Error while save_phone_number: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after save_phone_number: {E}")
-    return None
-
-
 async def save_otp_data(
     user_uuid: uuid7,
     current_api_hit: int = None,
     otp_number: str = None,
     saved_by_system: bool = False,
     save_to_hit_at: datetime = local_time() + timedelta(minutes=1),
-) -> None:
+) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -740,7 +459,7 @@ async def update_otp_data(
     save_to_hit_at: datetime = local_time(),
     blacklisted_at: datetime = local_time(),
     hit_tomorrow_at: datetime = local_time(),
-) -> None:
+) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -769,48 +488,10 @@ async def update_otp_data(
     return None
 
 
-async def update_otp_phone_number_verification(
-    user_uuid: uuid7,
-    current_api_hit: int = None,
-    otp_number: str = None,
-    saved_by_system: bool = False,
-    save_to_hit_at: datetime = datetime.now(timezone("UTC")) + timedelta(minutes=1),
-    blacklisted_at: datetime = datetime.now(timezone("UTC")) + timedelta(minutes=3),
-) -> None:
+async def extract_data_otp(user_uuid: uuid7) -> Row | None:  # used
     try:
         async with database_connection().connect() as session:
             async with session.begin():
-                try:
-                    query = (
-                        send_otps.update()
-                        .where(send_otps.c.user_uuid == user_uuid)
-                        .values(
-                            created_at=local_time(),
-                            current_api_hit=current_api_hit,
-                            otp_number=otp_number,
-                            save_to_hit_at=save_to_hit_at,
-                            blacklisted_at=blacklisted_at,
-                            saved_by_system=saved_by_system,
-                        )
-                    )
-                    await session.execute(query)
-                    await session.commit()
-                except Exception as E:
-                    logging.error(
-                        f"Error while save_otp_phone_number_verification: {E}"
-                    )
-                    await session.rollback()
-                finally:
-                    await session.close()
-    except Exception as E:
-        logging.error(f"Error after save_otp_phone_number_verification: {E}")
-    return None
-
-
-async def extract_data_otp(user_uuid: uuid7) -> Row | None:
-    try:
-        async with database_connection().connect() as session:
-            async with session.begin():  # Start a transaction block
                 try:
                     query = (
                         select(send_otps)
@@ -827,16 +508,15 @@ async def extract_data_otp(user_uuid: uuid7) -> Row | None:
                     logging.info("Data otp not found.")
                 except Exception as e:
                     logging.error(f"Error during extract_phone_number_otp: {e}")
-                    await session.rollback()  # Roll back the transaction on failure
-                    raise e
+                    await session.rollback()
                 finally:
-                    await session.close()  # Ensure the session is closed properly
+                    await session.close()
     except Exception as e:
         logging.error(f"Error after extract_phone_number_otp: {e}")
     return None
 
 
-async def update_phone_number_status(user_uuid: uuid7) -> None:
+async def update_phone_number_status(user_uuid: uuid7) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -860,7 +540,7 @@ async def update_phone_number_status(user_uuid: uuid7) -> None:
     return None
 
 
-async def update_verify_email_status(user_uuid: uuid7) -> None:
+async def update_verify_email_status(user_uuid: uuid7) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -884,33 +564,7 @@ async def update_verify_email_status(user_uuid: uuid7) -> None:
     return None
 
 
-async def update_user_google_sso(
-    user_uuid: uuid7, phone_number: str, full_name: str
-) -> None:
-    try:
-        async with database_connection().connect() as session:
-            try:
-                query = (
-                    users.update()
-                    .where(
-                        users.c.user_uuid == user_uuid,
-                    )
-                    .values(phone_number=phone_number, full_name=full_name)
-                )
-                await session.execute(query)
-                await session.commit()
-                logging.info("User successfully updated full name and phone number.")
-            except Exception as E:
-                logging.error(f"Error while update_user_google_sso: {E}")
-                await session.rollback()
-            finally:
-                await session.close()
-    except Exception as E:
-        logging.error(f"Error after update_user_google_sso: {E}")
-    return None
-
-
-async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:
+async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -934,7 +588,7 @@ async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:
     return None
 
 
-async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
+async def update_user_pin(user_uuid: uuid7, pin: str) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -960,7 +614,7 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:
 
 async def update_user_email(
     user_uuid: uuid7, email: EmailStr, verified_email: bool
-) -> None:
+) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -986,13 +640,3 @@ async def update_user_email(
     except Exception as E:
         logging.error(f"Error after update_user_email: {E}")
     return None
-
-
-async def verify_uuid(unique_id: uuid7) -> UUID:
-    try:
-        valid_uuid = UUID(unique_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
-        )
-    return valid_uuid

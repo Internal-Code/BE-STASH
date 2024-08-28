@@ -1,17 +1,24 @@
 import httpx
 from pytz import timezone
+from fastapi import APIRouter, status
 from datetime import datetime, timedelta
 from src.secret import LOCAL_WHATSAPP_API
 from src.auth.utils.logging import logging
-from src.auth.schema.response import ResponseDefault, UniqueID
-from src.auth.utils.request_format import SendVerificationLink, SendOTPPayload
-from src.auth.utils.forgot_password.general import send_gmail
+from src.auth.utils.validator import check_uuid
 from src.auth.utils.jwt.general import get_user
-from fastapi import APIRouter, HTTPException, status
+from src.auth.schema.response import ResponseDefault, UniqueID
+from src.auth.utils.forgot_password.general import send_gmail
+from src.auth.utils.request_format import SendVerificationLink, SendOTPPayload
+from src.auth.routers.exceptions import (
+    ServiceError,
+    FinanceTrackerApiError,
+    MandatoryInputError,
+    EntityDoesNotExistError,
+    InvalidOperationError,
+)
 from src.auth.utils.database.general import (
     save_reset_pin_data,
     extract_reset_pin_data,
-    verify_uuid,
 )
 
 router = APIRouter(tags=["users-forgot-pin"], prefix="/users")
@@ -21,40 +28,30 @@ async def send_reset_link_endpoint(
     unique_id: str, schema: SendVerificationLink
 ) -> ResponseDefault:
     response = ResponseDefault()
-    await verify_uuid(unique_id=unique_id)
+    await check_uuid(unique_id=unique_id)
 
     try:
         account = await get_user(unique_id=unique_id)
 
         if not account:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Account not found.",
-            )
+            raise EntityDoesNotExistError(detail="Account not found.")
 
         reset_link = f"http://localhost:8000/api/v1/users/reset-pin/{unique_id}"
 
         if schema.method == schema.method.EMAIL:
             if not account.verified_email and account.email:
                 logging.info("User email is not verified.")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User email is not verified.",
+                raise InvalidOperationError(
+                    detail="User email should be verified to send otp."
                 )
 
             if not account.email:
                 logging.info("User is not input email yet.")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User should add email first.",
-                )
+                raise MandatoryInputError(detail="User should add email first.")
 
             if not account.pin:
                 logging.info("User is not created pin.")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User is not created account pin.",
-                )
+                raise MandatoryInputError(detail="User should create pin first.")
 
             if account.verified_email:
                 logging.info("User account email validated.")
@@ -63,7 +60,7 @@ async def send_reset_link_endpoint(
                     f"Dear {account.email},<br><br>"
                     f"We received a request to reset your password. Please click the link below to create a new password:<br><br>"
                     f'<a href="{reset_link}">Reset Password</a><br><br>'
-                    f"Please note, this password reset link is only valid for <b>5 minutes</b>. If you did not request a password reset, please ignore this email.<br><br>"
+                    f"Please note, this password reset link is only valid for <b>5 minutes</b>. If you did not request a password reset, please ignore this email.<br>"
                     f"Thank you,<br><br>"
                     f"Best regards,<br>"
                     f"<b>Support Team</b>"
@@ -103,9 +100,8 @@ async def send_reset_link_endpoint(
 
                 if latest_reset_pin_data is not None and now_utc < valid_blacklist_time:
                     logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Should wait until {formatted_time}.",
+                    raise InvalidOperationError(
+                        detail=f"Should wait until {formatted_time}."
                     )
 
                 if now_utc >= valid_blacklist_time:
@@ -127,24 +123,19 @@ async def send_reset_link_endpoint(
         if schema.method == schema.method.PHONE_NUMBER:
             if not account.pin:
                 logging.info("User is not created pin.")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User is not created account pin.",
+                raise MandatoryInputError(
+                    detail="User should create pin first.",
                 )
 
             if account.phone_number and not account.verified_phone_number:
                 logging.info("User phone number not verified.")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User phone number not verified",
+                raise InvalidOperationError(
+                    detail="User phone number should be verified first to send otp",
                 )
 
             if not account.phone_number:
                 logging.info("User phone number empty.")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="User is not added phone number.",
-                )
+                raise InvalidOperationError(detail="User is not added phone number.")
 
             if account.verified_phone_number is True:
                 logging.info("User phone number validated.")
@@ -179,9 +170,9 @@ async def send_reset_link_endpoint(
                         )
 
                     if whatsapp_response.status_code != 200:
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        raise ServiceError(
                             detail="Failed to send OTP via WhatsApp.",
+                            name="Whatsapp API",
                         )
 
                     response.success = True
@@ -203,9 +194,8 @@ async def send_reset_link_endpoint(
 
                 if latest_reset_pin_data is not None and now_utc < valid_blacklist_time:
                     logging.info("User should wait API cooldown.")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Should wait until {formatted_time}.",
+                    raise InvalidOperationError(
+                        detail=f"Should wait until {formatted_time}."
                     )
 
                 if now_utc >= valid_blacklist_time:
@@ -219,9 +209,9 @@ async def send_reset_link_endpoint(
                         )
 
                     if whatsapp_response.status_code != 200:
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        raise ServiceError(
                             detail="Failed to send OTP via WhatsApp.",
+                            name="Whatsapp API",
                         )
 
                     response.success = True
@@ -230,14 +220,11 @@ async def send_reset_link_endpoint(
 
                 return response
             return response
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logging.error(f"Server error send reset link: {e}.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal Server Error: {e}.",
-        )
+    except FinanceTrackerApiError as FTE:
+        raise FTE
+
+    except Exception as E:
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
 
 router.add_api_route(
