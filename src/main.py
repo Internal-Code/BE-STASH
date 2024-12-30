@@ -1,17 +1,17 @@
 from fastapi import FastAPI, status
-from src.auth.routers import health_check
-from src.database.models import async_main
-from src.secret import MIDDLEWARE_SECRET_KEY
+from src.routers import health_check
+from services.postgres.models import database_migration
+from src.secret import Config
 from fastapi.middleware.cors import CORSMiddleware
-from src.database.connection import database_connection
-from src.auth.utils.general import create_exception_handler
+from services.postgres.connection import database_connection
+from utils.custom_error import create_exception_handler
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
-from src.auth.routers.google_sso import sso_authentication, sso_login
-from src.auth.routers.authorizations import access_token, refresh_token
-from src.auth.routers.send_otp import send_otp_phone_number, send_otp_email
-from src.auth.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
-from src.auth.routers.exceptions import (
+from src.routers.google_sso import sso_authentication, sso_login
+from src.routers.authorizations import access_token, refresh_token
+from src.routers.send_otp import send_otp_phone_number, send_otp_email
+from src.routers.users_forgot_pin import user_send_reset_link, user_reset_pin
+from utils.custom_error import (
     AuthenticationFailed,
     EntityAlreadyExistError,
     EntityDoesNotExistError,
@@ -26,31 +26,31 @@ from src.auth.routers.exceptions import (
     MandatoryInputError,
     EntityAlreadyFilledError,
 )
-from src.auth.routers.users_general import (
+from src.routers.users_general import (
     get_user,
     user_detail_full_name,
     user_logout,
     user_detail_phone_number,
     user_detail_email,
 )
-from src.auth.routers.monthly_schemas import (
+from src.routers.monthly_schemas import (
     create_schema,
     list_schema,
     delete_category_schema,
     update_category_schema,
 )
-from src.auth.routers.monthly_spends import (
+from src.routers.monthly_spends import (
     create_spend,
     list_spend,
     update_monthly_spend,
     delete_monthly_spend,
 )
-from src.auth.routers.users_register import (
+from src.routers.users_register import (
     user_create_pin,
     user_register_account,
     user_wrong_phone_number,
 )
-from src.auth.routers.account_verification import (
+from src.routers.account_verification import (
     change_verified_email,
     verify_phone_number,
     verify_email,
@@ -60,12 +60,15 @@ from src.auth.routers.account_verification import (
     change_full_name,
 )
 
+config = Config()
+
 app = FastAPI(
     root_path="/api/v1",
-    title="Finance Tracker Backend Application",
-    description="Backend application for finance-tracker.",
+    title="STASH Backend Application",
+    description="Backend application for STASH.",
     version="1.0.0",
 )
+
 app.openapi_scheme = {
     "type": "oauth2",
     "flows": OAuthFlows(password=OAuthFlowPassword(tokenUrl="auth/token")),
@@ -74,7 +77,7 @@ app.openapi_scheme = {
 
 @app.on_event("startup")
 async def startup():
-    await async_main()
+    await database_migration()
 
 
 @app.on_event("shutdown")
@@ -82,16 +85,15 @@ async def shutdown():
     await database_connection().dispose()
 
 
-# Add middleware configuration here
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(SessionMiddleware, secret_key=MIDDLEWARE_SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=config.MIDDLEWARE_SECRET_KEY)
 
-# Add api route endpoints here
+
 app.include_router(health_check.router)
 app.include_router(create_schema.router)
 app.include_router(update_category_schema.router)
