@@ -1,5 +1,5 @@
 from datetime import timedelta
-from uuid_extensions import uuid7
+from uuid import uuid4
 from fastapi import APIRouter, status
 from starlette.requests import Request
 from utils.logger import logging
@@ -41,7 +41,7 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseToken | Response
         try:
             if not registered_account:
                 logging.info("Creating new user using google sso.")
-                register_account_uuid = str(uuid7())
+                register_account_uuid = str(uuid4())
                 fullname = await generate_full_name(
                     first_name=user_info.given_name, last_name=user_info.family_name
                 )

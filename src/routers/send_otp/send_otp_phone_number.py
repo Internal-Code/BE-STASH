@@ -1,14 +1,17 @@
+import httpx
 from pytz import timezone
 from sqlalchemy.sql import select
 from fastapi import APIRouter, status
 from datetime import timedelta, datetime
 from utils.logger import logging
+from src.secret import Config
 from services.postgres.models import send_otps
 from utils.jwt.general import get_user
 from utils.validator import check_uuid
 from utils.generator import random_number
 from utils.database.general import local_time
 from services.postgres.connection import database_connection
+from utils.request_format import SendOTPPayload
 from src.schema.response import ResponseDefault, UniqueID
 from utils.custom_error import (
     ServiceError,
@@ -19,6 +22,7 @@ from utils.custom_error import (
     InvalidOperationError,
 )
 
+config = Config()
 router = APIRouter(tags=["send-otp"], prefix="/send-otp")
 
 
@@ -108,18 +112,21 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                         )
                     )
 
-                    # payload = SendOTPPayload(
-                    #     phoneNumber=account.phone_number,
-                    #     message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
-                    # )
+                    payload = SendOTPPayload(
+                        phoneNumber=account.phone_number,
+                        message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
+                    )
 
-                    # async with httpx.AsyncClient() as client:
-                    #     whatsapp_response = await client.post(
-                    #         LOCAL_WHATSAPP_API, json=dict(payload)
-                    #     )
+                    async with httpx.AsyncClient() as client:
+                        whatsapp_response = await client.post(
+                            config.WHATSAPP_API_MESSAGE, json=dict(payload)
+                        )
 
-                    # if whatsapp_response.status_code != 200:
-                    #     raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
+                    if whatsapp_response.status_code != 200:
+                        raise ServiceError(
+                            detail="Failed to send OTP via WhatsApp.",
+                            name="Whatsapp API",
+                        )
 
                     await session.execute(valid_per_day)
                     response.success = True

@@ -1,7 +1,6 @@
 from pytz import timezone
 from pydantic import EmailStr
 from sqlalchemy import select
-from uuid_extensions import uuid7
 from sqlalchemy.engine.row import Row
 from sqlalchemy.sql.schema import Table
 from sqlalchemy.sql import and_, update
@@ -25,7 +24,7 @@ def local_time(zone: str = "UTC") -> datetime:
     return time
 
 
-async def filter_spesific_category(user_uuid: uuid7, category: str) -> bool:  # used
+async def filter_spesific_category(user_uuid: str, category: str) -> bool:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -49,7 +48,7 @@ async def filter_spesific_category(user_uuid: uuid7, category: str) -> bool:  # 
 
 
 async def filter_month_year_category(
-    user_uuid: uuid7,
+    user_uuid: str,
     category: str,
     month: int = local_time().month,
     year: int = local_time().year,
@@ -81,7 +80,7 @@ async def filter_month_year_category(
 
 
 async def filter_daily_spending(
-    user_uuid: uuid7,
+    user_uuid: str,
     amount: int,
     category: str,
     description: str,
@@ -124,8 +123,8 @@ async def filter_daily_spending(
 
 
 async def filter_month_year(
-    user_uuid: uuid7, month: int = local_time().month, year: int = local_time().year
-) -> bool:  # used
+    user_uuid: str, month: int = local_time().month, year: int = local_time().year
+) -> bool:
     try:
         async with database_connection().connect() as session:
             try:
@@ -258,9 +257,7 @@ async def is_refresh_token_blacklisted(refresh_token: str) -> bool:  # used
     return False
 
 
-async def save_tokens(
-    user_uuid: uuid7, access_token: str, refresh_token: str
-) -> None:  # used
+async def save_tokens(user_uuid: str, access_token: str, refresh_token: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -285,7 +282,7 @@ async def save_tokens(
     return None
 
 
-async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:  # used
+async def save_reset_pin_data(user_uuid: str, email: EmailStr = None) -> None:  # used
     try:
         async with database_connection().connect() as session:
             try:
@@ -313,7 +310,7 @@ async def save_reset_pin_data(user_uuid: uuid7, email: EmailStr = None) -> None:
     return None
 
 
-async def extract_reset_pin_data(user_uuid: uuid7) -> Row | None:  # used
+async def extract_reset_pin_data(user_uuid: str) -> Row | None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -338,7 +335,7 @@ async def extract_reset_pin_data(user_uuid: uuid7) -> Row | None:  # used
     return None
 
 
-async def extract_tokens(user_uuid: uuid7) -> Row | None:  # used
+async def extract_tokens(user_uuid: str) -> Row | None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -362,14 +359,14 @@ async def extract_tokens(user_uuid: uuid7) -> Row | None:  # used
 
 
 async def save_google_sso_account(
-    user_uuid: uuid7,
+    user_uuid: str,
     email: EmailStr,
     full_name: str = None,
     phone_number: str = None,
     pin: str = None,
     is_email_verified: bool = True,
     is_phone_number_verified: bool = False,
-) -> None:  # used
+) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -396,7 +393,7 @@ async def save_google_sso_account(
     return None
 
 
-async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:  # used
+async def reset_user_pin(user_uuid: str, changed_pin: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -419,12 +416,12 @@ async def reset_user_pin(user_uuid: uuid7, changed_pin: str) -> None:  # used
 
 
 async def save_otp_data(
-    user_uuid: uuid7,
+    user_uuid: str,
     current_api_hit: int = None,
     otp_number: str = None,
     saved_by_system: bool = False,
     save_to_hit_at: datetime = local_time() + timedelta(minutes=1),
-) -> None:  # used
+) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -455,11 +452,11 @@ async def save_otp_data(
 
 
 async def update_otp_data(
-    user_uuid: uuid7,
+    user_uuid: str,
     save_to_hit_at: datetime = local_time(),
     blacklisted_at: datetime = local_time(),
     hit_tomorrow_at: datetime = local_time(),
-) -> None:  # used
+) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -488,7 +485,7 @@ async def update_otp_data(
     return None
 
 
-async def extract_data_otp(user_uuid: uuid7) -> Row | None:  # used
+async def extract_data_otp(user_uuid: str) -> Row | None:
     try:
         async with database_connection().connect() as session:
             async with session.begin():
@@ -516,7 +513,7 @@ async def extract_data_otp(user_uuid: uuid7) -> Row | None:  # used
     return None
 
 
-async def update_phone_number_status(user_uuid: uuid7) -> None:  # used
+async def update_phone_number_status(user_uuid: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -540,7 +537,7 @@ async def update_phone_number_status(user_uuid: uuid7) -> None:  # used
     return None
 
 
-async def update_verify_email_status(user_uuid: uuid7) -> None:  # used
+async def update_verify_email_status(user_uuid: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -564,7 +561,7 @@ async def update_verify_email_status(user_uuid: uuid7) -> None:  # used
     return None
 
 
-async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:  # used
+async def update_user_phone_number(user_uuid: str, phone_number: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -588,7 +585,7 @@ async def update_user_phone_number(user_uuid: uuid7, phone_number: str) -> None:
     return None
 
 
-async def update_user_pin(user_uuid: uuid7, pin: str) -> None:  # used
+async def update_user_pin(user_uuid: str, pin: str) -> None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -613,8 +610,8 @@ async def update_user_pin(user_uuid: uuid7, pin: str) -> None:  # used
 
 
 async def update_user_email(
-    user_uuid: uuid7, email: EmailStr, verified_email: bool
-) -> None:  # used
+    user_uuid: str, email: EmailStr, verified_email: bool
+) -> None:
     try:
         async with database_connection().connect() as session:
             try:

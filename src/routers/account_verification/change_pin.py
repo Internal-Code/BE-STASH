@@ -126,7 +126,7 @@ async def change_pin_endpoint(
 
             async with httpx.AsyncClient() as client:
                 whatsapp_response = await client.post(
-                    config.WHATSAPP_API_CONNECTION, json=dict(payload)
+                    config.WHATSAPP_API_MESSAGE, json=dict(payload)
                 )
 
             if whatsapp_response.status_code != 200:

@@ -2,7 +2,6 @@ from typing import Annotated
 from pydantic import EmailStr
 from datetime import timedelta
 from jose import JWTError, jwt
-from uuid_extensions import uuid7
 from sqlalchemy import and_, select
 from services.postgres.models import users
 from sqlalchemy.engine.row import Row
@@ -85,7 +84,7 @@ async def get_user(
     return None
 
 
-async def authenticate_user(user_uuid: uuid7, pin: str) -> Row | None:
+async def authenticate_user(user_uuid: str, pin: str) -> Row | None:
     await check_uuid(unique_id=user_uuid)
     await check_pin(pin=pin)
 

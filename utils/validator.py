@@ -1,5 +1,4 @@
 from uuid import UUID
-from uuid_extensions import uuid7
 from utils.custom_error import InvalidOperationError
 
 
@@ -53,7 +52,7 @@ async def check_fullname(value: str) -> str:
     return fullname
 
 
-async def check_uuid(unique_id: uuid7) -> UUID:
+async def check_uuid(unique_id: str) -> UUID:
     try:
         valid_uuid = UUID(unique_id)
     except ValueError:

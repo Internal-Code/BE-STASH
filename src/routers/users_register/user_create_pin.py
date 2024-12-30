@@ -1,12 +1,14 @@
+import httpx
 from datetime import timedelta
-from fastapi import APIRouter, status
 from utils.logger import logging
+from src.secret import Config
+from fastapi import APIRouter, status
 from utils.request_format import UserPin
 from src.schema.response import ResponseToken
 from utils.validator import check_uuid, check_pin
 from utils.database.general import update_user_pin
 from utils.forgot_password.general import send_gmail
-from src.secret import Config
+from utils.request_format import SendOTPPayload
 from utils.jwt.general import (
     get_user,
     get_password_hash,
@@ -62,29 +64,31 @@ async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseToken:
                 email_body=email_body,
             )
 
-        # elif account.verified_phone_number:
-        # logging.info("Send account information to phone number.")
-        # payload = SendOTPPayload(
-        #     phoneNumber=account.phone_number,
-        #     message=(
-        #         f"Dear *{account.full_name}*,\n\n"
-        #         "We are pleased to inform you that your phone number has been successfully verified. "
-        #         "You can now log in using the following credentials:\n\n"
-        #         f"Phone Number: *{account.phone_number}*\n"
-        #         f"PIN: *{validated_pin}*\n\n"
-        #         "Please ensure that you keep your account information secure.\n\n"
-        #         "Best Regards,\n"
-        #         "*Support Team*"
-        #     ),
-        # )
+        elif account.verified_phone_number:
+            logging.info("Send account information to phone number.")
+            payload = SendOTPPayload(
+                phoneNumber=account.phone_number,
+                message=(
+                    f"Dear *{account.full_name}*,\n\n"
+                    "We are pleased to inform you that your phone number has been successfully verified. "
+                    "You can now log in using the following credentials:\n\n"
+                    f"Phone Number: *{account.phone_number}*\n"
+                    f"PIN: *{validated_pin}*\n\n"
+                    "Please ensure that you keep your account information secure.\n\n"
+                    "Best Regards,\n"
+                    "*Support Team*"
+                ),
+            )
 
-        # async with httpx.AsyncClient() as client:
-        #     whatsapp_response = await client.post(
-        #         LOCAL_WHATSAPP_API, json=dict(payload)
-        #     )
+        async with httpx.AsyncClient() as client:
+            whatsapp_response = await client.post(
+                config.WHATSAPP_API_MESSAGE, json=dict(payload)
+            )
 
-        # if whatsapp_response.status_code != 200:
-        #     raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
+        if whatsapp_response.status_code != 200:
+            raise ServiceError(
+                detail="Failed to send OTP via WhatsApp.", name="Whatsapp API"
+            )
 
         access_token = await create_access_token(
             data={"sub": unique_id},

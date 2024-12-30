@@ -3,20 +3,6 @@
 # Default host value
 HOST="127.0.0.1"
 
-# Check command-line arguments
-if [ "$1" = "--prod" ]; then
-  echo "Using production environment configuration"
-  CURRENT_IP=$(hostname -I | awk '{print $1}')
-  if [ -z "$CURRENT_IP" ]; then
-    echo "Unable to detect current IP address! Using default host"
-  else
-    HOST="$CURRENT_IP"
-  fi
-else
-  # Default to local if no argument or if --local is passed
-  echo "Using local environment configuration"
-fi
-
 # Checking for existing processes on port 8000
 echo "Checking for existing processes on port 8000"
 PIDS=$(lsof -ti :8000)

@@ -1,4 +1,4 @@
-from uuid_extensions import uuid7
+from uuid import uuid4
 from services.postgres.models import users
 from fastapi import APIRouter, status
 from utils.logger import logging
@@ -40,7 +40,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
     registered_email = await is_using_registered_email(email=schema.email)
 
     try:
-        user_uuid = str(uuid7())
+        user_uuid = str(uuid4())
 
         logging.info("Endpoint register account.")
         if registered_phone_number:
