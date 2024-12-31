@@ -35,14 +35,10 @@ async def list_schema(
 
     response = ResponseDefault()
 
-    is_available = await filter_month_year(
-        user_uuid=users.user_uuid, month=month, year=year
-    )
+    is_available = await filter_month_year(user_uuid=users.user_uuid, month=month, year=year)
 
     if is_available is False:
-        logging.info(
-            f"User {users.full_name} has not created a schema in {month}/{year}."
-        )
+        logging.info(f"User {users.full_name} has not created a schema in {month}/{year}.")
         raise EntityDoesNotExistError(
             detail=f"User {users.full_name} has not created a schema in {month}/{year}."
         )
@@ -60,9 +56,7 @@ async def list_schema(
                 )
                 result = await session.execute(query)
                 data = result.fetchall()
-                logging.info(
-                    f"Get category {money_spend_schemas.name} for {month}/{year}."
-                )
+                logging.info(f"Get category {money_spend_schemas.name} for {month}/{year}.")
                 response.message = "Get schema information success."
                 response.data = [dict(row._mapping) for row in data]
                 response.success = True

@@ -35,9 +35,7 @@ async def list_spending(
 
     response = ResponseDefault()
 
-    is_available = await filter_month_year(
-        user_uuid=users.user_uuid, month=month, year=year
-    )
+    is_available = await filter_month_year(user_uuid=users.user_uuid, month=month, year=year)
 
     if not is_available:
         raise EntityDoesNotExistError(
@@ -57,9 +55,7 @@ async def list_spending(
                 )
                 result = await session.execute(query)
                 data = result.fetchall()
-                logging.info(
-                    f"Get spend per month {money_spends.name} on {month}/{year}."
-                )
+                logging.info(f"Get spend per month {money_spends.name} on {month}/{year}.")
                 response.message = "Get spend per month information success."
                 response.data = [dict(row._mapping) for row in data]
                 response.success = True

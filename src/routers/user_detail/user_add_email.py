@@ -33,14 +33,10 @@ async def add_email_endpoint(
 
     try:
         if registered_email:
-            raise EntityAlreadyExistError(
-                detail="Email already taken. Please use another email."
-            )
+            raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
 
         if current_user.verified_email:
-            raise EntityAlreadyVerifiedError(
-                detail="User already have an verified email."
-            )
+            raise EntityAlreadyVerifiedError(detail="User already have an verified email.")
 
         if current_user.email:
             raise EntityAlreadyAddedError(detail="User already have an email.")

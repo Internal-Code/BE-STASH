@@ -25,11 +25,9 @@ config = Config()
 router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
-async def send_reset_link_endpoint(
-    unique_id: str, schema: SendVerificationLink
-) -> ResponseDefault:
+async def send_reset_link_endpoint(unique_id: str, schema: SendVerificationLink) -> ResponseDefault:
     response = ResponseDefault()
-    await check_uuid(unique_id=unique_id)
+    check_uuid(unique_id=unique_id)
 
     try:
         account = await get_user(unique_id=unique_id)
@@ -42,9 +40,7 @@ async def send_reset_link_endpoint(
         if schema.method == schema.method.EMAIL:
             if not account.verified_email and account.email:
                 logging.info("User email is not verified.")
-                raise InvalidOperationError(
-                    detail="User email should be verified to send otp."
-                )
+                raise InvalidOperationError(detail="User email should be verified to send otp.")
 
             if not account.email:
                 logging.info("User is not input email yet.")
@@ -67,9 +63,7 @@ async def send_reset_link_endpoint(
                     f"<b>Support Team</b>"
                 )
 
-                latest_reset_pin_data = await extract_reset_pin_data(
-                    user_uuid=unique_id
-                )
+                latest_reset_pin_data = await extract_reset_pin_data(user_uuid=unique_id)
 
                 if not latest_reset_pin_data:
                     logging.info("Initialized send reset password link via email.")
@@ -89,10 +83,7 @@ async def send_reset_link_endpoint(
                 now_utc = datetime.now(timezone("UTC"))
                 jakarta_timezone = timezone("Asia/Jakarta")
                 blacklist_time = now_utc + timedelta(minutes=1)
-                if (
-                    latest_reset_pin_data is None
-                    or latest_reset_pin_data.save_to_hit_at is None
-                ):
+                if latest_reset_pin_data is None or latest_reset_pin_data.save_to_hit_at is None:
                     valid_blacklist_time = blacklist_time
                 else:
                     valid_blacklist_time = latest_reset_pin_data.save_to_hit_at
@@ -101,9 +92,7 @@ async def send_reset_link_endpoint(
 
                 if latest_reset_pin_data is not None and now_utc < valid_blacklist_time:
                     logging.info("User should wait API cooldown.")
-                    raise InvalidOperationError(
-                        detail=f"Should wait until {formatted_time}."
-                    )
+                    raise InvalidOperationError(detail=f"Should wait until {formatted_time}.")
 
                 if now_utc >= valid_blacklist_time:
                     logging.info("Saved new reset pin request data.")
@@ -154,14 +143,10 @@ async def send_reset_link_endpoint(
                     ),
                 )
 
-                latest_reset_pin_data = await extract_reset_pin_data(
-                    user_uuid=unique_id
-                )
+                latest_reset_pin_data = await extract_reset_pin_data(user_uuid=unique_id)
 
                 if not latest_reset_pin_data:
-                    logging.info(
-                        "Initialized send reset password link via phone nnumber."
-                    )
+                    logging.info("Initialized send reset password link via phone nnumber.")
 
                     await save_reset_pin_data(user_uuid=unique_id, email=account.email)
 
@@ -183,10 +168,7 @@ async def send_reset_link_endpoint(
                 now_utc = datetime.now(timezone("UTC"))
                 jakarta_timezone = timezone("Asia/Jakarta")
                 blacklist_time = now_utc + timedelta(minutes=1)
-                if (
-                    latest_reset_pin_data is None
-                    or latest_reset_pin_data.save_to_hit_at is None
-                ):
+                if latest_reset_pin_data is None or latest_reset_pin_data.save_to_hit_at is None:
                     valid_blacklist_time = blacklist_time
                 else:
                     valid_blacklist_time = latest_reset_pin_data.save_to_hit_at
@@ -195,9 +177,7 @@ async def send_reset_link_endpoint(
 
                 if latest_reset_pin_data is not None and now_utc < valid_blacklist_time:
                     logging.info("User should wait API cooldown.")
-                    raise InvalidOperationError(
-                        detail=f"Should wait until {formatted_time}."
-                    )
+                    raise InvalidOperationError(detail=f"Should wait until {formatted_time}.")
 
                 if now_utc >= valid_blacklist_time:
                     logging.info("Saved new reset pin request data.")

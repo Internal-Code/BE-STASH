@@ -76,16 +76,12 @@ async def create_spend(
                         response.message = "Created new spend money and schema data."
                         response.success = True
                     except Exception as E:
-                        logging.error(
-                            f"Error during creating new spend money and schema: {E}."
-                        )
+                        logging.error(f"Error during creating new spend money and schema: {E}.")
                         await session.rollback()
                         raise DatabaseError(detail=f"Database error: {E}.")
                 else:
                     try:
-                        logging.info(
-                            f"Only inserting data into table {money_spends.name}"
-                        )
+                        logging.info(f"Only inserting data into table {money_spends.name}")
                         create_spend = money_spends.insert().values(
                             created_at=local_time(),
                             updated_at=None,

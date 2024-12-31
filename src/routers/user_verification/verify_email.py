@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated
 from utils.logger import logging
 from fastapi import APIRouter, status, Depends
-from utils.validator import check_otp
+from utils.validator import check_security_code
 from src.schema.response import ResponseDefault
 from utils.jwt.general import get_current_user
 from utils.request_format import OTPVerification
@@ -45,7 +45,7 @@ async def verify_email_endpoint(
             logging.info("User email already verified.")
             raise EntityAlreadyVerifiedError(detail="User email already verified.")
 
-        await check_otp(otp=schema.otp)
+        check_security_code(type="otp", otp=schema.otp)
 
         if now_utc > initials_account.blacklisted_at:
             raise InvalidOperationError(detail="OTP already expired.")
@@ -53,10 +53,7 @@ async def verify_email_endpoint(
         if initials_account.otp_number != schema.otp:
             raise InvalidOperationError(detail="Invalid OTP code.")
 
-        if (
-            now_utc < initials_account.blacklisted_at
-            and initials_account.otp_number == schema.otp
-        ):
+        if now_utc < initials_account.blacklisted_at and initials_account.otp_number == schema.otp:
             await update_verify_email_status(user_uuid=current_user.user_uuid)
 
             response.success = True

@@ -28,7 +28,7 @@ router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
     response = ResponseDefault()
-    await check_uuid(unique_id=unique_id)
+    check_uuid(unique_id=unique_id)
 
     now_utc = datetime.now(timezone("UTC"))
     account = await get_user(unique_id=unique_id)
@@ -53,16 +53,12 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                     raise EntityDoesNotExistError(detail="Data not found.")
 
                 jakarta_timezone = timezone("Asia/Jakarta")
-                times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
-                    jakarta_timezone
-                )
+                times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(jakarta_timezone)
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
                 if not account.phone_number:
                     logging.info("User should filled phone number yet.")
-                    raise MandatoryInputError(
-                        detail="User should fill phone number first."
-                    )
+                    raise MandatoryInputError(detail="User should fill phone number first.")
 
                 if latest_record.current_api_hit % 4 == 0:
                     logging.info("User should only hit API again tomorrow.")
@@ -82,9 +78,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
 
                 if account.verified_phone_number:
                     logging.info("User phone number already verified.")
-                    raise EntityAlreadyVerifiedError(
-                        detail="User phone number already verified."
-                    )
+                    raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
 
                 if (
                     now_utc > latest_record.save_to_hit_at
@@ -94,9 +88,7 @@ async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
                 ):
                     logging.info("Matched condition. Sending OTP using whatsapp API.")
                     current_api_hit = (
-                        latest_record.current_api_hit + 1
-                        if latest_record.current_api_hit
-                        else 1
+                        latest_record.current_api_hit + 1 if latest_record.current_api_hit else 1
                     )
                     valid_per_day = (
                         send_otps.update()

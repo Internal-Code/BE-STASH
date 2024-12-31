@@ -25,7 +25,7 @@ async def wrong_phone_number_endpoint(
     schema: ChangeUserPhoneNumber, unique_id: str
 ) -> ResponseDefault:
     response = ResponseDefault()
-    await check_uuid(unique_id=unique_id)
+    check_uuid(unique_id=unique_id)
     await check_phone_number(phone_number=schema.phone_number)
     try:
         account = await get_user(unique_id=unique_id)
@@ -52,9 +52,7 @@ async def wrong_phone_number_endpoint(
 
         if account:
             logging.info("Update registered phone number.")
-            await update_user_phone_number(
-                user_uuid=unique_id, phone_number=schema.phone_number
-            )
+            await update_user_phone_number(user_uuid=unique_id, phone_number=schema.phone_number)
             logging.info("Re-initialized OTP save data.")
             await update_otp_data(user_uuid=unique_id)
 

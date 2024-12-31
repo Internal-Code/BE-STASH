@@ -55,9 +55,7 @@ async def update_category_schema(
         )
 
     if category_already_saved is True:
-        logging.warning(
-            f"Cannot changed category into: {schema.changed_category_into}."
-        )
+        logging.warning(f"Cannot changed category into: {schema.changed_category_into}.")
         raise EntityAlreadyExistError(
             detail=f"Category {schema.changed_category_into} already saved. Please change with another category."
         )
@@ -74,9 +72,7 @@ async def update_category_schema(
                         money_spend_schemas.c.category == schema.category,
                         money_spend_schemas.c.user_uuid == current_users.user_uuid,
                     )
-                    .values(
-                        updated_at=local_time(), category=schema.changed_category_into
-                    )
+                    .values(updated_at=local_time(), category=schema.changed_category_into)
                 )
                 await session.execute(query)
                 await session.commit()

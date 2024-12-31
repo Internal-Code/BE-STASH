@@ -42,9 +42,7 @@ async def send_otp_email_endpoint(
                 result = await session.execute(query)
                 latest_record = result.fetchone()
                 jakarta_timezone = timezone("Asia/Jakarta")
-                times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
-                    jakarta_timezone
-                )
+                times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(jakarta_timezone)
                 formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
 
                 if not current_user.email:
@@ -63,9 +61,7 @@ async def send_otp_email_endpoint(
 
                 if current_user.verified_email:
                     logging.info("User email  already verified.")
-                    raise EntityAlreadyVerifiedError(
-                        detail="User email already verified."
-                    )
+                    raise EntityAlreadyVerifiedError(detail="User email already verified.")
 
                 if (
                     now_utc > latest_record.save_to_hit_at
@@ -75,9 +71,7 @@ async def send_otp_email_endpoint(
                 ):
                     logging.info("Matched condition. Sending OTP using email services.")
                     current_api_hit = (
-                        latest_record.current_api_hit + 1
-                        if latest_record.current_api_hit
-                        else 1
+                        latest_record.current_api_hit + 1 if latest_record.current_api_hit else 1
                     )
                     valid_per_day = (
                         send_otps.update()

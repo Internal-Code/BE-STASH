@@ -22,13 +22,11 @@ async def change_full_name_endpoint(
     schema: ChangeUserFullName, current_user: Annotated[dict, Depends(get_current_user)]
 ) -> ResponseDefault:
     response = ResponseDefault()
-    validated_full_name = await check_fullname(value=schema.full_name)
+    validated_full_name = check_fullname(value=schema.full_name)
 
     try:
         if current_user.full_name == validated_full_name:
-            raise EntityForceInputSameDataError(
-                detail="Cannot change name into same name."
-            )
+            raise EntityForceInputSameDataError(detail="Cannot change name into same name.")
 
         async with database_connection().connect() as session:
             try:

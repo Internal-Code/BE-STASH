@@ -10,7 +10,9 @@ class Config:
     POSTGRES_DB = os.getenv("POSTGRES_DB")
     POSTGRES_VERSION = os.getenv("POSTGRES_VERSION")
     POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-    POSTGRES_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
+    POSTGRES_URL = (
+        f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
+    )
     PGADMIN_VERSION = os.getenv("PGADMIN_VERSION")
     PGADMIN_EMAIL = os.getenv("PGADMIN_EMAIL")
     PGADMIN_PASSWORD = os.getenv("PGADMIN_PASSWORD")

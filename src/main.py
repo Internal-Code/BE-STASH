@@ -1,28 +1,13 @@
-from fastapi import FastAPI, status
-from contextlib import asynccontextmanager
-from src.routers import health_check
-from services.postgres.models import database_migration
 from src.secret import Config
+from utils.exception_handler import register_exception_handlers
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from services.postgres.models import database_migration
 from services.postgres.connection import database_connection
-from utils.custom_error import create_exception_handler
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
-from utils.custom_error import (
-    AuthenticationFailed,
-    EntityAlreadyExistError,
-    EntityDoesNotExistError,
-    EntityAlreadyVerifiedError,
-    ServiceError,
-    InvalidOperationError,
-    InvalidTokenError,
-    EntityAlreadyAddedError,
-    EntityForceInputSameDataError,
-    DatabaseError,
-    EntityDoesNotMatchedError,
-    MandatoryInputError,
-    EntityAlreadyFilledError,
-)
+from src.routers import health_check
 from src.routers.user_send_otp import send_otp_phone_number, send_otp_email
 from src.routers.user_reset_account import user_send_reset_link, user_reset_pin
 from src.routers.monthly_schema import (
@@ -85,6 +70,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+register_exception_handlers(app=app)
+
 app.openapi_scheme = {
     "type": "oauth2",
     "flows": OAuthFlows(password=OAuthFlowPassword(tokenUrl="auth/token")),
@@ -98,7 +85,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=config.MIDDLEWARE_SECRET_KEY)
-
 
 app.include_router(health_check.router)
 app.include_router(create_schema.router)
@@ -132,104 +118,3 @@ app.include_router(user_detail_phone_number.router)
 app.include_router(user_detail_email.router)
 app.include_router(change_pin.router)
 app.include_router(change_full_name.router)
-
-
-app.add_exception_handler(
-    exc_class_or_status_code=InvalidOperationError,
-    handler=create_exception_handler(
-        status.HTTP_400_BAD_REQUEST, "Can't perform the operation."
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=AuthenticationFailed,
-    handler=create_exception_handler(
-        status.HTTP_401_UNAUTHORIZED,
-        "Authentication failed due to invalid credentials.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityDoesNotExistError,
-    handler=create_exception_handler(
-        status.HTTP_404_NOT_FOUND, "Entity does not exist."
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityAlreadyFilledError,
-    handler=create_exception_handler(
-        status.HTTP_403_FORBIDDEN, "Entity already filled."
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityDoesNotMatchedError,
-    handler=create_exception_handler(
-        status.HTTP_400_BAD_REQUEST,
-        "User input data that does not matched on saved data on database.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityAlreadyExistError,
-    handler=create_exception_handler(
-        status.HTTP_409_CONFLICT,
-        "Entity already saved.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityAlreadyVerifiedError,
-    handler=create_exception_handler(
-        status.HTTP_403_FORBIDDEN,
-        "Entity already verified.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityForceInputSameDataError,
-    handler=create_exception_handler(
-        status.HTTP_403_FORBIDDEN,
-        "Cannot use same data.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=EntityAlreadyAddedError,
-    handler=create_exception_handler(
-        status.HTTP_403_FORBIDDEN,
-        "Entity already have data.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=InvalidTokenError,
-    handler=create_exception_handler(
-        status.HTTP_401_UNAUTHORIZED, "Invalid token, please re-authenticate again."
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=ServiceError,
-    handler=create_exception_handler(
-        status.HTTP_500_INTERNAL_SERVER_ERROR,
-        "A service seems to be down, try again later.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=DatabaseError,
-    handler=create_exception_handler(
-        status.HTTP_500_INTERNAL_SERVER_ERROR,
-        "Database error.",
-    ),
-)
-
-app.add_exception_handler(
-    exc_class_or_status_code=MandatoryInputError,
-    handler=create_exception_handler(
-        status.HTTP_403_FORBIDDEN,
-        "User not inputed mandatory data yet.",
-    ),
-)

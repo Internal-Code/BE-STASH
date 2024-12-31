@@ -10,7 +10,7 @@ from utils.logger import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from services.postgres.connection import database_connection
-from utils.validator import check_pin, check_uuid
+from utils.validator import check_security_code, check_uuid
 from src.secret import Config
 from utils.database.general import (
     local_time,
@@ -85,8 +85,8 @@ async def get_user(
 
 
 async def authenticate_user(user_uuid: str, pin: str) -> Row | None:
-    await check_uuid(unique_id=user_uuid)
-    await check_pin(pin=pin)
+    check_uuid(unique_id=user_uuid)
+    check_security_code(type="pin", pin=pin)
 
     try:
         users = await get_user(unique_id=user_uuid)
@@ -94,9 +94,7 @@ async def authenticate_user(user_uuid: str, pin: str) -> Row | None:
             logging.error("Authentication failed, users not found.")
             return None
         if not await verify_pin(pin=pin, hashed_pin=users.pin):
-            logging.error(
-                f"Authentication failed, invalid pin for users {users.full_name}."
-            )
+            logging.error(f"Authentication failed, invalid pin for users {users.full_name}.")
             return None
     except Exception as E:
         logging.error(f"Error after authenticate_user: {E}.")
@@ -108,9 +106,7 @@ async def create_access_token(data: dict, access_token_expires: timedelta) -> st
     to_encode = data.copy()
     expires = local_time() + access_token_expires
     to_encode.update({"exp": expires})
-    encoded_access_token = jwt.encode(
-        claims=to_encode, key=config.ACCESS_TOKEN_SECRET_KEY
-    )
+    encoded_access_token = jwt.encode(claims=to_encode, key=config.ACCESS_TOKEN_SECRET_KEY)
     return encoded_access_token
 
 
@@ -118,9 +114,7 @@ async def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> 
     to_encode = data.copy()
     expires = local_time() + refresh_token_expires
     to_encode.update({"exp": expires})
-    encoded_refresh_token = jwt.encode(
-        claims=to_encode, key=config.REFRESH_TOKEN_SECRET_KEY
-    )
+    encoded_refresh_token = jwt.encode(claims=to_encode, key=config.REFRESH_TOKEN_SECRET_KEY)
     return encoded_refresh_token
 
 

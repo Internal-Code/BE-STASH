@@ -5,7 +5,7 @@ from src.secret import Config
 from fastapi import APIRouter, status
 from utils.request_format import UserPin
 from src.schema.response import ResponseToken
-from utils.validator import check_uuid, check_pin
+from utils.validator import check_uuid, check_security_code
 from utils.database.general import update_user_pin
 from utils.forgot_password.general import send_gmail
 from utils.request_format import SendOTPPayload
@@ -29,7 +29,7 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseToken:
     response = ResponseToken()
-    await check_uuid(unique_id=unique_id)
+    check_uuid(unique_id=unique_id)
     try:
         account = await get_user(unique_id=unique_id)
         if not account:
@@ -41,7 +41,7 @@ async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseToken:
         if account.pin:
             raise EntityAlreadyFilledError(detail="Account already filled pin.")
 
-        validated_pin = await check_pin(pin=pin.pin)
+        validated_pin = check_security_code(type="pin", pin=pin.pin)
         hashed_pin = await get_password_hash(password=validated_pin)
         await update_user_pin(user_uuid=unique_id, pin=hashed_pin)
 
@@ -81,14 +81,10 @@ async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseToken:
             )
 
         async with httpx.AsyncClient() as client:
-            whatsapp_response = await client.post(
-                config.WHATSAPP_API_MESSAGE, json=dict(payload)
-            )
+            whatsapp_response = await client.post(config.WHATSAPP_API_MESSAGE, json=dict(payload))
 
         if whatsapp_response.status_code != 200:
-            raise ServiceError(
-                detail="Failed to send OTP via WhatsApp.", name="Whatsapp API"
-            )
+            raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
 
         access_token = await create_access_token(
             data={"sub": unique_id},

@@ -141,9 +141,7 @@ async def filter_month_year(
                 if checked:
                     return True
             except Exception as E:
-                logging.error(
-                    f"Error during filter_month_year category availability: {E}."
-                )
+                logging.error(f"Error during filter_month_year category availability: {E}.")
                 await session.rollback()
             finally:
                 await session.close()
@@ -269,9 +267,7 @@ async def save_tokens(user_uuid: str, access_token: str, refresh_token: str) -> 
                 )
                 await session.execute(query)
                 await session.commit()
-                logging.info(
-                    f"User {user_uuid} successfully saved tokens into database."
-                )
+                logging.info(f"User {user_uuid} successfully saved tokens into database.")
             except Exception as E:
                 logging.error(f"Error while save_tokens: {E}")
                 await session.rollback()
@@ -296,9 +292,7 @@ async def save_reset_pin_data(user_uuid: str, email: EmailStr = None) -> None:  
                 await session.execute(query)
                 await session.commit()
 
-                logging.info(
-                    "User successfully insert reset password id into database."
-                )
+                logging.info("User successfully insert reset password id into database.")
 
             except Exception as E:
                 logging.error(f"Error while save_reset_password_id: {E}")
@@ -609,9 +603,7 @@ async def update_user_pin(user_uuid: str, pin: str) -> None:
     return None
 
 
-async def update_user_email(
-    user_uuid: str, email: EmailStr, verified_email: bool
-) -> None:
+async def update_user_email(user_uuid: str, email: EmailStr, verified_email: bool) -> None:
     try:
         async with database_connection().connect() as session:
             try:

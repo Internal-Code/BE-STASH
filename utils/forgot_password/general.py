@@ -84,14 +84,10 @@ async def send_gmail(
             )
         except SMTPConnectError as e:
             logging.error(f"SMTPConnectError: {e}")
-            raise ServiceError(
-                detail="Failed to connect to the SMTP server.", name="Google SMTP"
-            )
+            raise ServiceError(detail="Failed to connect to the SMTP server.", name="Google SMTP")
         except SMTPException as e:
             logging.error(f"SMTPException: {e}")
-            raise ServiceError(
-                detail=f"SMTP error occurred: {str(e)}", name="Google SMTP"
-            )
+            raise ServiceError(detail=f"SMTP error occurred: {str(e)}", name="Google SMTP")
     except FinanceTrackerApiError as FTE:
         raise FTE
     except Exception as E:

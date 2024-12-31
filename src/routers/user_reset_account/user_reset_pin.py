@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, status
 from src.secret import Config
 from src.schema.response import ResponseDefault
-from utils.validator import check_uuid, check_pin
+from utils.validator import check_uuid, check_security_code
 from utils.request_format import ForgotPin, SendOTPPayload
 from utils.jwt.general import get_user, get_password_hash
 from utils.database.general import extract_reset_pin_data, reset_user_pin
@@ -22,7 +22,7 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
     response = ResponseDefault()
-    await check_uuid(unique_id=unique_id)
+    check_uuid(unique_id=unique_id)
     try:
         account = await get_user(unique_id=unique_id)
 
@@ -36,7 +36,7 @@ async def reset_password(schema: ForgotPin, unique_id: str) -> ResponseDefault:
             raise InvalidOperationError(detail="Reset pin token expired.")
 
         if now_utc < latest_data.blacklisted_at:
-            validated_pin = await check_pin(pin=schema.pin)
+            validated_pin = check_security_code(type="pin", pin=schema.pin)
 
             if schema.pin != schema.confirm_new_pin:
                 raise EntityDoesNotMatchedError(

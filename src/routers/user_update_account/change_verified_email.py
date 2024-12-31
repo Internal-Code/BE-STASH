@@ -43,9 +43,7 @@ async def change_email_verified_endpoint(
             raise EntityForceInputSameDataError(detail="Cannot use same email.")
 
         if registered_email:
-            raise EntityAlreadyExistError(
-                detail="Email already taken. Please use another email."
-            )
+            raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
 
         await update_user_email(
             user_uuid=current_user.user_uuid, email=schema.email, verified_email=False

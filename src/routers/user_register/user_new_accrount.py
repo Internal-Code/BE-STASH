@@ -33,7 +33,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
     """
 
     response = ResponseDefault()
-    validated_phone_number = await check_phone_number(phone_number=schema.phone_number)
+    validated_phone_number = check_phone_number(phone_number=schema.phone_number)
     registered_phone_number = await is_using_registered_phone_number(
         phone_number=validated_phone_number
     )
@@ -53,7 +53,7 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
 
         logging.info("Creating new user.")
 
-        fullname = await check_fullname(value=schema.full_name)
+        fullname = check_fullname(value=schema.full_name)
         async with database_connection().connect() as session:
             try:
                 query = users.insert().values(
@@ -88,8 +88,10 @@ async def register_user(schema: CreateUser) -> ResponseDefault:
         response.message = "Account successfully created."
         response.data = UniqueID(unique_id=user_uuid)
 
-    except FinanceTrackerApiError as FTE:
-        raise FTE
+    except EntityAlreadyExistError:
+        raise
+    except FinanceTrackerApiError:
+        raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
     return response

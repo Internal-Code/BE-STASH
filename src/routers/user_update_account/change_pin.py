@@ -3,7 +3,7 @@ from typing import Annotated
 from src.secret import Config
 from utils.logger import logging
 from fastapi import APIRouter, status, Depends
-from utils.validator import check_pin
+from utils.validator import check_security_code
 from src.schema.response import ResponseDefault
 from services.postgres.models import users, blacklist_tokens
 from services.postgres.connection import database_connection
@@ -27,14 +27,10 @@ async def change_pin_endpoint(
     schema: ChangePin, current_user: Annotated[dict, Depends(get_current_user)]
 ) -> ResponseDefault:
     response = ResponseDefault()
-    new_pin = await check_pin(pin=schema.change_pin)
-    confirmed_pin = await check_pin(pin=schema.confirmed_changed_pin)
-    valid_existing_pin = await verify_pin(
-        pin=schema.current_pin, hashed_pin=current_user.pin
-    )
-    duplicated_changed_pin = await verify_pin(
-        pin=schema.change_pin, hashed_pin=current_user.pin
-    )
+    new_pin = check_security_code(type="pin", pin=schema.change_pin)
+    confirmed_pin = check_security_code(type="pin", pin=schema.confirmed_changed_pin)
+    valid_existing_pin = await verify_pin(pin=schema.current_pin, hashed_pin=current_user.pin)
+    duplicated_changed_pin = await verify_pin(pin=schema.change_pin, hashed_pin=current_user.pin)
     duplicated_confirmed_pin = await verify_pin(
         pin=schema.confirmed_changed_pin, hashed_pin=current_user.pin
     )
@@ -106,7 +102,9 @@ async def change_pin_endpoint(
             )
 
             response.success = True
-            response.message = "User successfully changed pin. Account information already sent into email."
+            response.message = (
+                "User successfully changed pin. Account information already sent into email."
+            )
 
         elif current_user.verified_phone_number:
             logging.info("Account update information sent into phone number.")
@@ -130,12 +128,12 @@ async def change_pin_endpoint(
                 )
 
             if whatsapp_response.status_code != 200:
-                raise ServiceError(
-                    detail="Failed to send OTP via WhatsApp.", name="Whatsapp API"
-                )
+                raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
 
             response.success = True
-            response.message = "User successfully changed pin. Account information already sent into phone number."
+            response.message = (
+                "User successfully changed pin. Account information already sent into phone number."
+            )
 
     except FinanceTrackerApiError as FTE:
         raise FTE

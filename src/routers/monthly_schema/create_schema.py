@@ -65,9 +65,7 @@ async def create_schema(
                 response.message = "Created new category."
                 response.success = True
             except Exception as E:
-                logging.error(
-                    f"Error during creating category inside transaction: {E}."
-                )
+                logging.error(f"Error during creating category inside transaction: {E}.")
                 await session.rollback()
                 raise DatabaseError(
                     detail=f"Database error: {E}.",

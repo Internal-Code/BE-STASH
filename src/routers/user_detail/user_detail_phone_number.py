@@ -13,9 +13,7 @@ async def user_detail_phone_number_endpoint(
     response = ResponseDefault()
     try:
         response.success = True
-        response.message = (
-            f"Extracting account {current_user.full_name} phone number info."
-        )
+        response.message = f"Extracting account {current_user.full_name} phone number info."
         response.data = current_user.to_detail_user_phone_number().dict()
     except FinanceTrackerApiError as FTE:
         raise FTE

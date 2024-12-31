@@ -45,7 +45,7 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseToken | Response
                 fullname = await generate_full_name(
                     first_name=user_info.given_name, last_name=user_info.family_name
                 )
-                validated_fullname = await check_fullname(value=fullname)
+                validated_fullname = check_fullname(value=fullname)
 
                 logging.info("Save registered user via google sso.")
                 await save_google_sso_account(
@@ -92,19 +92,13 @@ async def google_sso_auth_endpoint(request: Request) -> ResponseToken | Response
 
                 access_token = await create_access_token(
                     data={"sub": registered_account.user_uuid},
-                    access_token_expires=timedelta(
-                        minutes=int(config.ACCESS_TOKEN_EXPIRED)
-                    ),
+                    access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
                 )
                 refresh_token = await create_refresh_token(
                     data={"sub": registered_account.user_uuid},
-                    refresh_token_expires=timedelta(
-                        minutes=int(config.REFRESH_TOKEN_EXPIRED)
-                    ),
+                    refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
                 )
-                response = ResponseToken(
-                    access_token=access_token, refresh_token=refresh_token
-                )
+                response = ResponseToken(access_token=access_token, refresh_token=refresh_token)
                 return response
 
         except FinanceTrackerApiError as FTE:
