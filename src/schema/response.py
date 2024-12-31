@@ -6,9 +6,9 @@ class UniqueID(BaseModel):
 
 
 class ResponseDefault(BaseModel):
-    success: bool = False
+    success: bool = True
     message: str = None
-    data: list | dict | UniqueID = None
+    data: str | list | dict = None
 
 
 class ResponseToken(BaseModel):

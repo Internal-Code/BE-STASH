@@ -32,6 +32,7 @@ authlib = "^1.4.0"
 itsdangerous = "^2.2.0"
 httpx = "^0.28.1"
 python-multipart = "^0.0.20"
+sqlmodel = "^0.0.22"
 
 
 [build-system]
