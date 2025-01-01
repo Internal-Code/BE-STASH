@@ -3,7 +3,7 @@
 # from fastapi import APIRouter, status, Depends
 # from utils.jwt.general import get_current_user
 # from utils.validator import check_phone_number
-# from src.schema.response import ResponseDefault, UniqueID
+# from src.schema.response import ResponseDefault, UniqueId
 # from utils.request_format import ChangeUserPhoneNumber
 # from utils.custom_error import (
 #     EntityForceInputSameDataError,
@@ -59,7 +59,7 @@
 
 #         response.success = True
 #         response.message = "Update phone number success."
-#         response.data = UniqueID(unique_id=current_user.user_uuid)
+#         response.data = UniqueId(unique_id=current_user.user_uuid)
 
 #     except StashBaseApiError as FTE:
 #         raise FTE

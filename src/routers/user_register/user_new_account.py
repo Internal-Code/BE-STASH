@@ -8,7 +8,7 @@ from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from utils.validator import check_fullname, check_phone_number, check_record
 from utils.query.general import find_record, insert_record
-from src.schema.response import ResponseDefault, UniqueID
+from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,
     DatabaseError,
@@ -72,7 +72,7 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
 
         response.success = True
         response.message = "Account successfully created."
-        response.data = UniqueID(unique_id=user_uuid)
+        response.data = UniqueId(unique_id=user_uuid)
     except StashBaseApiError:
         raise
     except DatabaseError:

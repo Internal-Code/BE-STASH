@@ -4,7 +4,7 @@ from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
-from src.schema.response import ResponseDefault, UniqueID
+from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
 from utils.validator import check_security_code
 from utils.custom_error import (
@@ -56,7 +56,7 @@ async def verify_phone_number_endpoint(
 
         response.success = True
         response.message = "User phone number verified."
-        response.data = UniqueID(unique_id=str(unique_id))
+        response.data = UniqueId(unique_id=str(unique_id))
 
     except StashBaseApiError:
         raise

@@ -6,7 +6,7 @@
 # from utils.logger import logging
 # from utils.validator import check_uuid
 # from utils.jwt.general import get_user
-# from src.schema.response import ResponseDefault, UniqueID
+# from src.schema.response import ResponseDefault, UniqueId
 # from utils.forgot_password.general import send_gmail
 # from utils.request_format import SendVerificationLink, SendOTPPayload
 # from utils.custom_error import (
@@ -78,7 +78,7 @@
 
 #                     response.success = True
 #                     response.message = "Password reset link sent to email."
-#                     response.data = UniqueID(unique_id=unique_id)
+#                     response.data = UniqueId(unique_id=unique_id)
 
 #                 now_utc = datetime.now(timezone("UTC"))
 #                 jakarta_timezone = timezone("Asia/Jakarta")
@@ -105,7 +105,7 @@
 
 #                     response.success = True
 #                     response.message = "Password reset link sent to email."
-#                     response.data = UniqueID(unique_id=unique_id)
+#                     response.data = UniqueId(unique_id=unique_id)
 
 #                 return response
 #             return response
@@ -163,7 +163,7 @@
 
 #                     response.success = True
 #                     response.message = "Password reset link sent to phone number."
-#                     response.data = UniqueID(unique_id=unique_id)
+#                     response.data = UniqueId(unique_id=unique_id)
 
 #                 now_utc = datetime.now(timezone("UTC"))
 #                 jakarta_timezone = timezone("Asia/Jakarta")
@@ -197,7 +197,7 @@
 
 #                     response.success = True
 #                     response.message = "Password reset link sent to phone number."
-#                     response.data = UniqueID(unique_id=unique_id)
+#                     response.data = UniqueId(unique_id=unique_id)
 
 #                 return response
 #             return response

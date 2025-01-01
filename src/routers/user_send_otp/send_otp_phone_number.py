@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from utils.whatsapp_api import send_otp_whatsapp
 from utils.helper import local_time
-from src.schema.response import ResponseDefault, UniqueID
+from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
@@ -75,7 +75,7 @@ async def send_otp_phone_number_endpoint(
 
             response.success = True
             response.message = "OTP data sent to phone number."
-            response.data = UniqueID(unique_id=str(unique_id))
+            response.data = UniqueId(unique_id=str(unique_id))
     except StashBaseApiError:
         raise
     except DatabaseError:

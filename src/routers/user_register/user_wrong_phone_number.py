@@ -1,7 +1,7 @@
 # from fastapi import APIRouter, status
 # from utils.logger import logging
 # from utils.jwt.general import get_user
-# from src.schema.response import ResponseDefault, UniqueID
+# from src.schema.response import ResponseDefault, UniqueId
 # from utils.validator import check_uuid, check_phone_number
 # from utils.request_format import ChangeUserPhoneNumber
 # from utils.custom_error import (
@@ -58,7 +58,7 @@
 
 #             response.success = True
 #             response.message = "Phone number successfully updated."
-#             response.data = UniqueID(unique_id=account.user_uuid)
+#             response.data = UniqueId(unique_id=account.user_uuid)
 #     except StashBaseApiError as FTE:
 #         raise FTE
 #     except Exception as E:

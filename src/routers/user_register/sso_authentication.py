@@ -8,7 +8,7 @@
 # from authlib.integrations.starlette_client import OAuthError
 # from utils.sso.general import google_oauth_configuration
 # from src.secret import Config
-# from src.schema.response import ResponseDefault, UniqueID, ResponseToken
+# from src.schema.response import ResponseDefault, UniqueId, ResponseToken
 # from utils.custom_error import ServiceError, StashBaseApiError
 # from utils.database.general import (
 #     save_google_sso_account,
@@ -65,7 +65,7 @@
 #                 response = ResponseDefault(
 #                     success=True,
 #                     message="Sucess registered new user via google sso.",
-#                     data=UniqueID(unique_id=register_account_uuid),
+#                     data=UniqueId(unique_id=register_account_uuid),
 #                 )
 #                 return response
 
@@ -74,7 +74,7 @@
 #                 response = ResponseDefault(
 #                     success=True,
 #                     message="User should validated phone number.",
-#                     data=UniqueID(unique_id=registered_account.user_uuid),
+#                     data=UniqueId(unique_id=registered_account.user_uuid),
 #                 )
 #                 return response
 
@@ -83,7 +83,7 @@
 #                 response = ResponseDefault(
 #                     success=True,
 #                     message="User should create pin.",
-#                     data=UniqueID(unique_id=registered_account.user_uuid),
+#                     data=UniqueId(unique_id=registered_account.user_uuid),
 #                 )
 #                 return response
 
