@@ -7,7 +7,7 @@
 # from src.secret import Config
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     AuthenticationFailed,
 # )
 # from utils.jwt.general import (
@@ -48,7 +48,7 @@
 #         response.refresh_token = refresh_token
 #         response.access_token = access_token
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

@@ -9,7 +9,7 @@
 # from utils.request_format import OTPVerification
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityAlreadyVerifiedError,
 #     MandatoryInputError,
 #     EntityDoesNotExistError,
@@ -59,7 +59,7 @@
 #             response.success = True
 #             response.message = "User email verified."
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

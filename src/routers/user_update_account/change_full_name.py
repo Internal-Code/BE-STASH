@@ -12,7 +12,7 @@
 #     DatabaseError,
 #     EntityForceInputSameDataError,
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 # )
 
 # router = APIRouter(tags=["User Update Account"], prefix="/user/update")
@@ -39,7 +39,7 @@
 #                 await session.execute(query)
 #                 await session.commit()
 #                 logging.info("Success changed user full name.")
-#             except FinanceTrackerApiError as FE:
+#             except StashBaseApiError as FE:
 #                 raise FE
 #             except Exception as E:
 #                 logging.error(f"Error while change user full name: {E}.")
@@ -51,7 +51,7 @@
 #         response.success = True
 #         response.message = "User successfully changed full name."
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

@@ -8,7 +8,7 @@
 #     EntityForceInputSameDataError,
 #     EntityAlreadyExistError,
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     MandatoryInputError,
 #     EntityDoesNotExistError,
 #     EntityAlreadyFilledError,
@@ -59,7 +59,7 @@
 #             response.success = True
 #             response.message = "Phone number successfully updated."
 #             response.data = UniqueID(unique_id=account.user_uuid)
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 #     except Exception as E:
 #         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

@@ -13,11 +13,12 @@ from utils.validator import check_security_code, check_uuid
 from src.secret import Config
 from utils.helper import local_time
 from services.postgres.models import User
-from utils.database.general import (
-    # local_time,
-    is_access_token_blacklisted,
-)
-from schema.request_format import (
+
+# from utils.database.general import (
+# local_time,
+# is_access_token_blacklisted,
+# )
+from src.schema.request_format import (
     TokenData,
     UserInDB,
     DetailUserFullName,
@@ -34,7 +35,7 @@ async def verify_pin(pin: str, hashed_pin: str) -> str:
     return password_content.verify(pin, hashed_pin)
 
 
-async def get_password_hash(password: str) -> str:
+def get_password_hash(password: str) -> str:
     return password_content.hash(password)
 
 
@@ -132,17 +133,17 @@ async def get_current_user(
         headers={"WWW-Authenticate": "bearer"},
     )
 
-    blacklisted_access_token = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Session expired. Please perform re login.",
-        headers={"WWW-Authenticate": "bearer"},
-    )
+    # blacklisted_access_token = HTTPException(
+    #     status_code=status.HTTP_401_UNAUTHORIZED,
+    #     detail="Session expired. Please perform re login.",
+    #     headers={"WWW-Authenticate": "bearer"},
+    # )
 
     try:
-        validate_access_token = await is_access_token_blacklisted(access_token=token)
+        # validate_access_token = await is_access_token_blacklisted(access_token=token)
 
-        if validate_access_token is True:
-            raise blacklisted_access_token
+        # if validate_access_token is True:
+        #     raise blacklisted_access_token
 
         payload = jwt.decode(
             token=token,

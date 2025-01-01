@@ -14,7 +14,7 @@
 #     EntityAlreadyExistError,
 #     ServiceError,
 #     DatabaseError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityDoesNotExistError,
 # )
 
@@ -87,7 +87,7 @@
 #                 raise DatabaseError(detail=f"Database error: {E}.")
 #             finally:
 #                 await session.close()
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

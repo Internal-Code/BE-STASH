@@ -14,7 +14,7 @@
 # from utils.custom_error import (
 #     ServiceError,
 #     DatabaseError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     InvalidTokenError,
 # )
 
@@ -59,7 +59,7 @@
 #                 )
 #             finally:
 #                 await session.close()
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 #     except Exception as E:
 #         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

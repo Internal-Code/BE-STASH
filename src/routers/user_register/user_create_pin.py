@@ -1,113 +1,87 @@
-# import httpx
-# from datetime import timedelta
-# from utils.logger import logging
-# from src.secret import Config
-# from fastapi import APIRouter, status
-# from utils.request_format import UserPin
-# from src.schema.response import ResponseToken
-# from utils.validator import check_uuid, check_security_code
-# from utils.database.general import update_user_pin
-# from utils.forgot_password.general import send_gmail
-# from utils.request_format import SendOTPPayload
-# from utils.jwt.general import (
-#     get_user,
-#     get_password_hash,
-#     create_access_token,
-#     create_refresh_token,
-# )
-# from utils.custom_error import (
-#     ServiceError,
-#     FinanceTrackerApiError,
-#     MandatoryInputError,
-#     EntityDoesNotExistError,
-#     EntityAlreadyFilledError,
-# )
+from uuid import UUID
+from datetime import timedelta
+from src.secret import Config
+from fastapi import APIRouter, status, Depends
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.schema.response import ResponseToken
+from utils.validator import check_security_code
+from utils.query.general import find_record, update_record
+from services.postgres.models import User
+from utils.jwt.general import get_password_hash, create_access_token
+from utils.whatsapp_api import send_account_info_to_phone
+from utils.smtp import send_account_info_to_email
+from utils.custom_error import (
+    ServiceError,
+    StashBaseApiError,
+    MandatoryInputError,
+    EntityDoesNotExistError,
+    EntityAlreadyFilledError,
+    DatabaseError,
+)
 
-# config = Config()
-# router = APIRouter(tags=["User Register"], prefix="/user/register")
+config = Config()
+router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-# async def create_user_pin(pin: UserPin, unique_id: str) -> ResponseToken:
-#     response = ResponseToken()
-#     check_uuid(unique_id=unique_id)
-#     try:
-#         account = await get_user(unique_id=unique_id)
-#         if not account:
-#             raise EntityDoesNotExistError(detail="Account not found.")
+async def create_user_pin(
+    pin: str, unique_id: UUID, db: AsyncSession = Depends(get_db)
+) -> ResponseToken:
+    response = ResponseToken()
+    account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
+    validated_pin = check_security_code(type="pin", value=pin)
+    hashed_pin = get_password_hash(password=validated_pin)
 
-#         if account.verified_phone_number is False:
-#             raise MandatoryInputError(detail="User should validate phone number first.")
+    try:
+        if not account_record:
+            raise EntityDoesNotExistError(detail="Account not found.")
 
-#         if account.pin:
-#             raise EntityAlreadyFilledError(detail="Account already filled pin.")
+        if not account_record.verified_phone_number:
+            raise MandatoryInputError(detail="User should validate phone number first.")
 
-#         validated_pin = check_security_code(type="pin", pin=pin.pin)
-#         hashed_pin = await get_password_hash(password=validated_pin)
-#         await update_user_pin(user_uuid=unique_id, pin=hashed_pin)
+        if account_record.pin:
+            raise EntityAlreadyFilledError(detail="Account already filled pin.")
 
-#         if account.verified_email:
-#             logging.info("Send account information to email.")
-#             email_body = (
-#                 f"Dear {account.full_name},<br><br>"
-#                 f"We are pleased to inform you that your new account has been successfully created.<br><br>"
-#                 f"You can now log in using the following credentials:<br><br>"
-#                 f"Phone Number: <strong>{account.phone_number}</strong><br>"
-#                 f"PIN: <strong>{validated_pin}</strong><br><br>"
-#                 f"Thank you.<br><br>"
-#                 f"Best regards,<br>"
-#                 f"Support Team"
-#             )
+        if account_record.verified_email:
+            await send_account_info_to_email(
+                email=account_record.email,
+                full_name=account_record.full_name,
+                pin=validated_pin,
+                phone_number=account_record.phone_number,
+            )
 
-#             await send_gmail(
-#                 email_subject="Success Registered New Finance Tracker Account!",
-#                 email_receiver=account.email,
-#                 email_body=email_body,
-#             )
+        if account_record.verified_phone_number:
+            await send_account_info_to_phone(
+                phone_number=account_record.phone_number,
+                pin=validated_pin,
+                full_name=account_record.full_name,
+            )
 
-#         elif account.verified_phone_number:
-#             logging.info("Send account information to phone number.")
-#             payload = SendOTPPayload(
-#                 phoneNumber=account.phone_number,
-#                 message=(
-#                     f"Dear *{account.full_name}*,\n\n"
-#                     "We are pleased to inform you that your phone number has been successfully verified. "
-#                     "You can now log in using the following credentials:\n\n"
-#                     f"Phone Number: *{account.phone_number}*\n"
-#                     f"PIN: *{validated_pin}*\n\n"
-#                     "Please ensure that you keep your account information secure.\n\n"
-#                     "Best Regards,\n"
-#                     "*Support Team*"
-#                 ),
-#             )
+        await update_record(
+            db=db, table=User, conditions={"unique_id": str(unique_id)}, data={"pin": hashed_pin}
+        )
 
-#         async with httpx.AsyncClient() as client:
-#             whatsapp_response = await client.post(config.WHATSAPP_API_MESSAGE, json=dict(payload))
-
-#         if whatsapp_response.status_code != 200:
-#             raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
-
-#         access_token = await create_access_token(
-#             data={"sub": unique_id},
-#             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
-#         )
-#         refresh_token = await create_refresh_token(
-#             data={"sub": unique_id},
-#             refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
-#         )
-#         response.access_token = access_token
-#         response.refresh_token = refresh_token
-#     except FinanceTrackerApiError as FTE:
-#         raise FTE
-#     except Exception as E:
-#         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
-#     return response
+        access_token = await create_access_token(
+            data={"sub": str(unique_id)},
+            access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
+        )
+        response.access_token = access_token
+    except StashBaseApiError:
+        raise
+    except ServiceError:
+        raise
+    except DatabaseError:
+        raise
+    except Exception as E:
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+    return response
 
 
-# router.add_api_route(
-#     methods=["PATCH"],
-#     path="/create-pin/{unique_id}",
-#     response_model=ResponseToken,
-#     endpoint=create_user_pin,
-#     status_code=status.HTTP_201_CREATED,
-#     summary="Create user pin.",
-# )
+router.add_api_route(
+    methods=["PATCH"],
+    path="/create-pin/{unique_id}",
+    response_model=ResponseToken,
+    endpoint=create_user_pin,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create user pin.",
+)

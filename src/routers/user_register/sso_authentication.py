@@ -9,7 +9,7 @@
 # from utils.sso.general import google_oauth_configuration
 # from src.secret import Config
 # from src.schema.response import ResponseDefault, UniqueID, ResponseToken
-# from utils.custom_error import ServiceError, FinanceTrackerApiError
+# from utils.custom_error import ServiceError, StashBaseApiError
 # from utils.database.general import (
 #     save_google_sso_account,
 #     save_otp_data,
@@ -101,13 +101,13 @@
 #                 response = ResponseToken(access_token=access_token, refresh_token=refresh_token)
 #                 return response
 
-#         except FinanceTrackerApiError as FTE:
+#         except StashBaseApiError as FTE:
 #             raise FTE
 
 #         except Exception as E:
 #             raise ServiceError(detail=f"Service error: {E}.", name="Google SSO")
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except OAuthError as OauthErr:

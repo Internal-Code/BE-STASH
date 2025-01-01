@@ -1,5 +1,6 @@
 import httpx
 from src.secret import Config
+from utils.logger import logging
 from src.schema.request_format import SendOTPPayload
 from utils.custom_error import ServiceError
 
@@ -17,3 +18,26 @@ async def send_otp_whatsapp(phone_number: str, generated_otp: str) -> None:
             await client.post(config.WHATSAPP_API_MESSAGE, json=dict(payload))
     except Exception:
         raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
+
+
+async def send_account_info_to_phone(full_name: str, phone_number: str, pin: str) -> None:
+    logging.info("Send account information to phone number.")
+    payload = SendOTPPayload(
+        phoneNumber=phone_number,
+        message=(
+            f"Dear *{full_name}*,\n\n"
+            "We are pleased to inform you that your new account has been successfully registered. "
+            "You can now log in using the following credentials:\n\n"
+            f"Phone Number: *{phone_number}*\n"
+            f"PIN: *{pin}*\n\n"
+            "Please ensure that you keep your account information secure.\n\n"
+            "Best Regards,\n"
+            "STASH Support Team"
+        ),
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(config.WHATSAPP_API_MESSAGE, json=dict(payload))
+    except Exception:
+        raise ServiceError(detail="Failed to send accouunt info via WhatsApp.", name="Whatsapp API")

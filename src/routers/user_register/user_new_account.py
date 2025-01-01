@@ -12,7 +12,7 @@ from src.schema.response import ResponseDefault, UniqueID
 from utils.custom_error import (
     ServiceError,
     DatabaseError,
-    FinanceTrackerApiError,
+    StashBaseApiError,
 )
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
@@ -73,7 +73,7 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
         response.success = True
         response.message = "Account successfully created."
         response.data = UniqueID(unique_id=user_uuid)
-    except FinanceTrackerApiError:
+    except StashBaseApiError:
         raise
     except DatabaseError:
         raise

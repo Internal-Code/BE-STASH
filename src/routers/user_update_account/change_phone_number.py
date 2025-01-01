@@ -9,7 +9,7 @@
 #     EntityForceInputSameDataError,
 #     EntityAlreadyExistError,
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 # )
 # from utils.database.general import (
 #     local_time,
@@ -61,7 +61,7 @@
 #         response.message = "Update phone number success."
 #         response.data = UniqueID(unique_id=current_user.user_uuid)
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

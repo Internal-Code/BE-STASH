@@ -10,7 +10,7 @@
 # from utils.custom_error import (
 #     ServiceError,
 #     DatabaseError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityDoesNotExistError,
 # )
 
@@ -68,7 +68,7 @@
 #                 )
 #             finally:
 #                 await session.close()
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

@@ -8,7 +8,7 @@
 #     EntityForceInputSameDataError,
 #     EntityAlreadyExistError,
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     MandatoryInputError,
 # )
 # from utils.database.general import (
@@ -65,7 +65,7 @@
 #         response.success = True
 #         response.message = "Success update user email."
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

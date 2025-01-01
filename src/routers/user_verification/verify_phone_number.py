@@ -8,7 +8,7 @@
 # from src.schema.response import ResponseDefault, UniqueID
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityAlreadyVerifiedError,
 #     EntityDoesNotExistError,
 #     InvalidOperationError,
@@ -55,7 +55,7 @@
 #             response.message = "User phone number verified."
 #             response.data = UniqueID(unique_id=unique_id)
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

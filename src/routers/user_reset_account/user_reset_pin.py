@@ -10,7 +10,7 @@
 # from utils.database.general import extract_reset_pin_data, reset_user_pin
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityDoesNotMatchedError,
 #     EntityDoesNotExistError,
 #     InvalidOperationError,
@@ -75,7 +75,7 @@
 #                 response.success = True
 #                 response.message = "Pin successfully reset."
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

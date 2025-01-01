@@ -2,7 +2,7 @@
 # from fastapi import APIRouter, status, Depends
 # from src.schema.response import ResponseDefault
 # from utils.jwt.general import get_current_user
-# from utils.custom_error import ServiceError, FinanceTrackerApiError
+# from utils.custom_error import ServiceError, StashBaseApiError
 
 # router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
@@ -15,7 +15,7 @@
 #         response.success = True
 #         response.message = f"Extracting account {current_user.full_name} full name info."
 #         response.data = current_user.to_detail_user_full_name().dict()
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 #     except Exception as E:
 #         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

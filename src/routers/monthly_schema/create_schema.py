@@ -11,7 +11,7 @@
 #     EntityAlreadyExistError,
 #     ServiceError,
 #     DatabaseError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 # )
 
 # router = APIRouter(tags=["Monthly Schema"])
@@ -72,7 +72,7 @@
 #                 )
 #             finally:
 #                 await session.close()
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

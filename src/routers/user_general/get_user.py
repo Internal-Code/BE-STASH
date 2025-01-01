@@ -5,7 +5,7 @@
 # from utils.custom_error import (
 #     EntityDoesNotExistError,
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 # )
 
 # router = APIRouter(tags=["User General"], prefix="/user/general")
@@ -31,7 +31,7 @@
 #         response.message = "User found."
 #         response.data = UniqueID(unique_id=str(account.user_uuid))
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as e:

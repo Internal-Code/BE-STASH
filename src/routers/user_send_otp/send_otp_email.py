@@ -13,7 +13,7 @@
 # from utils.forgot_password.general import send_gmail
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityAlreadyVerifiedError,
 #     MandatoryInputError,
 #     InvalidOperationError,
@@ -107,7 +107,7 @@
 #                     response.success = True
 #                     response.message = "OTP data sent to email."
 
-#             except FinanceTrackerApiError as FTE:
+#             except StashBaseApiError as FTE:
 #                 raise FTE
 
 #             except Exception as E:
@@ -119,7 +119,7 @@
 #             finally:
 #                 await session.commit()
 #                 await session.close()
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

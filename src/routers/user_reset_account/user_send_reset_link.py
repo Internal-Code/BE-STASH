@@ -11,7 +11,7 @@
 # from utils.request_format import SendVerificationLink, SendOTPPayload
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     MandatoryInputError,
 #     EntityDoesNotExistError,
 #     InvalidOperationError,
@@ -201,7 +201,7 @@
 
 #                 return response
 #             return response
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

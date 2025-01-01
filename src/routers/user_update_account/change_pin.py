@@ -15,7 +15,7 @@
 #     EntityForceInputSameDataError,
 #     ServiceError,
 #     DatabaseError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     EntityDoesNotMatchedError,
 # )
 
@@ -70,7 +70,7 @@
 #                 await session.execute(query)
 #                 await session.commit()
 #                 logging.info("Success changed user pin and blacklisted current token.")
-#             except FinanceTrackerApiError as FE:
+#             except StashBaseApiError as FE:
 #                 raise FE
 #             except Exception as E:
 #                 logging.error(f"Error while change_pin_endpoint: {E}.")
@@ -135,7 +135,7 @@
 #                 "User successfully changed pin. Account information already sent into phone number."
 #             )
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

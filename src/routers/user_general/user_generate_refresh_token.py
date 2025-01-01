@@ -8,7 +8,7 @@
 # from src.secret import Config
 # from utils.custom_error import (
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 #     InvalidTokenError,
 # )
 
@@ -53,7 +53,7 @@
 #     except JWTError:
 #         raise InvalidTokenError(detail="Invalid JWT Token.")
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:

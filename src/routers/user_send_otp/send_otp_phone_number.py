@@ -13,7 +13,7 @@ from utils.helper import local_time
 from src.schema.response import ResponseDefault, UniqueID
 from utils.custom_error import (
     ServiceError,
-    FinanceTrackerApiError,
+    StashBaseApiError,
     EntityDoesNotExistError,
     MandatoryInputError,
     InvalidOperationError,
@@ -76,7 +76,7 @@ async def send_otp_phone_number_endpoint(
             response.success = True
             response.message = "OTP data sent to phone number."
             response.data = UniqueID(unique_id=str(unique_id))
-    except FinanceTrackerApiError:
+    except StashBaseApiError:
         raise
     except DatabaseError:
         raise

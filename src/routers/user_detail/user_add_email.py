@@ -10,7 +10,7 @@
 #     EntityAlreadyAddedError,
 #     EntityForceInputSameDataError,
 #     ServiceError,
-#     FinanceTrackerApiError,
+#     StashBaseApiError,
 # )
 # from utils.database.general import (
 #     is_using_registered_email,
@@ -60,7 +60,7 @@
 #         response.success = True
 #         response.message = "Success add new email."
 
-#     except FinanceTrackerApiError as FTE:
+#     except StashBaseApiError as FTE:
 #         raise FTE
 
 #     except Exception as E:
