@@ -1,6 +1,7 @@
 from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
+from src.schema.custom_state import RegisterAccountState
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +59,10 @@ async def create_user_pin(
             )
 
         await update_record(
-            db=db, table=User, conditions={"unique_id": str(unique_id)}, data={"pin": hashed_pin}
+            db=db,
+            table=User,
+            conditions={"unique_id": str(unique_id)},
+            data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
         )
 
         access_token = await create_access_token(

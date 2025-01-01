@@ -1,74 +1,80 @@
-# from pytz import timezone
-# from datetime import datetime
-# from fastapi import APIRouter, status
-# from utils.logger import logging
-# from utils.jwt.general import get_user
-# from utils.validator import check_uuid, check_security_code
-# from utils.request_format import OTPVerification
-# from src.schema.response import ResponseDefault, UniqueID
-# from utils.custom_error import (
-#     ServiceError,
-#     StashBaseApiError,
-#     EntityAlreadyVerifiedError,
-#     EntityDoesNotExistError,
-#     InvalidOperationError,
-# )
-# from utils.database.general import (
-#     extract_data_otp,
-#     update_phone_number_status,
-# )
+from uuid import UUID
+from utils.helper import local_time
+from fastapi import APIRouter, status, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.connection import get_db
+from services.postgres.models import SendOtp, User
+from src.schema.response import ResponseDefault, UniqueID
+from utils.query.general import find_record, update_record
+from utils.validator import check_security_code
+from utils.custom_error import (
+    ServiceError,
+    StashBaseApiError,
+    EntityAlreadyVerifiedError,
+    EntityDoesNotExistError,
+    InvalidOperationError,
+    DatabaseError,
+)
 
-# router = APIRouter(tags=["User Verification"], prefix="/user/verification")
+router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
-# async def verify_phone_number_endpoint(schema: OTPVerification, unique_id: str) -> ResponseDefault:
-#     response = ResponseDefault()
-#     check_uuid(unique_id=unique_id)
+async def verify_phone_number_endpoint(
+    otp: str, unique_id: UUID, db: AsyncSession = Depends(get_db)
+) -> ResponseDefault:
+    response = ResponseDefault()
+    otp_record = await find_record(db=db, table=SendOtp, column="unique_id", value=str(unique_id))
+    account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
+    current_time = local_time()
+    validated_otp = check_security_code(type="otp", value=otp)
 
-#     try:
-#         initials_account = await extract_data_otp(user_uuid=unique_id)
-#         now_utc = datetime.now(timezone("UTC"))
+    try:
+        if not otp_record:
+            raise EntityDoesNotExistError(detail="Data not found.")
 
-#         if not initials_account:
-#             logging.info("OTP data not found.")
-#             raise EntityDoesNotExistError(detail="Data not found.")
+        if not otp_record.otp_number:
+            raise EntityDoesNotExistError(
+                detail="OTP code not found. Please request a new OTP code."
+            )
 
-#         account = await get_user(unique_id=unique_id)
+        if account_record.verified_phone_number:
+            raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
 
-#         if account.verified_phone_number:
-#             logging.info("User phone number already verified.")
-#             raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
+        if current_time > otp_record.blacklisted_at:
+            raise InvalidOperationError(detail="OTP already expired.")
 
-#         logging.info("User phone number not verified.")
-#         check_security_code(type="otp", otp=schema.otp)
+        if otp_record.otp_number != validated_otp:
+            raise InvalidOperationError(detail="Invalid OTP code.")
 
-#         if now_utc > initials_account.blacklisted_at:
-#             raise InvalidOperationError(detail="OTP already expired.")
+        if current_time < otp_record.blacklisted_at and otp_record.otp_number == validated_otp:
+            await update_record(
+                db=db,
+                table=User,
+                conditions={"unique_id": str(unique_id)},
+                data={"verified_phone_number": True},
+            )
 
-#         if initials_account.otp_number != schema.otp:
-#             raise InvalidOperationError(detail="Invalid OTP code.")
+        response.success = True
+        response.message = "User phone number verified."
+        response.data = UniqueID(unique_id=str(unique_id))
 
-#         if now_utc < initials_account.blacklisted_at and initials_account.otp_number == schema.otp:
-#             await update_phone_number_status(user_uuid=unique_id)
+    except StashBaseApiError:
+        raise
 
-#             response.success = True
-#             response.message = "User phone number verified."
-#             response.data = UniqueID(unique_id=unique_id)
+    except DatabaseError:
+        raise
 
-#     except StashBaseApiError as FTE:
-#         raise FTE
+    except Exception as E:
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
-#     except Exception as E:
-#         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
-
-#     return response
+    return response
 
 
-# router.add_api_route(
-#     methods=["POST"],
-#     path="/phone-number/{unique_id}",
-#     endpoint=verify_phone_number_endpoint,
-#     response_model=ResponseDefault,
-#     status_code=status.HTTP_200_OK,
-#     summary="User phone number verification.",
-# )
+router.add_api_route(
+    methods=["PATCH"],
+    path="/phone-number/{unique_id}",
+    endpoint=verify_phone_number_endpoint,
+    response_model=ResponseDefault,
+    status_code=status.HTTP_200_OK,
+    summary="User phone number verification.",
+)

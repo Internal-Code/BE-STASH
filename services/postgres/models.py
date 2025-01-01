@@ -2,6 +2,7 @@ from datetime import datetime
 from utils.helper import local_time
 from sqlmodel import SQLModel, Field, Relationship
 from services.postgres.connection import database_connection
+from src.schema.custom_state import RegisterAccountState
 
 
 class User(SQLModel, table=True):
@@ -16,6 +17,9 @@ class User(SQLModel, table=True):
     pin: str | None = Field(default=None, unique=False, nullable=True)
     verified_email: bool = Field(default=False)
     verified_phone_number: bool = Field(default=False)
+    register_state: RegisterAccountState = Field(
+        default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True
+    )
     money_spend: list["MoneySpend"] = Relationship(back_populates="user", cascade_delete=True)
     money_spend_schema: list["MoneySpendSchema"] = Relationship(
         back_populates="user", cascade_delete=True

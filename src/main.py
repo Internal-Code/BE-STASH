@@ -10,6 +10,7 @@ from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.routers import health_check
 from src.routers.user_send_otp import send_otp_phone_number
 from src.routers.user_register import user_new_account, user_create_pin
+from src.routers.user_verification import verify_phone_number
 
 config = Config()
 
@@ -65,7 +66,7 @@ app.include_router(user_create_pin.router)
 # app.include_router(sso_login.router)
 # app.include_router(sso_authentication.router)
 app.include_router(send_otp_phone_number.router)
-# app.include_router(verify_phone_number.router)
+app.include_router(verify_phone_number.router)
 # app.include_router(verify_email.router)
 # app.include_router(user_wrong_phone_number.router)
 # app.include_router(user_reset_pin.router)

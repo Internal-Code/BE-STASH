@@ -1,7 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from utils.helper import local_time
-from enum import Enum
+from enum import StrEnum
 
 
 class MoneySpendSchema(BaseModel):
@@ -104,7 +104,7 @@ class UserForgotPassword(BaseModel):
     email: EmailStr
 
 
-class SendMethod(str, Enum):
+class SendMethod(StrEnum):
     PHONE_NUMBER = "phone_number"
     EMAIL = "email"
 
