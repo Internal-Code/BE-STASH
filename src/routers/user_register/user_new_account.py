@@ -35,9 +35,7 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
     fullname = check_fullname(value=schema.full_name)
 
     check_record(
-        record=await find_record(
-            db=db, table=User, column="phone_number", value=validated_phone_number
-        ),
+        record=await find_record(db=db, table=User, column="phone_number", value=validated_phone_number),
         column="phone_number",
     )
     check_record(

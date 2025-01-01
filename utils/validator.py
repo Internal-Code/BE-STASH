@@ -32,17 +32,13 @@ def check_fullname(value: str) -> str:
 
 def check_record(record: Row, column: str) -> None:
     if record:
-        column_name = (
-            " ".join(column.split("_")).capitalize()
-            if column.__contains__("_")
-            else column.capitalize()
-        )
+        column_name = " ".join(column.split("_")).capitalize() if column.__contains__("_") else column.capitalize()
         raise EntityAlreadyExistError(detail=f"{column_name} already registered.")
 
 
-def check_uuid(unique_id: str) -> UUID:
+def check_uuid(unique_id: str) -> str:
     try:
         valid_uuid = UUID(unique_id)
     except ValueError:
-        raise InvalidOperationError(detail="Invalid UUID format.")
-    return valid_uuid
+        raise InvalidOperationError(detail="Invalid unique id format.")
+    return str(valid_uuid)

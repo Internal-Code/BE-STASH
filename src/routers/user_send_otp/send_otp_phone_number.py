@@ -25,9 +25,7 @@ config = Config()
 router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
-async def send_otp_phone_number_endpoint(
-    unique_id: UUID, db: AsyncSession = Depends(get_db)
-) -> ResponseDefault:
+async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = str(random_number(6))
@@ -54,9 +52,7 @@ async def send_otp_phone_number_endpoint(
         if current_time > otp_record.save_to_hit_at:
             logging.info("Matched condition. Sending OTP using whatsapp API.")
 
-            await send_otp_whatsapp(
-                phone_number=account_record.phone_number, generated_otp=generated_otp
-            )
+            await send_otp_whatsapp(phone_number=account_record.phone_number, generated_otp=generated_otp)
             await update_record(
                 db=db,
                 table=SendOtp,
@@ -64,9 +60,7 @@ async def send_otp_phone_number_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1
-                    if otp_record.current_api_hit
-                    else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
                     "saved_by_system": False,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),

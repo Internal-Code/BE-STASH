@@ -63,19 +63,13 @@ async def send_gmail(
                     smtp.close()
         except SMTPAuthenticationError as e:
             logging.error(f"SMTPAuthenticationError: {e}")
-            raise AuthenticationFailed(
-                detail="SMTP Authentication failed. Please check your credentials."
-            )
+            raise AuthenticationFailed(detail="SMTP Authentication failed. Please check your credentials.")
         except SMTPRecipientsRefused as e:
             logging.error(f"SMTPRecipientsRefused: {e}")
-            raise EntityDoesNotMatchedError(
-                detail="SMTP Recipients refused. The email address might be invalid."
-            )
+            raise EntityDoesNotMatchedError(detail="SMTP Recipients refused. The email address might be invalid.")
         except SMTPSenderRefused as e:
             logging.error(f"SMTPSenderRefused: {e}")
-            raise EntityDoesNotMatchedError(
-                detail="SMTP Sender refused. The sender's email address might be invalid."
-            )
+            raise EntityDoesNotMatchedError(detail="SMTP Sender refused. The sender's email address might be invalid.")
         except SMTPDataError as e:
             logging.error(f"SMTPDataError: {e}")
             raise ServiceError(
@@ -99,9 +93,7 @@ async def send_gmail(
     return smtp
 
 
-async def send_account_info_to_email(
-    email: EmailStr, full_name: str, phone_number: str, pin: str
-) -> None:
+async def send_account_info_to_email(email: EmailStr, full_name: str, phone_number: str, pin: str) -> None:
     logging.info("Send account information to email.")
     email_body = (
         f"Dear {full_name},<br><br>"

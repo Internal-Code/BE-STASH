@@ -11,6 +11,7 @@ from src.routers import health_check
 from src.routers.user_send_otp import send_otp_phone_number
 from src.routers.user_register import user_new_account, user_create_pin
 from src.routers.user_verification import verify_phone_number
+from src.routers.user_general import user_login
 from src.routers.user_general import get_user
 
 config = Config()
@@ -56,7 +57,7 @@ app.include_router(health_check.router)
 # app.include_router(list_spend.router)
 # app.include_router(update_monthly_spend.router)
 # app.include_router(delete_monthly_spend.router)
-# app.include_router(user_login.router)
+app.include_router(user_login.router)
 # app.include_router(user_generate_refresh_token.router)
 # app.include_router(user_logout.router)
 # app.include_router(user_detail_full_name.router)
@@ -72,7 +73,7 @@ app.include_router(verify_phone_number.router)
 # app.include_router(user_wrong_phone_number.router)
 # app.include_router(user_reset_pin.router)
 # app.include_router(send_otp_email.router)
-# app.include_router(user_add_email.router)
+# app.include_router(user_add_email.router)``
 # app.include_router(change_verified_email.router)
 # app.include_router(change_phone_number.router)
 # app.include_router(user_detail_phone_number.router)

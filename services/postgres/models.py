@@ -17,16 +17,10 @@ class User(SQLModel, table=True):
     pin: str | None = Field(default=None, unique=False, nullable=True)
     verified_email: bool = Field(default=False)
     verified_phone_number: bool = Field(default=False)
-    register_state: RegisterAccountState = Field(
-        default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True
-    )
+    register_state: RegisterAccountState = Field(default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True)
     money_spend: list["MoneySpend"] = Relationship(back_populates="user", cascade_delete=True)
-    money_spend_schema: list["MoneySpendSchema"] = Relationship(
-        back_populates="user", cascade_delete=True
-    )
-    blacklist_token: list["BlacklistToken"] = Relationship(
-        back_populates="user", cascade_delete=True
-    )
+    money_spend_schema: list["MoneySpendSchema"] = Relationship(back_populates="user", cascade_delete=True)
+    blacklist_token: list["BlacklistToken"] = Relationship(back_populates="user", cascade_delete=True)
     user_token: list["UserToken"] = Relationship(back_populates="user", cascade_delete=True)
     reset_pin: list["ResetPin"] = Relationship(back_populates="user", cascade_delete=True)
     send_otp: list["SendOtp"] = Relationship(back_populates="user", cascade_delete=True)
@@ -56,9 +50,7 @@ class MoneySpendSchema(SQLModel, table=True):
     created_at: datetime = Field(default=local_time())
     updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
     deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(
-        default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE"
-    )
+    unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
     month: int | None = Field(default=None, unique=False, nullable=True)
     year: int | None = Field(default=None, unique=False, nullable=True)
     category: str | None = Field(default=None, unique=False, nullable=True)

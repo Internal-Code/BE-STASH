@@ -132,10 +132,6 @@ class ChangeUserPhoneNumber(BaseModel):
     phone_number: str
 
 
-class OTPVerification(BaseModel):
-    otp: str
-
-
 class AddEmail(BaseModel):
     email: EmailStr
 

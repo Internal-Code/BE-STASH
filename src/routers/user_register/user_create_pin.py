@@ -9,7 +9,7 @@ from src.schema.response import ResponseToken
 from utils.validator import check_security_code
 from utils.query.general import find_record, update_record
 from services.postgres.models import User
-from utils.jwt.general import get_password_hash, create_access_token
+from utils.jwt import get_password_hash, create_access_token
 from utils.whatsapp_api import send_account_info_to_phone
 from utils.smtp import send_account_info_to_email
 from utils.custom_error import (
@@ -25,9 +25,7 @@ config = Config()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def create_user_pin(
-    pin: str, unique_id: UUID, db: AsyncSession = Depends(get_db)
-) -> ResponseToken:
+async def create_user_pin(pin: str, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
     validated_pin = check_security_code(type="pin", value=pin)

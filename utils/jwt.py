@@ -8,22 +8,15 @@ from passlib.context import CryptContext
 from utils.logger import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from services.postgres.connection import database_connection
+from services.postgres.connection import database_connection, get_db
 from utils.validator import check_security_code, check_uuid
 from src.secret import Config
 from utils.helper import local_time
-from services.postgres.models import User
-
-# from utils.database.general import (
-# local_time,
-# is_access_token_blacklisted,
-# )
+from services.postgres.models import User, BlacklistToken
+from utils.query.general import find_record
+from utils.custom_error import AuthenticationFailed, EntityDoesNotExistError
 from src.schema.request_format import (
-    TokenData,
     UserInDB,
-    DetailUserFullName,
-    DetailUserPhoneNumber,
-    DetailUserEmail,
 )
 
 config = Config()
@@ -31,7 +24,7 @@ password_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
-async def verify_pin(pin: str, hashed_pin: str) -> str:
+def verify_pin(pin: str, hashed_pin: str) -> str:
     return password_content.verify(pin, hashed_pin)
 
 
@@ -39,9 +32,7 @@ def get_password_hash(password: str) -> str:
     return password_content.hash(password)
 
 
-async def get_user(
-    phone_number: str = None, unique_id: str = None, email: EmailStr = None
-) -> UserInDB | None:
+async def get_user(phone_number: str = None, unique_id: str = None, email: EmailStr = None) -> UserInDB | None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -86,25 +77,23 @@ async def get_user(
     return None
 
 
-async def authenticate_user(user_uuid: str, pin: str) -> Row | None:
-    check_uuid(unique_id=user_uuid)
-    check_security_code(type="pin", pin=pin)
+async def authenticate_user(unique_id: str, pin: str) -> Row | None:
+    validated_uuid = check_uuid(unique_id=unique_id)
+    validated_pin = check_security_code(type="pin", value=pin)
 
-    try:
-        users = await get_user(unique_id=user_uuid)
-        if not users:
-            logging.error("Authentication failed, users not found.")
-            return None
-        if not await verify_pin(pin=pin, hashed_pin=User.pin):
-            logging.error(f"Authentication failed, invalid pin for users {User.full_name}.")
-            return None
-    except Exception as E:
-        logging.error(f"Error after authenticate_user: {E}.")
-        return None
-    return users
+    async for db in get_db():
+        account_record = await find_record(db=db, table=User, column="unique_id", value=validated_uuid)
+        break
+
+    if not account_record:
+        raise EntityDoesNotExistError(detail="User not found.")
+    if not verify_pin(pin=validated_pin, hashed_pin=account_record.pin):
+        raise AuthenticationFailed(detail="invalid pin.")
+
+    return account_record
 
 
-async def create_access_token(data: dict, access_token_expires: timedelta) -> str:
+def create_access_token(data: dict, access_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + access_token_expires
     to_encode.update({"exp": expires})
@@ -112,7 +101,7 @@ async def create_access_token(data: dict, access_token_expires: timedelta) -> st
     return encoded_access_token
 
 
-async def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
+def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + refresh_token_expires
     to_encode.update({"exp": expires})
@@ -124,26 +113,16 @@ async def get_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
     return access_token
 
 
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> DetailUserFullName | DetailUserPhoneNumber | DetailUserEmail | None:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "bearer"},
-    )
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row | None:
+    async for db in get_db():
+        break
 
-    # blacklisted_access_token = HTTPException(
-    #     status_code=status.HTTP_401_UNAUTHORIZED,
-    #     detail="Session expired. Please perform re login.",
-    #     headers={"WWW-Authenticate": "bearer"},
-    # )
+    blacklisted_record = await find_record(db=db, table=BlacklistToken, column="access_token", value=token)
 
     try:
-        # validate_access_token = await is_access_token_blacklisted(access_token=token)
-
-        # if validate_access_token is True:
-        #     raise blacklisted_access_token
+        if blacklisted_record:
+            logging.error("Access token is blacklisted.")
+            raise AuthenticationFailed(detail="Session expired. Please perform re login.")
 
         payload = jwt.decode(
             token=token,
@@ -152,15 +131,14 @@ async def get_current_user(
         )
 
         user_uuid = payload.get("sub")
+        users = await find_record(db=db, table=User, column="unique_id", value=user_uuid)
 
-        token_data = TokenData(user_uuid=user_uuid)
-        users = await get_user(unique_id=token_data.user_uuid)
+        if not user_uuid:
+            raise AuthenticationFailed(detail="Could not validate credentials.")
 
-        if user_uuid is None or users is None:
-            raise credentials_exception
     except JWTError as e:
         logging.error(f"JWTError: {e}")
-        raise credentials_exception
+        raise AuthenticationFailed(detail="Could not validate credentials.", name="JWT")
     return users
 
 

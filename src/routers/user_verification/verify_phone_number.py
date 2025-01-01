@@ -33,9 +33,7 @@ async def verify_phone_number_endpoint(
             raise EntityDoesNotExistError(detail="Data not found.")
 
         if not otp_record.otp_number:
-            raise EntityDoesNotExistError(
-                detail="OTP code not found. Please request a new OTP code."
-            )
+            raise EntityDoesNotExistError(detail="OTP code not found. Please request a new OTP code.")
 
         if account_record.verified_phone_number:
             raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
