@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional, Any
 
 
 class UniqueID(BaseModel):
@@ -8,7 +9,7 @@ class UniqueID(BaseModel):
 class ResponseDefault(BaseModel):
     success: bool = True
     message: str = None
-    data: str | list | dict = None
+    data: Optional[Any] = None
 
 
 class ResponseToken(BaseModel):

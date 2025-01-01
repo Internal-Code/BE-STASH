@@ -6,7 +6,7 @@ from faker import Faker
 faker = Faker()
 
 
-async def random_number(length: int = 1) -> int:
+def random_number(length: int = 1) -> int:
     if length < 1:
         raise ValueError("length parameter should be more than 0")
 

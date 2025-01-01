@@ -3,7 +3,6 @@ from pydantic import EmailStr
 from datetime import timedelta
 from jose import JWTError, jwt
 from sqlalchemy import and_, select
-from services.postgres.models import users
 from sqlalchemy.engine.row import Row
 from passlib.context import CryptContext
 from utils.logger import logging
@@ -12,11 +11,13 @@ from fastapi.security import OAuth2PasswordBearer
 from services.postgres.connection import database_connection
 from utils.validator import check_security_code, check_uuid
 from src.secret import Config
+from utils.helper import local_time
+from services.postgres.models import User
 from utils.database.general import (
-    local_time,
+    # local_time,
     is_access_token_blacklisted,
 )
-from utils.request_format import (
+from schema.request_format import (
     TokenData,
     UserInDB,
     DetailUserFullName,
@@ -46,16 +47,16 @@ async def get_user(
                 filters = []
 
                 if phone_number:
-                    filters.append(users.c.phone_number == phone_number)
+                    filters.append(User.c.phone_number == phone_number)
                 if unique_id:
-                    filters.append(users.c.user_uuid == unique_id)
+                    filters.append(User.c.user_uuid == unique_id)
                 if email:
-                    filters.append(users.c.email == email)
+                    filters.append(User.c.email == email)
 
                 if not filters:
                     logging.error("No valid filter provided.")
 
-                query = select(users).where(and_(*filters))
+                query = select(User).where(and_(*filters))
                 result = await session.execute(query)
                 checked = result.fetchone()
                 if checked:
@@ -93,8 +94,8 @@ async def authenticate_user(user_uuid: str, pin: str) -> Row | None:
         if not users:
             logging.error("Authentication failed, users not found.")
             return None
-        if not await verify_pin(pin=pin, hashed_pin=users.pin):
-            logging.error(f"Authentication failed, invalid pin for users {users.full_name}.")
+        if not await verify_pin(pin=pin, hashed_pin=User.pin):
+            logging.error(f"Authentication failed, invalid pin for users {User.full_name}.")
             return None
     except Exception as E:
         logging.error(f"Error after authenticate_user: {E}.")
@@ -175,17 +176,17 @@ async def verify_email_status(token: Annotated[str, Depends(oauth2_scheme)]) -> 
     )
 
     try:
-        payload = jwt.decode(
-            token=token,
-            key=config.ACCESS_TOKEN_SECRET_KEY,
-            algorithms=[config.ACCESS_TOKEN_ALGORITHM],
-        )
+        # payload = jwt.decode(
+        #     token=token,
+        #     key=config.ACCESS_TOKEN_SECRET_KEY,
+        #     algorithms=[config.ACCESS_TOKEN_ALGORITHM],
+        # )
 
-        user_uuid = payload.get("sub")
+        # user_uuid = payload.get("sub")
 
-        token_data = TokenData(user_uuid=user_uuid)
-        users = await get_user(unique_id=token_data.user_uuid)
-        email_status = users.verified_email
+        # token_data = TokenData(user_uuid=user_uuid)
+        # users = await get_user(unique_id=token_data.user_uuid)
+        email_status = User.verified_email
 
         if email_status:
             raise already_verified

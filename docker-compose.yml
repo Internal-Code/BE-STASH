@@ -12,7 +12,9 @@ services:
     volumes:
       - stash_postgre_sql:/var/lib/postgresql/data
     networks:
-      - stash_network
+      stash_network:
+        ipv4_address: 172.18.0.2
+
 
   stash_pg_admin:
     container_name: stash_pg_admin
@@ -24,7 +26,8 @@ services:
     ports:
       - 5050:80
     networks:
-      - stash_network
+      stash_network:
+        ipv4_address: 172.18.0.3
     volumes:
       - stash_pg_admin:/var/lib/pgadmin
     depends_on:
@@ -42,7 +45,8 @@ services:
     ports:
       - 80:80
     networks:
-      - stash_network
+      stash_network:
+        ipv4_address: 172.18.0.4
 
 volumes:
   stash_postgre_sql:
@@ -51,3 +55,7 @@ volumes:
 
 networks:
   stash_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16

@@ -3,4 +3,4 @@ from datetime import datetime
 
 
 def local_time(zone: str = "Asia/Jakarta") -> datetime:
-    return datetime.now(timezone(zone))
+    return datetime.now(timezone(zone)).replace(tzinfo=None)

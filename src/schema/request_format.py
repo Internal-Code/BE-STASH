@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
-from utils.database.general import local_time
+from utils.helper import local_time
 from enum import Enum
 
 
