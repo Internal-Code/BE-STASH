@@ -2,6 +2,7 @@ from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
 from utils.logger import logging
+from utils.helper import local_time
 from services.postgres.models import SendOtp, User
 from utils.generator import random_number
 from utils.query.general import find_record, update_record
@@ -9,7 +10,6 @@ from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from utils.whatsapp_api import send_otp_whatsapp
-from utils.helper import local_time
 from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,

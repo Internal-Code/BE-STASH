@@ -22,6 +22,8 @@ def check_security_code(value: str, type: Literal["otp", "pin"]) -> str:
 
 def check_fullname(value: str) -> str:
     value = " ".join(value.split())
+    if not value:
+        raise InvalidOperationError(detail="Fullname should not be empty.")
     if not all(char.isalpha() or char.isspace() for char in value):
         raise InvalidOperationError(detail="Fullname should contain only letters and space.")
     if len(value) >= 100:

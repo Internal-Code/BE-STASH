@@ -35,11 +35,11 @@ async def create_user_pin(pin: str, unique_id: UUID, db: AsyncSession = Depends(
         if not account_record:
             raise EntityDoesNotExistError(detail="Account not found.")
 
+        if account_record.register_state == RegisterAccountState.SUCCESS:
+            raise EntityAlreadyFilledError(detail="Account already set pin.")
+
         if not account_record.verified_phone_number:
             raise MandatoryInputError(detail="User should validate phone number first.")
-
-        if account_record.pin:
-            raise EntityAlreadyFilledError(detail="Account already filled pin.")
 
         if account_record.verified_email:
             await send_account_info_to_email(
@@ -63,7 +63,7 @@ async def create_user_pin(pin: str, unique_id: UUID, db: AsyncSession = Depends(
             data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
         )
 
-        access_token = await create_access_token(
+        access_token = create_access_token(
             data={"sub": str(unique_id)},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )

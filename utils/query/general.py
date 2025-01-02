@@ -10,11 +10,16 @@ async def find_record(db: AsyncSession, table: type[SQLModel], column: str, valu
     column = getattr(table, column, None)
 
     if not column:
-        raise ValueError(f"Column {column} not found in {table.__name__} table!")
+        raise ValueError(f"Column {column} not found in {table.__tablename__} table!")
 
-    query = select(table).where(column == value)
-    result = await db.execute(query)
-    row = result.fetchone()
+    try:
+        query = select(table).where(column == value)
+        result = await db.execute(query)
+        row = result.fetchone()
+    except Exception as e:
+        logging.error(f"Failed to find record in table {table.__name__}: {e}")
+        await db.rollback()
+        raise DatabaseError(detail="Database query error.")
 
     return row
 
@@ -22,7 +27,7 @@ async def find_record(db: AsyncSession, table: type[SQLModel], column: str, valu
 async def insert_record(db: AsyncSession, table: type[SQLModel], data: dict) -> None:
     for column in data.keys():
         if not hasattr(table, column):
-            raise ValueError(f"Column '{column}' not found in {table.__name__} table!")
+            raise ValueError(f"Column '{column}' not found in {table.__tablename__} table!")
 
     try:
         query = insert(table).values(**data)

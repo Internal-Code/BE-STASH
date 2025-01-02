@@ -87,6 +87,8 @@ async def authenticate_user(unique_id: str, pin: str) -> Row | None:
 
     if not account_record:
         raise EntityDoesNotExistError(detail="User not found.")
+    if not account_record.pin:
+        raise AuthenticationFailed(detail="User has not set pin.")
     if not verify_pin(pin=validated_pin, hashed_pin=account_record.pin):
         raise AuthenticationFailed(detail="invalid pin.")
 

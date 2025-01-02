@@ -6,7 +6,7 @@ from src.schema.custom_state import RegisterAccountState
 
 
 class User(SQLModel, table=True):
-    __tablebame__ = "user"
+    __tablename__ = "user"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
     updated_at: datetime | None = Field(default=None, unique=False, nullable=True)

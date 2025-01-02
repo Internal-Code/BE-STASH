@@ -9,7 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.routers import health_check
 from src.routers.user_send_otp import send_otp_phone_number
-from src.routers.user_register import user_new_account, user_create_pin
+from src.routers.user_register import user_new_account, user_create_pin, user_wrong_phone_number
 from src.routers.user_verification import verify_phone_number
 from src.routers.user_general import user_login
 from src.routers.user_general import get_user
@@ -19,9 +19,11 @@ config = Config()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await database_migration()
-    yield
-    await database_connection().dispose()
+    try:
+        await database_migration()
+        yield
+    finally:
+        await database_connection().dispose()
 
 
 app = FastAPI(
@@ -70,7 +72,7 @@ app.include_router(user_create_pin.router)
 app.include_router(send_otp_phone_number.router)
 app.include_router(verify_phone_number.router)
 # app.include_router(verify_email.router)
-# app.include_router(user_wrong_phone_number.router)
+app.include_router(user_wrong_phone_number.router)
 # app.include_router(user_reset_pin.router)
 # app.include_router(send_otp_email.router)
 # app.include_router(user_add_email.router)``
