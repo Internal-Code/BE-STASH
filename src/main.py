@@ -13,6 +13,7 @@ from src.routers.user_register import user_new_account, user_create_pin, user_wr
 from src.routers.user_verification import verify_phone_number
 from src.routers.user_general import user_login
 from src.routers.user_general import get_user
+from src.routers.monthly_schema import create_category
 
 config = Config()
 
@@ -51,7 +52,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=config.MIDDLEWARE_SECRET_KEY)
 
 app.include_router(health_check.router)
-# app.include_router(create_schema.router)
+app.include_router(create_category.router)
 # app.include_router(update_category_schema.router)
 # app.include_router(delete_category_schema.router)
 # app.include_router(list_schema.router)

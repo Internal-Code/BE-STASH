@@ -4,9 +4,7 @@ from utils.helper import local_time
 from enum import StrEnum
 
 
-class MoneySpendSchema(BaseModel):
-    month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year, ge=1000, le=9999)
+class MonthlySchema(BaseModel):
     category: str
     budget: int
 

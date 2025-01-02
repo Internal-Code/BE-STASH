@@ -21,7 +21,7 @@ from src.schema.request_format import (
 
 config = Config()
 password_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/general/login")
 
 
 def verify_pin(pin: str, hashed_pin: str) -> str:
@@ -133,6 +133,10 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row
         )
 
         user_uuid = payload.get("sub")
+
+        async for db in get_db():
+            break
+
         users = await find_record(db=db, table=User, column="unique_id", value=user_uuid)
 
         if not user_uuid:

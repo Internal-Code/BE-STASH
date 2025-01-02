@@ -17,7 +17,6 @@ from utils.custom_error import (
     EntityDoesNotExistError,
     MandatoryInputError,
     InvalidOperationError,
-    EntityAlreadyVerifiedError,
     DatabaseError,
 )
 
@@ -44,10 +43,6 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
         if current_time < otp_record.save_to_hit_at:
             logging.info("User should wait API cooldown.")
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
-
-        if account_record.verified_phone_number:
-            logging.info("User phone number already verified.")
-            raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
 
         if current_time > otp_record.save_to_hit_at:
             logging.info("Matched condition. Sending OTP using whatsapp API.")
