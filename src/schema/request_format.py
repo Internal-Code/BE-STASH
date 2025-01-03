@@ -4,9 +4,26 @@ from utils.helper import local_time
 from enum import StrEnum
 
 
-class MonthlySchema(BaseModel):
-    category: str
-    budget: int
+class UserPin(BaseModel):
+    pin: str = None
+
+
+class UserPhoneNumber(BaseModel):
+    phone_number: str = None
+
+
+class UserOtp(BaseModel):
+    otp: str = None
+
+
+class MonthlyCategory(BaseModel):
+    category: str = None
+    budget: int = 100000
+
+
+class DefaultSchema(BaseModel):
+    month: int = Field(default=local_time().month, ge=1, le=12)
+    year: int = Field(default=local_time().year, ge=1000, le=9999)
 
 
 class UpdateCategorySchema(BaseModel):
@@ -50,10 +67,6 @@ class CreateUser(BaseModel):
     full_name: str
     phone_number: str
     email: EmailStr | None = None
-
-
-class UserPin(BaseModel):
-    pin: str
 
 
 class TokenData(BaseModel):

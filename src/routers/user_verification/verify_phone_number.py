@@ -7,6 +7,7 @@ from services.postgres.models import SendOtp, User
 from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
 from utils.validator import check_security_code
+from src.schema.request_format import UserOtp
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
@@ -20,13 +21,13 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_phone_number_endpoint(
-    otp: str, unique_id: UUID, db: AsyncSession = Depends(get_db)
+    schema: UserOtp, unique_id: UUID, db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
-    otp_record = await find_record(db=db, table=SendOtp, column="unique_id", value=str(unique_id))
-    account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
+    otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
+    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
     current_time = local_time()
-    validated_otp = check_security_code(type="otp", value=otp)
+    validated_otp = check_security_code(type="otp", value=schema.otp)
 
     try:
         if not otp_record:

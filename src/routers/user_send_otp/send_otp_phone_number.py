@@ -28,8 +28,8 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = str(random_number(6))
-    otp_record = await find_record(db=db, table=SendOtp, column="unique_id", value=str(unique_id))
-    account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
+    otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
+    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
 
     try:
         if not account_record:

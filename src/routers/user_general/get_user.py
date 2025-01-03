@@ -18,7 +18,7 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 async def get_user_endpoint(phone_number: str, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
     response = ResponseDefault()
     validated_phone_number = check_phone_number(phone_number=phone_number)
-    account_record = await find_record(db=db, table=User, column="phone_number", value=validated_phone_number)
+    account_record = await find_record(db=db, table=User, phone_number=validated_phone_number)
 
     try:
         if not account_record:

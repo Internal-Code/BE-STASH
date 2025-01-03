@@ -12,6 +12,7 @@ from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
 from src.schema.custom_state import RegisterAccountState
+from src.schema.request_format import UserPhoneNumber
 from utils.custom_error import (
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
@@ -20,22 +21,22 @@ from utils.custom_error import (
     DatabaseError,
     EntityDoesNotExistError,
     EntityAlreadyFilledError,
-    InvalidOperationError
+    InvalidOperationError,
 )
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def wrong_phone_number_endpoint(
-    phone_number: str, unique_id: UUID, db: AsyncSession = Depends(get_db)
+    schema: UserPhoneNumber, unique_id: UUID, db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = str(random_number(6))
-    validated_phone_number = check_phone_number(phone_number=phone_number)
-    account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
-    registered_phone_number = await find_record(db=db, table=User, column="phone_number", value=validated_phone_number)
-    otp_record = await find_record(db=db, table=SendOtp, column="unique_id", value=str(unique_id))
+    validated_phone_number = check_phone_number(phone_number=schema.phone_number)
+    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
+    registered_phone_number = await find_record(db=db, table=User, phone_number=validated_phone_number)
+    otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
     try:
         if not account_record:
             raise EntityDoesNotExistError(detail="Account not found.")
@@ -48,11 +49,11 @@ async def wrong_phone_number_endpoint(
 
         if registered_phone_number:
             raise EntityAlreadyExistError(detail="Phone number already registered.")
-        
+
         if current_time < otp_record.save_to_hit_at:
             logging.info("User should wait API cooldown.")
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
-        
+
         if current_time > otp_record.save_to_hit_at:
             logging.info("Matched condition. Sending OTP using whatsapp API.")
 

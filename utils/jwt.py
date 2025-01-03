@@ -82,7 +82,7 @@ async def authenticate_user(unique_id: str, pin: str) -> Row | None:
     validated_pin = check_security_code(type="pin", value=pin)
 
     async for db in get_db():
-        account_record = await find_record(db=db, table=User, column="unique_id", value=validated_uuid)
+        account_record = await find_record(db=db, table=User, unique_id=validated_uuid)
         break
 
     if not account_record:
@@ -119,7 +119,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row
     async for db in get_db():
         break
 
-    blacklisted_record = await find_record(db=db, table=BlacklistToken, column="access_token", value=token)
+    blacklisted_record = await find_record(db=db, table=BlacklistToken, access_token=token)
 
     try:
         if blacklisted_record:
@@ -137,7 +137,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row
         async for db in get_db():
             break
 
-        users = await find_record(db=db, table=User, column="unique_id", value=user_uuid)
+        users = await find_record(db=db, table=User, unique_id=user_uuid)
 
         if not user_uuid:
             raise AuthenticationFailed(detail="Could not validate credentials.")

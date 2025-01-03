@@ -22,7 +22,7 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: AsyncSession = Depends(get_db)
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotated[AsyncSession, Depends(get_db)]
 ) -> ResponseToken:
     response = ResponseToken()
     account_record = await authenticate_user(unique_id=form_data.username, pin=form_data.password)

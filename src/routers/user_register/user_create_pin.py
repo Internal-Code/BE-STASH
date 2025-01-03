@@ -12,6 +12,7 @@ from services.postgres.models import User
 from utils.jwt import get_password_hash, create_access_token
 from utils.whatsapp_api import send_account_info_to_phone
 from utils.smtp import send_account_info_to_email
+from src.schema.request_format import UserPin
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
@@ -25,10 +26,10 @@ config = Config()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def create_user_pin(pin: str, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
+async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
     response = ResponseToken()
-    account_record = await find_record(db=db, table=User, column="unique_id", value=str(unique_id))
-    validated_pin = check_security_code(type="pin", value=pin)
+    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
+    validated_pin = check_security_code(type="pin", value=schema.pin)
     hashed_pin = get_password_hash(password=validated_pin)
 
     try:

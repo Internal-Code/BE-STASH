@@ -1,4 +1,5 @@
 from uuid import uuid4
+from datetime import timedelta
 from utils.logger import logging
 from utils.helper import local_time
 from src.schema.request_format import CreateUser
@@ -8,6 +9,8 @@ from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from utils.validator import check_fullname, check_phone_number, check_record
 from utils.query.general import find_record, insert_record
+from utils.whatsapp_api import send_otp_whatsapp
+from utils.generator import random_number
 from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,
@@ -29,17 +32,18 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
         - Should be 10 - 13 digit of number.
     """
 
-    user_uuid = str(uuid4())
+    unique_id = str(uuid4())
+    generated_otp = str(random_number(6))
     response = ResponseDefault()
     validated_phone_number = check_phone_number(phone_number=schema.phone_number)
     fullname = check_fullname(value=schema.full_name)
 
     check_record(
-        record=await find_record(db=db, table=User, column="phone_number", value=validated_phone_number),
+        record=await find_record(db=db, table=User, phone_number=validated_phone_number),
         column="phone_number",
     )
     check_record(
-        record=await find_record(db=db, table=User, column="email", value=schema.email),
+        record=await find_record(db=db, table=User, email=schema.email),
         column="email",
     )
 
@@ -50,7 +54,7 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
             db=db,
             table=User,
             data={
-                "unique_id": user_uuid,
+                "unique_id": unique_id,
                 "full_name": fullname,
                 "phone_number": validated_phone_number,
                 "email": schema.email,
@@ -62,15 +66,19 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
             db=db,
             table=SendOtp,
             data={
-                "unique_id": user_uuid,
-                "saved_by_system": True,
+                "unique_id": unique_id,
+                "otp_number": generated_otp,
                 "save_to_hit_at": local_time(),
+                "blacklisted_at": local_time() + timedelta(minutes=3),
             },
         )
 
+        logging.info("Sending OTP code.")
+        await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
+
         response.success = True
         response.message = "Account successfully created."
-        response.data = UniqueId(unique_id=user_uuid)
+        response.data = UniqueId(unique_id=unique_id)
     except StashBaseApiError:
         raise
     except DatabaseError:

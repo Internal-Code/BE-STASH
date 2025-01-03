@@ -19,7 +19,8 @@ class User(SQLModel, table=True):
     verified_phone_number: bool = Field(default=False)
     register_state: RegisterAccountState = Field(default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True)
     money_spend: list["MoneySpend"] = Relationship(back_populates="user", cascade_delete=True)
-    money_spend_schema: list["MoneySpendSchema"] = Relationship(back_populates="user", cascade_delete=True)
+    monthly_schema: list["MonthlySchema"] = Relationship(back_populates="user", cascade_delete=True)
+    category_schema: list["CategorySchema"] = Relationship(back_populates="user", cascade_delete=True)
     blacklist_token: list["BlacklistToken"] = Relationship(back_populates="user", cascade_delete=True)
     user_token: list["UserToken"] = Relationship(back_populates="user", cascade_delete=True)
     reset_pin: list["ResetPin"] = Relationship(back_populates="user", cascade_delete=True)
@@ -32,9 +33,7 @@ class MoneySpend(SQLModel, table=True):
     created_at: datetime = Field(default=local_time())
     updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
     deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(
-        default=None, unique=False, nullable=False, foreign_key="user.unique_id", ondelete="CASCADE"
-    )
+    unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
     spend_day: int | None = Field(default=None, unique=False, nullable=True)
     spend_month: int | None = Field(default=None, unique=False, nullable=True)
     spend_year: int | None = Field(default=None, unique=False, nullable=True)
@@ -44,18 +43,30 @@ class MoneySpend(SQLModel, table=True):
     user: User = Relationship(back_populates="money_spend")
 
 
-class MoneySpendSchema(SQLModel, table=True):
-    __tablename__ = "money_spend_schema"
+class MonthlySchema(SQLModel, table=True):
+    __tablename__ = "monthly_schema"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
     updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
     deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
     unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
+    month_id: str | None = Field(default=None, unique=False, nullable=True)
     month: int | None = Field(default=None, unique=False, nullable=True)
     year: int | None = Field(default=None, unique=False, nullable=True)
+    user: User = Relationship(back_populates="monthly_schema")
+
+
+class CategorySchema(SQLModel, table=True):
+    __tablename__ = "category_schema"
+    id: int = Field(primary_key=True)
+    created_at: datetime = Field(default=local_time())
+    updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
+    deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
+    unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
+    category_id: str | None = Field(default=None, unique=False, nullable=True)
     category: str | None = Field(default=None, unique=False, nullable=True)
     budget: int | None = Field(default=None, unique=False, nullable=True)
-    user: User = Relationship(back_populates="money_spend_schema")
+    user: User = Relationship(back_populates="category_schema")
 
 
 class BlacklistToken(SQLModel, table=True):
@@ -105,7 +116,6 @@ class SendOtp(SQLModel, table=True):
     )
     otp_number: str | None = Field(default=None, unique=False, nullable=True)
     current_api_hit: int | None = Field(default=None, unique=False, nullable=True)
-    saved_by_system: bool = Field(default=False)
     save_to_hit_at: datetime | None = Field(default=None, unique=False, nullable=True)
     blacklisted_at: datetime | None = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="send_otp")

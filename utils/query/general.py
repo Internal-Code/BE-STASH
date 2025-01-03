@@ -1,4 +1,5 @@
 from utils.logger import logging
+from typing import Literal
 from sqlmodel import SQLModel
 from sqlalchemy import select, insert, update
 from sqlalchemy.engine.row import Row
@@ -6,22 +7,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from utils.custom_error import DatabaseError
 
 
-async def find_record(db: AsyncSession, table: type[SQLModel], column: str, value: str) -> Row | None:
-    column = getattr(table, column, None)
+async def find_record(
+    db: AsyncSession, table: type[SQLModel], fetch_type: Literal["one", "all"] = "one", **filters
+) -> list[Row] | None:
+    condition = []
 
-    if not column:
-        raise ValueError(f"Column {column} not found in {table.__tablename__} table!")
+    for col, value in filters.items():
+        col_attr = getattr(table, col, None)
+        if not col_attr:
+            raise ValueError(f"Column {col} not found in {table.__tablename__} table!")
+
+        condition.append(col_attr == value)
 
     try:
-        query = select(table).where(column == value)
+        query = select(table).where(*condition)
         result = await db.execute(query)
-        row = result.fetchone()
+
+        if fetch_type == "all":
+            rows = result.fetchall()
+            entries = [dict(row._mapping) for row in rows] if rows else None
+            return entries
+
+        entry = result.fetchone()
+
     except Exception as e:
         logging.error(f"Failed to find record in table {table.__name__}: {e}")
         await db.rollback()
         raise DatabaseError(detail="Database query error.")
 
-    return row
+    return entry
 
 
 async def insert_record(db: AsyncSession, table: type[SQLModel], data: dict) -> None:
