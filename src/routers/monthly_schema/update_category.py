@@ -9,11 +9,6 @@ from services.postgres.models import CategorySchema
 from src.schema.request_format import UpdateCategorySchema
 from utils.query.general import find_record, update_record
 from utils.helper import local_time
-
-# from utils.database.general import (
-#     filter_month_year_category,
-#     filter_spesific_category,
-# )
 from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
