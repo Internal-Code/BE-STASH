@@ -9,9 +9,9 @@
 # from utils.database.general import filter_month_year, local_time
 # from utils.custom_error import (
 #     ServiceError,
-#     DatabaseError,
+#     DatabaseQueryError,
 #     StashBaseApiError,
-#     EntityDoesNotExistError,
+#     DataNotFoundError,
 # )
 
 # router = APIRouter(tags=["Monthly Spend"])
@@ -38,7 +38,7 @@
 #     is_available = await filter_month_year(user_uuid=users.user_uuid, month=month, year=year)
 
 #     if not is_available:
-#         raise EntityDoesNotExistError(
+#         raise DataNotFoundError(
 #             detail=f"Schema on {month}/{year} is not created yet.",
 #         )
 
@@ -62,7 +62,7 @@
 #             except Exception as E:
 #                 logging.error(f"Error during getting money spend per month: {E}.")
 #                 await session.rollback()
-#                 raise DatabaseError(
+#                 raise DatabaseQueryError(
 #                     detail=f"Database error: {E}",
 #                 )
 #             finally:

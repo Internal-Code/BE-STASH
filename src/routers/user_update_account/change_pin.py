@@ -14,7 +14,7 @@
 # from utils.custom_error import (
 #     EntityForceInputSameDataError,
 #     ServiceError,
-#     DatabaseError,
+#     DatabaseQueryError,
 #     StashBaseApiError,
 #     EntityDoesNotMatchedError,
 # )
@@ -75,7 +75,7 @@
 #             except Exception as E:
 #                 logging.error(f"Error while change_pin_endpoint: {E}.")
 #                 await session.rollback()
-#                 raise DatabaseError(
+#                 raise DatabaseQueryError(
 #                     detail=f"Database error: {E}.",
 #                 )
 #             finally:

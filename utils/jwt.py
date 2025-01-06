@@ -14,7 +14,7 @@ from src.secret import Config
 from utils.helper import local_time
 from services.postgres.models import User, BlacklistToken
 from utils.query.general import find_record
-from utils.custom_error import AuthenticationFailed, EntityDoesNotExistError
+from utils.custom_error import AuthenticationFailed, DataNotFoundError
 from src.schema.request_format import (
     UserInDB,
 )
@@ -86,7 +86,7 @@ async def authenticate_user(unique_id: str, pin: str) -> Row | None:
         break
 
     if not account_record:
-        raise EntityDoesNotExistError(detail="User not found.")
+        raise DataNotFoundError(detail="User not found.")
     if not account_record.pin:
         raise AuthenticationFailed(detail="User has not set pin.")
     if not verify_pin(pin=validated_pin, hashed_pin=account_record.pin):

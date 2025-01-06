@@ -14,10 +14,10 @@ from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
-    EntityDoesNotExistError,
+    DataNotFoundError,
     MandatoryInputError,
     InvalidOperationError,
-    DatabaseError,
+    DatabaseQueryError,
 )
 
 config = Config()
@@ -34,7 +34,7 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
     try:
         if not account_record:
             logging.info("OTP data initialization not found.")
-            raise EntityDoesNotExistError(detail="Data not found.")
+            raise DataNotFoundError(detail="Data not found.")
 
         if not account_record.phone_number:
             logging.info("User should filled phone number yet.")
@@ -67,7 +67,7 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
             response.data = UniqueId(unique_id=str(unique_id))
     except StashBaseApiError:
         raise
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
     except ServiceError:
         raise

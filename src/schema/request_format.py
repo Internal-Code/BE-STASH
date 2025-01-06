@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from utils.helper import local_time
 from enum import StrEnum
 
@@ -21,16 +21,21 @@ class MonthlyCategory(BaseModel):
     budget: int = 100000
 
 
+class UpdateCategorySchema(BaseModel):
+    category: str = None
+    changed_category_into: str = None
+
+
 class DefaultSchema(BaseModel):
     month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year, ge=1000, le=9999)
+    year: int = local_time().year
 
-
-class UpdateCategorySchema(BaseModel):
-    month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year, ge=1000, le=9999)
-    category: str
-    changed_category_into: str
+    @field_validator("year")
+    @classmethod
+    def year_must_be_four_digits(cls, v: int) -> int:
+        if len(str(v)) != 4:
+            raise ValueError("year must be exactly 4 digits long")
+        return v
 
 
 class UpdateCategorySpending(BaseModel):

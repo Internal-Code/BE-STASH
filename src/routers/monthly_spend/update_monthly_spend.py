@@ -9,9 +9,9 @@
 # from utils.request_format import UpdateCategorySpending, local_time
 # from utils.custom_error import (
 #     ServiceError,
-#     DatabaseError,
+#     DatabaseQueryError,
 #     StashBaseApiError,
-#     EntityDoesNotExistError,
+#     DataNotFoundError,
 # )
 # from utils.database.general import (
 #     filter_daily_spending,
@@ -51,7 +51,7 @@
 #     )
 
 #     if not category_already_saved:
-#         raise EntityDoesNotExistError(
+#         raise DataNotFoundError(
 #             detail=f"Category {schema.changed_category_into} is not found on database. You should create it first."
 #         )
 
@@ -66,7 +66,7 @@
 #     )
 
 #     if not spending_is_available:
-#         raise EntityDoesNotExistError(
+#         raise DataNotFoundError(
 #             detail=f"Data daily spending on {schema.spend_day}/{schema.spend_month}/{schema.spend_year} with category {schema.category} not found. Please create first."
 #         )
 
@@ -102,7 +102,7 @@
 #             except Exception as E:
 #                 logging.error(f"Error while daily spending data: {E}.")
 #                 await session.rollback()
-#                 raise DatabaseError(
+#                 raise DatabaseQueryError(
 #                     detail=f"Database error: {E}.",
 #                 )
 #             finally:

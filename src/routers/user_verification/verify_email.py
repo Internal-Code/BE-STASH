@@ -16,7 +16,7 @@
 #     StashBaseApiError,
 #     EntityAlreadyVerifiedError,
 #     MandatoryInputError,
-#     EntityDoesNotExistError,
+#     DataNotFoundError,
 #     InvalidOperationError,
 # )
 # # from utils.database.general import (
@@ -43,7 +43,7 @@
 
 #         # if not initials_account:
 #         #     logging.info("OTP data not found.")
-#         #     raise EntityDoesNotExistError(detail="Data not found.")
+#         #     raise DataNotFoundError(detail="Data not found.")
 
 #         # if not current_user.email:
 #         #     logging.info("User is not input email yet.")

@@ -18,8 +18,8 @@ from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
     StashBaseApiError,
-    DatabaseError,
-    EntityDoesNotExistError,
+    DatabaseQueryError,
+    DataNotFoundError,
     EntityAlreadyFilledError,
     InvalidOperationError,
 )
@@ -39,7 +39,7 @@ async def wrong_phone_number_endpoint(
     otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
     try:
         if not account_record:
-            raise EntityDoesNotExistError(detail="Account not found.")
+            raise DataNotFoundError(detail="Account not found.")
 
         if account_record.register_state == RegisterAccountState.SUCCESS:
             raise EntityAlreadyFilledError(detail="Account already set pin.")
@@ -86,7 +86,7 @@ async def wrong_phone_number_endpoint(
             response.message = "Sending OTP into updated phone number."
             response.data = UniqueId(unique_id=account_record.unique_id)
 
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
     except StashBaseApiError:
         raise

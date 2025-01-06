@@ -37,12 +37,6 @@ class ServiceError(StashBaseApiError):
     pass
 
 
-class EntityAlreadyAddedError(StashBaseApiError):
-    """user trying input new data not null data."""
-
-    pass
-
-
 class EntityAlreadyVerifiedError(StashBaseApiError):
     """user trying input new data into already verified data."""
 
@@ -55,7 +49,7 @@ class EntityForceInputSameDataError(StashBaseApiError):
     pass
 
 
-class EntityDoesNotExistError(StashBaseApiError):
+class DataNotFoundError(StashBaseApiError):
     """database returns nothing"""
 
     pass
@@ -79,7 +73,7 @@ class MandatoryInputError(StashBaseApiError):
     pass
 
 
-class DatabaseError(StashBaseApiError):
+class DatabaseQueryError(StashBaseApiError):
     """exception for database query error"""
 
     pass

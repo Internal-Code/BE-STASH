@@ -13,8 +13,8 @@ from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
     AuthenticationFailed,
-    DatabaseError,
-    EntityDoesNotExistError,
+    DatabaseQueryError,
+    DataNotFoundError,
 )
 
 config = Config()
@@ -29,7 +29,7 @@ async def access_token(
 
     try:
         if not account_record:
-            raise EntityDoesNotExistError(detail="User not found.")
+            raise DataNotFoundError(detail="User not found.")
 
         access_token = create_access_token(
             data={"sub": account_record.unique_id},
@@ -46,7 +46,7 @@ async def access_token(
         raise
     except StashBaseApiError:
         raise
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

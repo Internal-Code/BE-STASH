@@ -9,7 +9,7 @@
 # from utils.database.general import filter_month_year_category, local_time
 # from utils.custom_error import (
 #     ServiceError,
-#     DatabaseError,
+#     DatabaseQueryError,
 #     StashBaseApiError,
 # )
 
@@ -78,7 +78,7 @@
 #                     except Exception as E:
 #                         logging.error(f"Error during creating new spend money and schema: {E}.")
 #                         await session.rollback()
-#                         raise DatabaseError(detail=f"Database error: {E}.")
+#                         raise DatabaseQueryError(detail=f"Database error: {E}.")
 #                 else:
 #                     try:
 #                         logging.info(f"Only inserting data into table {money_spends.name}")
@@ -101,13 +101,13 @@
 #                     except Exception as E:
 #                         logging.error(f"Error during creating new spend money: {E}.")
 #                         await session.rollback()
-#                         raise DatabaseError(detail=f"Database error: {E}.")
+#                         raise DatabaseQueryError(detail=f"Database error: {E}.")
 #             except Exception as E:
 #                 logging.error(
 #                     f"Error during creating spend money or with adding money schema: {E}."
 #                 )
 #                 await session.rollback()
-#                 raise DatabaseError(
+#                 raise DatabaseQueryError(
 #                     detail=f"Database error during creating spend money or with adding money schema: {E}."
 #                 )
 #             finally:

@@ -14,7 +14,7 @@ from utils.generator import random_number
 from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,
-    DatabaseError,
+    DatabaseQueryError,
     StashBaseApiError,
 )
 
@@ -81,7 +81,7 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
         response.data = UniqueId(unique_id=unique_id)
     except StashBaseApiError:
         raise
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="STASH")

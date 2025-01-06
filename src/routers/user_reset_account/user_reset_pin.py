@@ -12,7 +12,7 @@
 #     ServiceError,
 #     StashBaseApiError,
 #     EntityDoesNotMatchedError,
-#     EntityDoesNotExistError,
+#     DataNotFoundError,
 #     InvalidOperationError,
 # )
 
@@ -28,7 +28,7 @@
 
 #         latest_data = await extract_reset_pin_data(user_uuid=unique_id)
 #         if not latest_data:
-#             raise EntityDoesNotExistError(detail="User not found.")
+#             raise DataNotFoundError(detail="User not found.")
 
 #         now_utc = datetime.now(timezone("UTC"))
 

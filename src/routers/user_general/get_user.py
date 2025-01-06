@@ -6,10 +6,10 @@ from services.postgres.models import User
 from utils.validator import check_phone_number
 from src.schema.response import ResponseDefault, UserStatus
 from utils.custom_error import (
-    EntityDoesNotExistError,
+    DataNotFoundError,
     ServiceError,
     StashBaseApiError,
-    DatabaseError,
+    DatabaseQueryError,
 )
 
 router = APIRouter(tags=["User General"], prefix="/user/general")
@@ -22,7 +22,7 @@ async def get_user_endpoint(phone_number: str, db: AsyncSession = Depends(get_db
 
     try:
         if not account_record:
-            raise EntityDoesNotExistError(detail="User not found.")
+            raise DataNotFoundError(detail="User not found.")
 
         response.success = True
         response.message = "User found."
@@ -31,7 +31,7 @@ async def get_user_endpoint(phone_number: str, db: AsyncSession = Depends(get_db
     except StashBaseApiError:
         raise
 
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
 
     except Exception as e:

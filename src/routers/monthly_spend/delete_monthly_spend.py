@@ -9,9 +9,9 @@
 # from utils.database.general import filter_daily_spending
 # from utils.custom_error import (
 #     ServiceError,
-#     DatabaseError,
+#     DatabaseQueryError,
 #     StashBaseApiError,
-#     EntityDoesNotExistError,
+#     DataNotFoundError,
 # )
 
 # router = APIRouter(tags=["Monthly Spend"])
@@ -44,7 +44,7 @@
 #     )
 
 #     if not is_available:
-#         raise EntityDoesNotExistError(
+#         raise DataNotFoundError(
 #             detail="Data is not found. Please ensure data already created on database."
 #         )
 
@@ -71,7 +71,7 @@
 #             except Exception as E:
 #                 logging.error(f"Error during delete daily spend money data: {E}.")
 #                 await session.rollback()
-#                 raise DatabaseError(
+#                 raise DatabaseQueryError(
 #                     detail=f"Database error: {E}.",
 #                 )
 #             finally:

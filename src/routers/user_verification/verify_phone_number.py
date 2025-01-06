@@ -12,9 +12,9 @@ from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,
-    EntityDoesNotExistError,
+    DataNotFoundError,
     InvalidOperationError,
-    DatabaseError,
+    DatabaseQueryError,
 )
 
 router = APIRouter(tags=["User Verification"], prefix="/user/verification")
@@ -31,10 +31,10 @@ async def verify_phone_number_endpoint(
 
     try:
         if not otp_record:
-            raise EntityDoesNotExistError(detail="Data not found.")
+            raise DataNotFoundError(detail="Data not found.")
 
         if not otp_record.otp_number:
-            raise EntityDoesNotExistError(detail="OTP code not found. Please request a new OTP code.")
+            raise DataNotFoundError(detail="OTP code not found. Please request a new OTP code.")
 
         if account_record.verified_phone_number:
             raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
@@ -60,7 +60,7 @@ async def verify_phone_number_endpoint(
     except StashBaseApiError:
         raise
 
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
 
     except Exception as E:

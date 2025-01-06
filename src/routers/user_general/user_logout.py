@@ -13,7 +13,7 @@
 # )
 # from utils.custom_error import (
 #     ServiceError,
-#     DatabaseError,
+#     DatabaseQueryError,
 #     StashBaseApiError,
 #     InvalidTokenError,
 # )
@@ -54,7 +54,7 @@
 #             except Exception as E:
 #                 logging.error(f"Error during logout: {E}.")
 #                 await session.rollback()
-#                 raise DatabaseError(
+#                 raise DatabaseQueryError(
 #                     detail=f"Database error: {E}.",
 #                 )
 #             finally:

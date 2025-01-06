@@ -4,7 +4,7 @@ from sqlmodel import SQLModel
 from sqlalchemy import select, insert, update
 from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.custom_error import DatabaseError
+from utils.custom_error import DatabaseQueryError
 
 
 async def find_record(
@@ -20,7 +20,7 @@ async def find_record(
         condition.append(col_attr == value)
 
     try:
-        query = select(table).where(*condition)
+        query = select(table).where(*condition).order_by(table.id)
         result = await db.execute(query)
 
         if fetch_type == "all":
@@ -33,7 +33,7 @@ async def find_record(
     except Exception as e:
         logging.error(f"Failed to find record in table {table.__name__}: {e}")
         await db.rollback()
-        raise DatabaseError(detail="Database query error.")
+        raise DatabaseQueryError(detail="Database query error.")
 
     return entry
 
@@ -51,7 +51,7 @@ async def insert_record(db: AsyncSession, table: type[SQLModel], data: dict) -> 
     except Exception as e:
         logging.error(f"Failed to insert record in table {table.__name__}: {e}")
         await db.rollback()
-        raise DatabaseError(detail="Database query error.")
+        raise DatabaseQueryError(detail="Database query error.")
 
 
 async def update_record(db: AsyncSession, table: type[SQLModel], conditions: dict, data: dict) -> None:
@@ -75,4 +75,4 @@ async def update_record(db: AsyncSession, table: type[SQLModel], conditions: dic
     except Exception as e:
         logging.error(f"Failed to update record in table {table.__name__} with conditions {conditions}: {e}")
         await db.rollback()
-        raise DatabaseError(detail="Database query error.")
+        raise DatabaseQueryError(detail="Database query error.")

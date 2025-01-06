@@ -13,7 +13,7 @@
 #     ServiceError,
 #     StashBaseApiError,
 #     MandatoryInputError,
-#     EntityDoesNotExistError,
+#     DataNotFoundError,
 #     InvalidOperationError,
 # )
 # from utils.database.general import (
@@ -33,7 +33,7 @@
 #         account = await get_user(unique_id=unique_id)
 
 #         if not account:
-#             raise EntityDoesNotExistError(detail="Account not found.")
+#             raise DataNotFoundError(detail="Account not found.")
 
 #         reset_link = f"http://localhost:8000/api/v1/users/reset-pin/{unique_id}"
 

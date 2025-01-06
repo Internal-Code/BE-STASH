@@ -17,9 +17,9 @@ from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
     MandatoryInputError,
-    EntityDoesNotExistError,
+    DataNotFoundError,
     EntityAlreadyFilledError,
-    DatabaseError,
+    DatabaseQueryError,
 )
 
 config = Config()
@@ -34,7 +34,7 @@ async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = D
 
     try:
         if not account_record:
-            raise EntityDoesNotExistError(detail="Account not found.")
+            raise DataNotFoundError(detail="Account not found.")
 
         if account_record.register_state == RegisterAccountState.SUCCESS:
             raise EntityAlreadyFilledError(detail="Account already set pin.")
@@ -73,7 +73,7 @@ async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = D
         raise
     except ServiceError:
         raise
-    except DatabaseError:
+    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

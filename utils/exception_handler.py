@@ -3,14 +3,13 @@ from utils.custom_error import create_exception_handler
 from utils.custom_error import (
     AuthenticationFailed,
     EntityAlreadyExistError,
-    EntityDoesNotExistError,
+    DataNotFoundError,
     EntityAlreadyVerifiedError,
     ServiceError,
     InvalidOperationError,
     InvalidTokenError,
-    EntityAlreadyAddedError,
     EntityForceInputSameDataError,
-    DatabaseError,
+    DatabaseQueryError,
     EntityDoesNotMatchedError,
     MandatoryInputError,
     EntityAlreadyFilledError,
@@ -32,7 +31,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     )
 
     app.add_exception_handler(
-        exc_class_or_status_code=EntityDoesNotExistError,
+        exc_class_or_status_code=DataNotFoundError,
         handler=create_exception_handler(status.HTTP_404_NOT_FOUND, "Entity does not exist."),
     )
 
@@ -74,14 +73,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     )
 
     app.add_exception_handler(
-        exc_class_or_status_code=EntityAlreadyAddedError,
-        handler=create_exception_handler(
-            status.HTTP_403_FORBIDDEN,
-            "Entity already have data.",
-        ),
-    )
-
-    app.add_exception_handler(
         exc_class_or_status_code=InvalidTokenError,
         handler=create_exception_handler(status.HTTP_401_UNAUTHORIZED, "Invalid token, please re-authenticate again."),
     )
@@ -95,7 +86,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     )
 
     app.add_exception_handler(
-        exc_class_or_status_code=DatabaseError,
+        exc_class_or_status_code=DatabaseQueryError,
         handler=create_exception_handler(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             "Database error.",

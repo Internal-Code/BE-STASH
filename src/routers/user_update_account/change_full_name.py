@@ -9,7 +9,7 @@
 # from utils.request_format import ChangeUserFullName
 # from utils.database.general import local_time
 # from utils.custom_error import (
-#     DatabaseError,
+#     DatabaseQueryError,
 #     EntityForceInputSameDataError,
 #     ServiceError,
 #     StashBaseApiError,
@@ -44,7 +44,7 @@
 #             except Exception as E:
 #                 logging.error(f"Error while change user full name: {E}.")
 #                 await session.rollback()
-#                 raise DatabaseError(detail=f"Database error: {E}.")
+#                 raise DatabaseQueryError(detail=f"Database error: {E}.")
 #             finally:
 #                 await session.close()
 
