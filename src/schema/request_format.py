@@ -1,5 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ValidationInfo
+from src.schema.validator import FullNameValidatorMixin, PhoneNumberValidatorMixin
 from utils.helper import local_time
 from enum import StrEnum
 
@@ -15,6 +16,13 @@ class UserPhoneNumber(BaseModel):
 class UserOtp(BaseModel):
     otp: str = None
 
+class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
+    change_full_name_into: str = None
+    
+    @field_validator("change_full_name_into")
+    @classmethod
+    def validate_full_name(cls, value: str) -> str:
+        return cls.validate_fullname(value)
 
 class MonthlyCategory(BaseModel):
     category: str = None
@@ -68,10 +76,21 @@ class CreateSpend(BaseModel):
     amount: int
 
 
-class CreateUser(BaseModel):
-    full_name: str
-    phone_number: str
-    email: EmailStr | None = None
+class CreateUser(BaseModel, FullNameValidatorMixin, PhoneNumberValidatorMixin):
+    full_name: str = None
+    phone_number: str = None
+    email: EmailStr = None
+    
+    @field_validator("full_name")
+    @classmethod
+    def validate_fullname(cls, value: str) -> str:
+        return FullNameValidatorMixin.validate_fullname(value)
+    
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, value: str) -> str:
+        return PhoneNumberValidatorMixin.validate_phone_number(value)
+    
 
 
 class TokenData(BaseModel):

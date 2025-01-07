@@ -7,7 +7,7 @@ from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
-from utils.validator import check_fullname, check_phone_number, check_record
+from utils.validator import check_phone_number, check_record
 from utils.query.general import find_record, insert_record
 from utils.whatsapp_api import send_otp_whatsapp
 from utils.generator import random_number
@@ -35,11 +35,10 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
     unique_id = str(uuid4())
     generated_otp = str(random_number(6))
     response = ResponseDefault()
-    validated_phone_number = check_phone_number(phone_number=schema.phone_number)
-    fullname = check_fullname(value=schema.full_name)
+    # validated_phone_number = check_phone_number(phone_number=schema.phone_number)
 
     check_record(
-        record=await find_record(db=db, table=User, phone_number=validated_phone_number),
+        record=await find_record(db=db, table=User, phone_number=schema.phone_number),
         column="phone_number",
     )
     check_record(
@@ -55,8 +54,8 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
             table=User,
             data={
                 "unique_id": unique_id,
-                "full_name": fullname,
-                "phone_number": validated_phone_number,
+                "full_name": schema.fullname,
+                "phone_number": schema.phone_number,
                 "email": schema.email,
             },
         )
