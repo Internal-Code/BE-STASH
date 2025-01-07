@@ -20,18 +20,6 @@ def check_security_code(value: str, type: Literal["otp", "pin"]) -> str:
     return value
 
 
-def check_fullname(value: str) -> str:
-    value = " ".join(value.split())
-    if not value:
-        raise InvalidOperationError(detail="Fullname should not be empty.")
-    if not all(char.isalpha() or char.isspace() for char in value):
-        raise InvalidOperationError(detail="Fullname should contain only letters and space.")
-    if len(value) >= 100:
-        raise InvalidOperationError(detail="Fullname should be less than 100 character.")
-    fullname = value.title()
-    return fullname
-
-
 def check_record(record: Row, column: str) -> None:
     if record:
         column_name = " ".join(column.split("_")).capitalize() if column.__contains__("_") else column.capitalize()
