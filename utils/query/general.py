@@ -1,7 +1,7 @@
 from utils.logger import logging
 from typing import Literal
 from sqlmodel import SQLModel
-from sqlalchemy import select, insert, update
+from sqlalchemy import select, insert, update, delete
 from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.custom_error import DatabaseQueryError
@@ -74,5 +74,17 @@ async def update_record(db: AsyncSession, table: type[SQLModel], conditions: dic
         logging.info(f"Updated record in table {table.__name__}.")
     except Exception as e:
         logging.error(f"Failed to update record in table {table.__name__} with conditions {conditions}: {e}")
+        await db.rollback()
+        raise DatabaseQueryError(detail="Database query error.")
+
+
+async def delete_record(db: AsyncSession, table: type[SQLModel]) -> None:
+    try:
+        query = delete(table)
+        await db.execute(query)
+        await db.commit()
+        logging.info(f"Successfully deleted all records in table {table.__name__}.")
+    except Exception as e:
+        logging.error(f"Failed to delete all records in table {table.__name__}: {e}")
         await db.rollback()
         raise DatabaseQueryError(detail="Database query error.")

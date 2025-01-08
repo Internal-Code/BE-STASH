@@ -56,7 +56,6 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
                     "updated_at": current_time,
                     "otp_number": generated_otp,
                     "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
-                    "saved_by_system": False,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

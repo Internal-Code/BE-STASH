@@ -7,54 +7,37 @@ from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
-from utils.validator import check_phone_number, check_record
 from utils.query.general import find_record, insert_record
+from src.schema.validator import PhoneNumberValidatorMixin
 from utils.whatsapp_api import send_otp_whatsapp
 from utils.generator import random_number
 from src.schema.response import ResponseDefault, UniqueId
-from utils.custom_error import (
-    ServiceError,
-    DatabaseQueryError,
-    StashBaseApiError,
-)
+from utils.custom_error import ServiceError, DatabaseQueryError, StashBaseApiError, EntityAlreadyExistError
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
-    """
-    Create a new users account with the following information:
-
-    - **full_name**: The full name of the users.
-        - Maximum full name is 100 character.
-        - Should contain only letters and space.
-    - **phone_number**: The phone number of the users.
-        - Should be 10 - 13 digit of number.
-    """
-
     unique_id = str(uuid4())
     generated_otp = str(random_number(6))
     response = ResponseDefault()
-    # validated_phone_number = check_phone_number(phone_number=schema.phone_number)
-
-    check_record(
-        record=await find_record(db=db, table=User, phone_number=schema.phone_number),
-        column="phone_number",
-    )
-    check_record(
-        record=await find_record(db=db, table=User, email=schema.email),
-        column="email",
-    )
+    validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=schema.phone_number)
+    phone_number_record = await find_record(db=db, table=User, phone_number=validated_phone_number)
+    email_record = await find_record(db=db, table=User, email=schema.email)
 
     try:
-        logging.info("Endpoint register account.")
-        logging.info("Inserting user account entry.")
+        if phone_number_record:
+            raise EntityAlreadyExistError(detail="Phone number already registered.")
+
+        if email_record:
+            raise EntityAlreadyExistError(detail="Email already registered.")
+
         await insert_record(
             db=db,
             table=User,
             data={
                 "unique_id": unique_id,
-                "full_name": schema.fullname,
+                "full_name": schema.full_name,
                 "phone_number": schema.phone_number,
                 "email": schema.email,
             },
@@ -73,7 +56,8 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
         )
 
         logging.info("Sending OTP code.")
-        await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
+        tes = await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
+        logging.info(tes)
 
         response.success = True
         response.message = "Account successfully created."

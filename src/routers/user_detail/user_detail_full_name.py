@@ -11,7 +11,7 @@ async def user_detail_general_endpoint(current_user: Annotated[dict, Depends(get
     response = ResponseDefault()
     try:
         response.success = True
-        response.message = f"Extracting full name info."
+        response.message = "Extracted full name info."
         response.data = current_user.full_name
     except StashBaseApiError:
         raise

@@ -6,7 +6,7 @@ from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseToken
-from utils.validator import check_security_code
+from src.schema.validator import SecurityCodeValidator
 from utils.query.general import find_record, update_record
 from services.postgres.models import User
 from utils.jwt import get_password_hash, create_access_token
@@ -29,7 +29,7 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
-    validated_pin = check_security_code(type="pin", value=schema.pin)
+    validated_pin = SecurityCodeValidator.validate_security_code(type="pin", value=schema.pin)
     hashed_pin = get_password_hash(password=validated_pin)
 
     try:

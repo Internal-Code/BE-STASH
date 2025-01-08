@@ -6,7 +6,7 @@ from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
 from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
-from utils.validator import check_security_code
+from src.schema.validator import SecurityCodeValidator
 from src.schema.request_format import UserOtp
 from utils.custom_error import (
     ServiceError,
@@ -27,7 +27,7 @@ async def verify_phone_number_endpoint(
     otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
     current_time = local_time()
-    validated_otp = check_security_code(type="otp", value=schema.otp)
+    validated_otp = SecurityCodeValidator.validate_security_code(type="otp", value=schema.otp)
 
     try:
         if not otp_record:

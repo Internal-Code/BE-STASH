@@ -9,7 +9,7 @@ from utils.logger import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from services.postgres.connection import database_connection, get_db
-from utils.validator import check_security_code, check_uuid
+from src.schema.validator import SecurityCodeValidator, UniqueIdValidator
 from src.secret import Config
 from utils.helper import local_time
 from services.postgres.models import User, BlacklistToken
@@ -78,8 +78,8 @@ async def get_user(phone_number: str = None, unique_id: str = None, email: Email
 
 
 async def authenticate_user(unique_id: str, pin: str) -> Row | None:
-    validated_uuid = check_uuid(unique_id=unique_id)
-    validated_pin = check_security_code(type="pin", value=pin)
+    validated_uuid = UniqueIdValidator.validate_uuid(unique_id=unique_id)
+    validated_pin = SecurityCodeValidator.validate_security_code(type="pin", value=pin)
 
     async for db in get_db():
         account_record = await find_record(db=db, table=User, unique_id=validated_uuid)

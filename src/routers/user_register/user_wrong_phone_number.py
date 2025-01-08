@@ -2,7 +2,6 @@ from uuid import UUID
 from datetime import timedelta
 from utils.logger import logging
 from utils.helper import local_time
-from utils.validator import check_phone_number
 from utils.whatsapp_api import send_otp_whatsapp
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
@@ -11,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
+from src.schema.validator import PhoneNumberValidatorMixin
 from src.schema.custom_state import RegisterAccountState
 from src.schema.request_format import UserPhoneNumber
 from utils.custom_error import (
@@ -33,7 +33,7 @@ async def wrong_phone_number_endpoint(
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = str(random_number(6))
-    validated_phone_number = check_phone_number(phone_number=schema.phone_number)
+    validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=schema.phone_number)
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
     registered_phone_number = await find_record(db=db, table=User, phone_number=validated_phone_number)
     otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
