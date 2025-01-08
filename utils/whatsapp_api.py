@@ -16,10 +16,12 @@ async def send_otp_whatsapp(phone_number: str, generated_otp: str) -> None:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(config.WHATSAPP_API_MESSAGE, json=dict(payload))
-            print(response._content)
+
+        if response.status_code != 200:
+            raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
 
     except Exception:
-        raise ServiceError(detail="Failed to send OTP via WhatsApp.", name="Whatsapp API")
+        raise ServiceError(detail="Whatsapp API error.", name="Whatsapp API")
     finally:
         await client.aclose()
 

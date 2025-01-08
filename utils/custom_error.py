@@ -37,7 +37,19 @@ class ServiceError(StashBaseApiError):
     pass
 
 
+class DataNotFoundError(StashBaseApiError):
+    """database returns nothing"""
+
+    pass
+
+
 class EntityAlreadyVerifiedError(StashBaseApiError):
+    """user trying input new data into already verified data."""
+
+    pass
+
+
+class UserNotVerifiedError(StashBaseApiError):
     """user trying input new data into already verified data."""
 
     pass
@@ -45,12 +57,6 @@ class EntityAlreadyVerifiedError(StashBaseApiError):
 
 class EntityForceInputSameDataError(StashBaseApiError):
     """user trying input new data which same with old data."""
-
-    pass
-
-
-class DataNotFoundError(StashBaseApiError):
-    """database returns nothing"""
 
     pass
 

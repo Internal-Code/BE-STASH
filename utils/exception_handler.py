@@ -13,6 +13,7 @@ from utils.custom_error import (
     EntityDoesNotMatchedError,
     MandatoryInputError,
     EntityAlreadyFilledError,
+    UserNotVerifiedError,
 )
 
 
@@ -62,6 +63,11 @@ def register_exception_handlers(app: FastAPI) -> None:
             status.HTTP_403_FORBIDDEN,
             "Entity already verified.",
         ),
+    )
+
+    app.add_exception_handler(
+        exc_class_or_status_code=UserNotVerifiedError,
+        handler=create_exception_handler(status.HTTP_403_FORBIDDEN, "Entity should verified."),
     )
 
     app.add_exception_handler(

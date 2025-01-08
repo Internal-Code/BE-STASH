@@ -13,7 +13,7 @@ from src.routers.user_register import user_new_account, user_create_pin, user_wr
 from src.routers.user_verification import verify_phone_number
 from src.routers.user_general import user_login
 from src.routers.user_general import get_user
-from src.routers.user_update_account import change_full_name
+from src.routers.user_update_account import change_full_name, change_phone_number
 from src.routers.user_detail import user_detail_full_name
 from src.routers.monthly_schema import (
     create_category,
@@ -96,7 +96,7 @@ app.include_router(user_wrong_phone_number.router)
 # app.include_router(send_otp_email.router)
 # app.include_router(user_add_email.router)``
 # app.include_router(change_verified_email.router)
-# app.include_router(change_phone_number.router)
+app.include_router(change_phone_number.router)
 # app.include_router(user_detail_phone_number.router)
 # app.include_router(user_detail_email.router)
 # app.include_router(change_pin.router)

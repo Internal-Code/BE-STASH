@@ -17,7 +17,6 @@ from utils.custom_error import (
     DataNotFoundError,
     MandatoryInputError,
     InvalidOperationError,
-    DatabaseQueryError,
 )
 
 config = Config()
@@ -65,10 +64,6 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
             response.message = "OTP data sent to phone number."
             response.data = UniqueId(unique_id=str(unique_id))
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
-        raise
-    except ServiceError:
         raise
     except Exception as e:
         raise ServiceError(detail=f"Service error: {e}.", name="Finance Tracker")
