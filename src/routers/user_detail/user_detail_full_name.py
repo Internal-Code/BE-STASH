@@ -10,7 +10,6 @@ router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 async def user_detail_general_endpoint(current_user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     response = ResponseDefault()
     try:
-        response.success = True
         response.message = "Extracted full name info."
         response.data = current_user.full_name
     except StashBaseApiError:

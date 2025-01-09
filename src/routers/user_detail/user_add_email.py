@@ -1,79 +1,68 @@
-# from typing import Annotated
-# from utils.logger import logging
-# from fastapi import APIRouter, status, Depends
-# from utils.request_format import AddEmail
-# from src.schema.response import ResponseDefault
-# from utils.jwt.general import get_current_user
-# from utils.custom_error import (
-#     EntityAlreadyVerifiedError,
-#     EntityAlreadyExistError,
-#     EntityAlreadyAddedError,
-#     EntityForceInputSameDataError,
-#     ServiceError,
-#     StashBaseApiError,
-# )
-# from utils.database.general import (
-#     is_using_registered_email,
-#     update_user_email,
-#     extract_data_otp,
-#     save_otp_data,
-#     local_time,
-# )
-
-# router = APIRouter(tags=["User Detail"], prefix="/user/detail")
+from typing import Annotated
+from fastapi import APIRouter, status, Depends
+from src.schema.request_format import UserEmail
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.schema.response import ResponseDefault
+from utils.query.general import find_record, update_record
+from services.postgres.models import User
+from utils.helper import local_time
+from utils.jwt import get_current_user
+from utils.custom_error import (
+    EntityAlreadyVerifiedError,
+    EntityAlreadyExistError,
+    EntityForceInputSameDataError,
+    ServiceError,
+    StashBaseApiError,
+)
 
 
-# async def add_email_endpoint(
-#     schema: AddEmail,
-#     current_user: Annotated[dict, Depends(get_current_user)],
-# ) -> ResponseDefault:
-#     response = ResponseDefault()
-#     registered_email = await is_using_registered_email(email=schema.email)
-#     initial_data = await extract_data_otp(user_uuid=current_user.user_uuid)
-
-#     try:
-#         if registered_email:
-#             raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
-
-#         if current_user.verified_email:
-#             raise EntityAlreadyVerifiedError(detail="User already have an verified email.")
-
-#         if current_user.email:
-#             raise EntityAlreadyAddedError(detail="User already have an email.")
-
-#         if current_user.email == schema.email:
-#             raise EntityForceInputSameDataError(detail="Cannot use same email.")
-
-#         await update_user_email(
-#             user_uuid=current_user.user_uuid, email=schema.email, verified_email=False
-#         )
-
-#         if not initial_data:
-#             logging.info("Initialized OTP save data.")
-#             await save_otp_data(
-#                 user_uuid=current_user.user_uuid,
-#                 current_api_hit=1,
-#                 saved_by_system=True,
-#                 save_to_hit_at=local_time(),
-#             )
-
-#         response.success = True
-#         response.message = "Success add new email."
-
-#     except StashBaseApiError as FTE:
-#         raise FTE
-
-#     except Exception as E:
-#         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
-
-#     return response
+router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
-# router.add_api_route(
-#     methods=["PATCH"],
-#     path="/add-email",
-#     response_model=ResponseDefault,
-#     endpoint=add_email_endpoint,
-#     status_code=status.HTTP_201_CREATED,
-#     summary="User add new email.",
-# )
+async def add_email_endpoint(
+    schema: UserEmail, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+) -> ResponseDefault:
+    response = ResponseDefault()
+    current_time = local_time()
+    registered_email = await find_record(db=db, table=User, email=schema.email)
+    user_record = await find_record(db=db, table=User, unique_id=current_user.unique_id)
+
+    try:
+        if registered_email:
+            raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
+
+        if user_record.verified_email:
+            raise EntityAlreadyVerifiedError(detail="User already have an verified email.")
+
+        if user_record.email:
+            raise EntityAlreadyExistError(detail="User already have an email.")
+
+        if user_record.email == schema.email:
+            raise EntityForceInputSameDataError(detail="Cannot update into same email.")
+
+        await update_record(
+            db=db,
+            table=User,
+            conditions={"unique_id": current_user.unique_id},
+            data={"email": schema.email, "updated_at": current_time},
+        )
+
+        response.message = "Success add new email."
+
+    except StashBaseApiError:
+        raise
+    except Exception as E:
+        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+
+    return response
+
+
+router.add_api_route(
+    methods=["PATCH"],
+    path="/add-email",
+    response_model=ResponseDefault,
+    endpoint=add_email_endpoint,
+    status_code=status.HTTP_201_CREATED,
+    summary="User add new email.",
+)

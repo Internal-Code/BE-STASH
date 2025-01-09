@@ -40,7 +40,7 @@ async def change_phone_number_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
-    generated_otp = str(random_number(6))
+    generated_otp = random_number(6)
     registered_phone_number = await find_record(db=db, table=User, phone_number=schema.phone_number)
     otp_record = await find_record(db=db, table=SendOtp, unique_id=current_user.unique_id)
 

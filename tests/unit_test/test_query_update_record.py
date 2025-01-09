@@ -10,18 +10,6 @@ from utils.query.general import find_record, delete_record, insert_record, updat
 
 
 @pytest.mark.asyncio
-async def test_update_record_raised_data_not_found_error():
-    async for db in get_db():
-        with pytest.raises(DataNotFoundError, match="Data not found."):
-            await update_record(
-                db=db,
-                table=User,
-                conditions={"unique_id": str(uuid4())},
-                data={"phone_number": random_number(length=10)},
-            )
-
-
-@pytest.mark.asyncio
 async def test_update_record_with_available_data_inside_table():
     faker = Faker()
     unique_id = str(uuid4())
@@ -98,3 +86,15 @@ async def test_update_record_raised_database_query_error():
     async for db in get_db():
         with pytest.raises(DatabaseQueryError, match="Database query error."):
             await update_record(db=db, table=User, conditions={"unique_id": uuid4()}, data={})
+
+
+@pytest.mark.asyncio
+async def test_update_record_raised_data_not_found_error():
+    async for db in get_db():
+        with pytest.raises(DataNotFoundError, match="Data not found."):
+            await update_record(
+                db=db,
+                table=User,
+                conditions={"unique_id": str(uuid4())},
+                data={"phone_number": random_number(length=10)},
+            )

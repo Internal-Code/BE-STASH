@@ -19,18 +19,14 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
     unique_id = str(uuid4())
-    generated_otp = str(random_number(6))
+    generated_otp = random_number(6)
     response = ResponseDefault()
     validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=schema.phone_number)
     phone_number_record = await find_record(db=db, table=User, phone_number=validated_phone_number)
-    email_record = await find_record(db=db, table=User, email=schema.email)
 
     try:
         if phone_number_record:
             raise EntityAlreadyExistError(detail="Phone number already registered.")
-
-        if email_record:
-            raise EntityAlreadyExistError(detail="Email already registered.")
 
         await insert_record(
             db=db,
@@ -39,7 +35,6 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
                 "unique_id": unique_id,
                 "full_name": schema.full_name,
                 "phone_number": schema.phone_number,
-                "email": schema.email,
             },
         )
 

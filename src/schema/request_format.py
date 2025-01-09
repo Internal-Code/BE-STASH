@@ -22,6 +22,10 @@ class UserOtp(BaseModel):
     otp: str = None
 
 
+class UserEmail(BaseModel):
+    email: EmailStr = None
+
+
 class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
     change_full_name_into: str = None
 
@@ -86,7 +90,6 @@ class CreateSpend(BaseModel):
 class CreateUser(BaseModel, FullNameValidatorMixin, PhoneNumberValidatorMixin):
     full_name: str = None
     phone_number: str = None
-    email: EmailStr = None
 
     @field_validator("full_name")
     @classmethod

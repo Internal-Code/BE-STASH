@@ -32,7 +32,7 @@ async def wrong_phone_number_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
-    generated_otp = str(random_number(6))
+    generated_otp = random_number(6)
     validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=schema.phone_number)
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
     registered_phone_number = await find_record(db=db, table=User, phone_number=validated_phone_number)
