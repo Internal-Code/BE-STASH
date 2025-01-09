@@ -6,17 +6,17 @@ from faker import Faker
 faker = Faker()
 
 
-def random_number(length: int = 1) -> int:
+def random_number(length: int = 1) -> str:
     if length < 1:
         raise ValueError("length parameter should be more than 0")
 
     lower_bound = 10 ** (length - 1)
     upper_bound = 10**length - 1
 
-    return random.randint(lower_bound, upper_bound)
+    return str(random.randint(lower_bound, upper_bound))
 
 
-async def random_word(length: int = 4) -> str:
+def random_word(length: int = 4) -> str:
     if length < 1:
         raise ValueError("length parameter should be more than 0")
 

@@ -56,8 +56,7 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
         )
 
         logging.info("Sending OTP code.")
-        tes = await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
-        logging.info(tes)
+        await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
 
         response.success = True
         response.message = "Account successfully created."

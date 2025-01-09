@@ -72,7 +72,7 @@ sh ./scripts/activate.sh
 
 # Run the tests
 echo "Running tests in $TEST_DIR on $ENV_FILE environment"
-if ! coverage run -m --source=$TEST_DIR pytest $TEST_DIR --verbose; then
+if ! coverage run -m  --source=$TEST_DIR pytest $TEST_DIR --verbose; then
   echo "Tests failed!"
   exit 1
 fi
