@@ -62,8 +62,16 @@ case "$1" in
     ;;
 esac
 
-#Load the environment variables using the external script
-export $(grep -v '^#' $ENV_FILE | xargs)
+# Load the environment variables using the external script
+set -a
+while IFS='=' read -r key value; do
+  # Skip comments and empty lines
+  if [ -n "$key" ] && [ "${key#\#}" != "$key" ]; then
+    # Preserve multi-word values by quoting them
+    export "$key=$value"
+  fi
+done < "$ENV_FILE"
+set +a
 sh ./scripts/load_env.sh
 
 # Activate virtualenv

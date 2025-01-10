@@ -19,9 +19,9 @@ router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def change_full_name_endpoint(
-    schema: UpdateUserFullName, 
+    schema: UpdateUserFullName,
     current_user: Annotated[dict, Depends(get_current_user)],
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
@@ -30,8 +30,8 @@ async def change_full_name_endpoint(
         await update_record(
             db=db,
             table=User,
-            conditions={"unique_id":current_user.unique_id},
-            data={"full_name":schema.change_full_name_into, "updated_at":current_time}
+            conditions={"unique_id": current_user.unique_id},
+            data={"full_name": schema.change_full_name_into, "updated_at": current_time},
         )
 
         response.success = True

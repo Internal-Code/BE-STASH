@@ -1,5 +1,6 @@
 #!/bin/sh
 
+
 # Load the environment variables
 if [ -f "$ENV_FILE" ]; then
   echo "Loading environment variables from $ENV_FILE"

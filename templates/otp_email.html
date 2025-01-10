@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #ffffff;
+      }
+      .container {
+        margin: 0 auto;
+        padding: 20px;
+        max-width: 600px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .header {
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .otp {
+        font-size: 24px;
+        font-weight: bold;
+        color: #d32f2f;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 14px;
+        color: #777;
+      }
+      .unique-id {
+        font-size: 12px;
+        color: #aaa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">Dear {{ full_name }},</div>
+      <p>
+        We received a request to verify your email address. Please enter the
+        following code to verify your account:
+      </p>
+      <p class="otp">{{ otp }}</p>
+      <p>This code will expire in <b>3 minutes</b>.</p>
+      <p>Thank you,</p>
+      <div class="footer">
+        Best regards,<br />
+        <b>STASH Support Team</b><br />
+        <span class="unique-id">Ref: {{ unique_id }}</span>
+      </div>
+    </div>
+  </body>
+</html>

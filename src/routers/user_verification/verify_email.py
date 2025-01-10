@@ -6,7 +6,7 @@
 # from fastapi import APIRouter, status, Depends
 # from sqlalchemy.ext.asyncio import AsyncSession
 # from services.postgres.connection import get_db
-# from utils.validator import check_security_code
+# from src.schema.validator import SecurityCodeValidator
 # from utils.helper import local_time
 # from src.schema.response import ResponseDefault
 # from utils.jwt import get_current_user

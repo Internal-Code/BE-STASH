@@ -1,12 +1,10 @@
 import ssl
 import smtplib
 from pydantic import EmailStr
-from email.mime.text import MIMEText
 from email.message import EmailMessage
 from utils.logger import logging
 from src.secret import Config
 from smtplib import (
-    SMTPException,
     SMTPAuthenticationError,
     SMTPRecipientsRefused,
     SMTPSenderRefused,
@@ -15,7 +13,6 @@ from smtplib import (
 )
 from utils.custom_error import (
     AuthenticationFailed,
-    StashBaseApiError,
     ServiceError,
     EntityDoesNotMatchedError,
 )
@@ -29,68 +26,35 @@ async def send_gmail(
     email_subject: str,
     email_body: str,
     email_sender: EmailStr = config.GOOGLE_DEFAULT_EMAIL,
-) -> EmailMessage:
-    try:
-        email = EmailMessage()
-        email["From"] = email_sender
-        email["To"] = email_receiver
-        email["Subject"] = email_subject
-        email.set_content(email_body)
-        email.set_content(MIMEText(email_body, "html"))
+) -> None:
+    email = EmailMessage()
+    email["From"] = email_sender
+    email["To"] = email_receiver
+    email["Subject"] = email_subject
+    email.set_content(email_body, subtype="html")
+    context = ssl.create_default_context()
 
-        context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host=config.GOOGLE_SMTP_SERVER, port=int(config.GOOGLE_SMTP_PORT), context=context) as smtp:
         try:
-            with smtplib.SMTP_SSL(
-                host=config.GOOGLE_SMTP_SERVER,
-                port=int(config.GOOGLE_SMTP_PORT),
-                context=context,
-            ) as smtp:
-                try:
-                    logging.info(f"Email successfully sent into: {email_receiver}")
-                    smtp.login(
-                        user=config.GOOGLE_DEFAULT_EMAIL,
-                        password=config.GOOGLE_APP_PASSWORD,
-                    )
-                    smtp.sendmail(
-                        from_addr=config.GOOGLE_DEFAULT_EMAIL,
-                        to_addrs=email_receiver,
-                        msg=email.as_string(),
-                    )
-                except Exception as E:
-                    logging.error(f"Error during sending smtp email: {E}")
-                    raise ServiceError(detail=f"SMTP Error: {E}.", name="Google SMTP")
-                finally:
-                    smtp.close()
-        except SMTPAuthenticationError as e:
-            logging.error(f"SMTPAuthenticationError: {e}")
+            smtp.login(user=config.GOOGLE_DEFAULT_EMAIL, password=config.GOOGLE_APP_PASSWORD)
+            smtp.sendmail(email)
+            logging.info(f"Email successfully sent into {email_receiver}")
+        except SMTPAuthenticationError:
             raise AuthenticationFailed(detail="SMTP Authentication failed. Please check your credentials.")
-        except SMTPRecipientsRefused as e:
-            logging.error(f"SMTPRecipientsRefused: {e}")
+        except SMTPRecipientsRefused:
             raise EntityDoesNotMatchedError(detail="SMTP Recipients refused. The email address might be invalid.")
-        except SMTPSenderRefused as e:
-            logging.error(f"SMTPSenderRefused: {e}")
+        except SMTPSenderRefused:
             raise EntityDoesNotMatchedError(detail="SMTP Sender refused. The sender's email address might be invalid.")
-        except SMTPDataError as e:
-            logging.error(f"SMTPDataError: {e}")
-            raise ServiceError(
-                detail="SMTP Data error occurred while sending the email.",
-                name="Google SMTP",
-            )
-        except SMTPConnectError as e:
-            logging.error(f"SMTPConnectError: {e}")
+        except SMTPDataError:
+            raise ServiceError(detail="SMTP Data error occurred while sending the email.", name="Google SMTP")
+        except SMTPConnectError:
             raise ServiceError(detail="Failed to connect to the SMTP server.", name="Google SMTP")
-        except SMTPException as e:
-            logging.error(f"SMTPException: {e}")
-            raise ServiceError(detail=f"SMTP error occurred: {str(e)}", name="Google SMTP")
-    except StashBaseApiError as FTE:
-        raise FTE
-    except Exception as E:
-        logging.error(f"Unexpected error during Gmail SMTP authentication: {E}")
-        raise ServiceError(
-            detail="An unexpected error occurred. Please try again later",
-            name="Google SMTP",
-        )
-    return smtp
+        except Exception as E:
+            logging.error(f"Error during sending smtp email: {E}")
+            raise ServiceError(detail=f"SMTP Error: {E}.", name="Google SMTP")
+        finally:
+            smtp.close()
+    return None
 
 
 async def send_account_info_to_email(email: EmailStr, full_name: str, phone_number: str, pin: str) -> None:

@@ -64,7 +64,15 @@ if [ -z "$TEST_DIR" ]; then
 fi
 
 # Load environment variables
-export $(grep -v '^#' $ENV_FILE | xargs)
+set -a
+while IFS='=' read -r key value; do
+  # Skip comments and empty lines
+  if [ -n "$key" ] && [ "${key#\#}" != "$key" ]; then
+    # Preserve multi-word values by quoting them
+    export "$key=$value"
+  fi
+done < "$ENV_FILE"
+set +a
 sh ./scripts/load_env.sh
 
 # Activate the virtual environment

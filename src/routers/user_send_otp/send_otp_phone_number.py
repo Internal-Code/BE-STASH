@@ -60,8 +60,7 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
                 },
             )
 
-            response.success = True
-            response.message = "OTP data sent to phone number."
+            response.message = f"OTP sent to {account_record.phone_number}."
             response.data = UniqueId(unique_id=str(unique_id))
     except StashBaseApiError:
         raise
