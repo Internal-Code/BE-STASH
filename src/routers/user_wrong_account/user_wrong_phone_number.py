@@ -1,6 +1,5 @@
 from uuid import UUID
 from datetime import timedelta
-from utils.logger import logging
 from utils.helper import local_time
 from utils.whatsapp_api import send_otp_whatsapp
 from fastapi import APIRouter, status, Depends
@@ -24,7 +23,7 @@ from utils.custom_error import (
     InvalidOperationError,
 )
 
-router = APIRouter(tags=["User Register"], prefix="/user/register")
+router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def wrong_phone_number_endpoint(
@@ -51,13 +50,11 @@ async def wrong_phone_number_endpoint(
             raise EntityAlreadyExistError(detail="Phone number already registered.")
 
         if current_time < otp_record.save_to_hit_at:
-            logging.info("User should wait API cooldown.")
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
 
         if current_time > otp_record.save_to_hit_at:
-            logging.info("Matched condition. Sending OTP using whatsapp API.")
+            await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
 
-            logging.info("Update registered phone number.")
             await update_record(
                 db=db,
                 table=User,
@@ -65,7 +62,6 @@ async def wrong_phone_number_endpoint(
                 data={"phone_number": validated_phone_number, "updated_at": current_time},
             )
 
-            logging.info("Updating OTP record.")
             await update_record(
                 db=db,
                 table=SendOtp,
@@ -78,9 +74,6 @@ async def wrong_phone_number_endpoint(
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },
             )
-
-            logging.info("Sending OTP code to new phone number.")
-            await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
 
             response.success = True
             response.message = "Sending OTP into updated phone number."
@@ -97,7 +90,7 @@ async def wrong_phone_number_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/wrong-phone-number/{unique_id}",
+    path="/phone-number/{unique_id}",
     response_model=ResponseDefault,
     endpoint=wrong_phone_number_endpoint,
     status_code=status.HTTP_202_ACCEPTED,

@@ -5,9 +5,10 @@ from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from utils.generator import random_number
-from services.postgres.models import SendOtp
+from services.postgres.models import SendOtp, User
 from utils.query.general import find_record, update_record
-from src.schema.response import ResponseDefault
+from src.schema.response import ResponseDefault, UniqueId
+from src.schema.request_format import UserEmail
 from utils.helper import local_time
 from utils.jwt import get_current_user
 from utils.smtp import send_gmail
@@ -17,13 +18,14 @@ from utils.custom_error import (
     EntityAlreadyVerifiedError,
     MandatoryInputError,
     InvalidOperationError,
+    EntityForceInputSameDataError,
 )
 
-router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
+router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def send_otp_email_endpoint(
-    current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    schema: UserEmail, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
@@ -38,23 +40,32 @@ async def send_otp_email_endpoint(
         if current_user.verified_email:
             raise EntityAlreadyVerifiedError(detail="Email already verified.")
 
+        if current_user.email == schema.email:
+            raise EntityForceInputSameDataError(detail="Cannot changed into same email.")
+
         if current_time < otp_record.save_to_hit_at:
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
 
         if current_time > otp_record.save_to_hit_at:
             email_body = templates.TemplateResponse(
                 "otp_email.html",
-                context={
-                    "request": {},
-                    "full_name": current_user.full_name,
-                    "otp": generated_otp,
-                },
+                context={"request": {}, "full_name": current_user.full_name, "otp": generated_otp},
             ).body.decode("utf-8")
 
             await send_gmail(
                 email_subject="OTP Email Verification.",
-                email_receiver=current_user.email,
+                email_receiver=schema.email,
                 email_body=email_body,
+            )
+
+            await update_record(
+                db=db,
+                table=User,
+                conditions={"unique_id": current_user.unique_id},
+                data={
+                    "updated_at": current_time,
+                    "email": schema.email,
+                },
             )
 
             await update_record(
@@ -70,7 +81,8 @@ async def send_otp_email_endpoint(
                 },
             )
 
-            response.message = f"OTP sent to {current_user.email}."
+            response.message = f"OTP sent to {schema.email}."
+            response.data = UniqueId(unique_id=current_user.unique_id)
 
     except StashBaseApiError:
         raise

@@ -37,7 +37,7 @@ async def send_gmail(
     with smtplib.SMTP_SSL(host=config.GOOGLE_SMTP_SERVER, port=int(config.GOOGLE_SMTP_PORT), context=context) as smtp:
         try:
             smtp.login(user=config.GOOGLE_DEFAULT_EMAIL, password=config.GOOGLE_APP_PASSWORD)
-            smtp.sendmail(email)
+            smtp.send_message(email)
             logging.info(f"Email successfully sent into {email_receiver}")
         except SMTPAuthenticationError:
             raise AuthenticationFailed(detail="SMTP Authentication failed. Please check your credentials.")
@@ -57,24 +57,24 @@ async def send_gmail(
     return None
 
 
-async def send_account_info_to_email(email: EmailStr, full_name: str, phone_number: str, pin: str) -> None:
-    logging.info("Send account information to email.")
-    email_body = (
-        f"Dear {full_name},<br><br>"
-        f"We are pleased to inform you that your new account has been successfully registered.<br><br>"
-        f"You can now log in using the following credentials:<br><br>"
-        f"Phone Number: <strong>{phone_number}</strong><br>"
-        f"PIN: <strong>{pin}</strong><br><br>"
-        f"Please ensure that you keep your account information secure.<br><br>"
-        f"Best regards,<br>"
-        f"STASH Support Team"
-    )
+# async def send_account_info_to_email(email: EmailStr, full_name: str, phone_number: str, pin: str) -> None:
+#     logging.info("Send account information to email.")
+#     email_body = (
+#         f"Dear {full_name},<br><br>"
+#         f"We are pleased to inform you that your new account has been successfully registered.<br><br>"
+#         f"You can now log in using the following credentials:<br><br>"
+#         f"Phone Number: <strong>{phone_number}</strong><br>"
+#         f"PIN: <strong>{pin}</strong><br><br>"
+#         f"Please ensure that you keep your account information secure.<br><br>"
+#         f"Best regards,<br>"
+#         f"STASH Support Team"
+#     )
 
-    try:
-        await send_gmail(
-            email_subject="Success Registered STASH Account!",
-            email_receiver=email,
-            email_body=email_body,
-        )
-    except Exception:
-        raise ServiceError(detail="Failed to send accouunt info via email.", name="Whatsapp API")
+#     try:
+#         await send_gmail(
+#             email_subject="Success Registered STASH Account!",
+#             email_receiver=email,
+#             email_body=email_body,
+#         )
+#     except Exception:
+#         raise ServiceError(detail="Failed to send accouunt info via email.", name="Whatsapp API")

@@ -37,7 +37,7 @@ async def verify_phone_number_endpoint(
             raise DataNotFoundError(detail="OTP code not found. Please request a new OTP code.")
 
         if account_record.verified_phone_number:
-            raise EntityAlreadyVerifiedError(detail="User phone number already verified.")
+            raise EntityAlreadyVerifiedError(detail="Phone number already verified.")
 
         if current_time > otp_record.blacklisted_at:
             raise InvalidOperationError(detail="OTP already expired.")
@@ -53,9 +53,8 @@ async def verify_phone_number_endpoint(
                 data={"verified_phone_number": True},
             )
 
-        response.success = True
-        response.message = "User phone number verified."
-        response.data = UniqueId(unique_id=str(unique_id))
+            response.message = "Phone number successfully verified."
+            response.data = UniqueId(unique_id=str(unique_id))
 
     except StashBaseApiError:
         raise
