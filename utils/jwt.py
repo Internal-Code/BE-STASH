@@ -83,7 +83,6 @@ async def authenticate_user(unique_id: str, pin: str) -> Row | None:
 
     async for db in get_db():
         account_record = await find_record(db=db, table=User, unique_id=validated_uuid)
-        break
 
     if not account_record:
         raise DataNotFoundError(detail="User not found.")
@@ -117,14 +116,11 @@ async def get_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row | None:
     async for db in get_db():
-        break
-
-    blacklisted_record = await find_record(db=db, table=BlacklistToken, access_token=token)
+        blacklisted_record = await find_record(db=db, table=BlacklistToken, access_token=token)
 
     try:
         if blacklisted_record:
-            logging.error("Access token is blacklisted.")
-            raise AuthenticationFailed(detail="Session expired. Please perform re login.")
+            raise AuthenticationFailed(detail="Session expired. Please perform re-login.")
 
         payload = jwt.decode(
             token=token,
@@ -135,9 +131,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row
         user_uuid = payload.get("sub")
 
         async for db in get_db():
-            break
-
-        users = await find_record(db=db, table=User, unique_id=user_uuid)
+            users = await find_record(db=db, table=User, unique_id=user_uuid)
 
         if not user_uuid:
             raise AuthenticationFailed(detail="Could not validate credentials.")

@@ -14,7 +14,6 @@ from utils.generator import random_number
 from utils.helper import local_time
 from datetime import timedelta
 from utils.custom_error import (
-    DatabaseQueryError,
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
     UserNotVerifiedError,
@@ -86,8 +85,6 @@ async def change_phone_number_endpoint(
             response.data = UniqueId(unique_id=current_user.unique_id)
 
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

@@ -9,18 +9,13 @@ from utils.helper import local_time
 from src.schema.request_format import UserOtp
 from src.schema.response import ResponseDefault
 from utils.jwt import get_current_user
-
-# from utils.request_format import OTPVerification
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,
     InvalidOperationError,
 )
-# from utils.database.general import (
-#     extract_data_otp,
-#     update_verify_email_status,
-# )
+
 
 router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 

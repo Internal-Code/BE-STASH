@@ -10,7 +10,7 @@ async def google_oauth_configuration(
     name: str = "google",
     server_url: str = "https://accounts.google.com/.well-known/openid-configuration",
     scope: str = "email openid profile",
-    redirect_url: str = "http://localhost:8000/api/v1/google/auth",
+    redirect_url: str = "http://localhost:8000/api/v1/user/register/google/auth",
     prompt: str = "select_account",
 ) -> OAuth:
     try:

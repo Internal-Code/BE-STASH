@@ -26,6 +26,10 @@ class UserEmail(BaseModel):
     email: EmailStr = None
 
 
+class UserRefreshToken(BaseModel):
+    refresh_token: str = None
+
+
 class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
     change_full_name_into: str = None
 

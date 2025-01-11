@@ -10,7 +10,6 @@ from utils.helper import local_time
 from utils.query.general import update_record
 from services.postgres.models import User
 from utils.custom_error import (
-    DatabaseQueryError,
     ServiceError,
     StashBaseApiError,
 )
@@ -38,8 +37,6 @@ async def change_full_name_endpoint(
         response.message = "Success changed full name."
 
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

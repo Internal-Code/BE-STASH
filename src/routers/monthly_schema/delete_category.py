@@ -11,7 +11,6 @@ from utils.query.general import find_record, update_record
 from services.postgres.models import CategorySchema
 from utils.custom_error import (
     ServiceError,
-    DatabaseQueryError,
     StashBaseApiError,
     DataNotFoundError,
 )
@@ -19,7 +18,7 @@ from utils.custom_error import (
 router = APIRouter(tags=["Monthly Schema"])
 
 
-async def update_category_schema(
+async def update_category_endpoint(
     category_id: UUID,
     schema: MonthlyCategory,
     current_user: Annotated[dict, Depends(get_current_user)],
@@ -55,8 +54,6 @@ async def update_category_schema(
 
     except StashBaseApiError:
         raise
-    except DatabaseQueryError:
-        raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
@@ -67,7 +64,7 @@ router.add_api_route(
     methods=["PATCH"],
     path="/schema/delete-category/{category_id}",
     response_model=ResponseDefault,
-    endpoint=update_category_schema,
+    endpoint=update_category_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Delete category in spesific schema.",
 )

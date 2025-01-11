@@ -11,7 +11,6 @@ from utils.query.general import find_record, update_record
 from services.postgres.models import MonthlySchema
 from utils.custom_error import (
     ServiceError,
-    DatabaseQueryError,
     StashBaseApiError,
     DataNotFoundError,
     EntityAlreadyExistError,
@@ -20,7 +19,7 @@ from utils.custom_error import (
 router = APIRouter(tags=["Monthly Schema"])
 
 
-async def update_user_schema(
+async def update_schema_endpoint(
     month_id: UUID,
     schema: DefaultSchema,
     current_user: Annotated[dict, Depends(get_current_user)],
@@ -61,8 +60,6 @@ async def update_user_schema(
 
     except StashBaseApiError:
         raise
-    except DatabaseQueryError:
-        raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 
@@ -73,7 +70,7 @@ router.add_api_route(
     methods=["PATCH"],
     path="/schema/update/{month_id}",
     response_model=ResponseDefault,
-    endpoint=update_user_schema,
+    endpoint=update_schema_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Update budgeting schema.",
 )

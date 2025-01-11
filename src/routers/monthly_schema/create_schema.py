@@ -11,14 +11,13 @@ from utils.query.general import insert_record, find_record
 from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
-    DatabaseQueryError,
     StashBaseApiError,
 )
 
 router = APIRouter(tags=["Monthly Schema"])
 
 
-async def create_schema(
+async def create_schema_endpoint(
     schema: DefaultSchema,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: AsyncSession = Depends(get_db),
@@ -50,9 +49,8 @@ async def create_schema(
         )
         response.message = "Created new schema."
         response.data = UniqueId(unique_id=month_id)
+
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
@@ -64,7 +62,7 @@ router.add_api_route(
     methods=["POST"],
     path="/schema/create",
     response_model=ResponseDefault,
-    endpoint=create_schema,
+    endpoint=create_schema_endpoint,
     status_code=status.HTTP_201_CREATED,
     summary="Create budgeting schema for each month.",
 )

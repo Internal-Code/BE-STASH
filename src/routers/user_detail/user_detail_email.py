@@ -7,7 +7,7 @@ from utils.custom_error import ServiceError, StashBaseApiError
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
-async def user_detail_email_endpoint(current_user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def detail_email_endpoint(current_user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
     response = ResponseDefault()
     try:
         response.message = "Extracted email info."
@@ -23,7 +23,7 @@ router.add_api_route(
     methods=["GET"],
     path="/email",
     response_model=ResponseDefault,
-    endpoint=user_detail_email_endpoint,
+    endpoint=detail_email_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Retrieve current authenticated users email information.",
 )

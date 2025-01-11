@@ -12,12 +12,12 @@ from src.schema.validator import PhoneNumberValidatorMixin
 from utils.whatsapp_api import send_otp_whatsapp
 from utils.generator import random_number
 from src.schema.response import ResponseDefault, UniqueId
-from utils.custom_error import ServiceError, DatabaseQueryError, StashBaseApiError, EntityAlreadyExistError
+from utils.custom_error import ServiceError, StashBaseApiError, EntityAlreadyExistError
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
+async def register_accountn_endpoint(schema: CreateUser, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
     unique_id = str(uuid4())
     generated_otp = random_number(6)
     response = ResponseDefault()
@@ -56,9 +56,8 @@ async def register_user(schema: CreateUser, db: AsyncSession = Depends(get_db)) 
         response.success = True
         response.message = "Account successfully created."
         response.data = UniqueId(unique_id=unique_id)
+
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="STASH")
@@ -69,7 +68,7 @@ router.add_api_route(
     methods=["POST"],
     path="/new-account",
     response_model=ResponseDefault,
-    endpoint=register_user,
+    endpoint=register_accountn_endpoint,
     status_code=status.HTTP_201_CREATED,
     summary="Account registration.",
 )

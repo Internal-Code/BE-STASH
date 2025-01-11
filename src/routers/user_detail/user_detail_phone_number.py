@@ -7,7 +7,7 @@ from utils.custom_error import ServiceError, StashBaseApiError
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
-async def user_detail_phone_number_endpoint(
+async def detail_phone_number_endpoint(
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> ResponseDefault:
     response = ResponseDefault()
@@ -25,7 +25,7 @@ router.add_api_route(
     methods=["GET"],
     path="/phone-number",
     response_model=ResponseDefault,
-    endpoint=user_detail_phone_number_endpoint,
+    endpoint=detail_phone_number_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Retrieve current authenticated users phone number information.",
 )

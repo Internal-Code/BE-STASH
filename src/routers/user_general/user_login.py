@@ -8,12 +8,10 @@ from src.schema.response import ResponseToken
 from fastapi.security import OAuth2PasswordRequestForm
 from utils.query.general import insert_record
 from services.postgres.models import UserToken
-from utils.jwt import authenticate_user, create_access_token
+from utils.jwt import authenticate_user, create_access_token, create_refresh_token
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
-    AuthenticationFailed,
-    DatabaseQueryError,
     DataNotFoundError,
 )
 
@@ -21,8 +19,8 @@ config = Config()
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
-async def access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotated[AsyncSession, Depends(get_db)]
+async def login_endpoint(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: AsyncSession = Depends(get_db)
 ) -> ResponseToken:
     response = ResponseToken()
     account_record = await authenticate_user(unique_id=form_data.username, pin=form_data.password)
@@ -36,17 +34,21 @@ async def access_token(
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
+        refresh_token = create_refresh_token(
+            data={"sub": account_record.unique_id},
+            refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
+        )
+
         await insert_record(
-            db=db, table=UserToken, data={"unique_id": account_record.unique_id, "access_token": access_token}
+            db=db,
+            table=UserToken,
+            data={"unique_id": account_record.unique_id, "access_token": access_token, "refresh_token": refresh_token},
         )
 
         response.access_token = access_token
+        response.refresh_token = refresh_token
 
-    except AuthenticationFailed:
-        raise
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
@@ -58,7 +60,7 @@ router.add_api_route(
     methods=["POST"],
     path="/login",
     response_model=ResponseToken,
-    endpoint=access_token,
+    endpoint=login_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Authenticate users and return access token.",
 )

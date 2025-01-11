@@ -14,7 +14,6 @@ from utils.custom_error import (
     EntityAlreadyVerifiedError,
     DataNotFoundError,
     InvalidOperationError,
-    DatabaseQueryError,
 )
 
 router = APIRouter(tags=["User Verification"], prefix="/user/verification")
@@ -58,10 +57,6 @@ async def verify_phone_number_endpoint(
 
     except StashBaseApiError:
         raise
-
-    except DatabaseQueryError:
-        raise
-
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
 

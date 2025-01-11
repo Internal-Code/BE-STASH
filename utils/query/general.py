@@ -1,7 +1,7 @@
 from utils.logger import logging
 from typing import Literal, Any
 from sqlmodel import SQLModel
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, and_, or_
 from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.custom_error import DatabaseQueryError, DataNotFoundError
@@ -11,10 +11,11 @@ async def find_record(
     db: AsyncSession,
     table: type[SQLModel],
     fetch_type: Literal["one", "all"] = "one",
+    filter_type: Literal["and", "or"] = "and",
+    order_by: Literal["asc", "desc"] = "asc",
     **kwargs: Any,
 ) -> list[Row] | Row | None:
     condition = []
-
     if kwargs:
         for col, value in kwargs.items():
             col_attr = getattr(table, col, None)
@@ -24,7 +25,9 @@ async def find_record(
             condition.append(col_attr == value)
 
     try:
-        query = select(table).where(*condition).order_by(table.id)
+        filter_condition = or_(*condition) if filter_type == "or" else and_(*condition)
+        order_clause = table.id.asc() if order_by == "asc" else table.id.desc()
+        query = select(table).where(filter_condition).order_by(order_clause)
         result = await db.execute(query)
 
         if fetch_type == "all":

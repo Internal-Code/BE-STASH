@@ -12,7 +12,6 @@ from utils.helper import local_time
 from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
-    DatabaseQueryError,
     StashBaseApiError,
     DataNotFoundError,
 )
@@ -66,8 +65,6 @@ async def update_category_endpoint(
         response.message = "Category successfully updated."
 
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")

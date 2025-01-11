@@ -7,12 +7,12 @@ from services.postgres.models import CategorySchema, MonthlySchema
 from src.schema.response import ResponseDefault
 from utils.jwt import get_current_user
 from utils.query.general import find_record
-from utils.custom_error import ServiceError, StashBaseApiError, DatabaseQueryError, DataNotFoundError
+from utils.custom_error import ServiceError, StashBaseApiError, DataNotFoundError
 
 router = APIRouter(tags=["Monthly Schema"])
 
 
-async def list_schema(
+async def list_category_endpoint(
     month_id: UUID, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
@@ -42,9 +42,8 @@ async def list_schema(
             return response
 
         response.message = "No category data available."
+
     except StashBaseApiError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
@@ -56,7 +55,7 @@ router.add_api_route(
     methods=["GET"],
     path="/schema/list-category/{month_id}",
     response_model=ResponseDefault,
-    endpoint=list_schema,
+    endpoint=list_category_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Fetch all category information.",
 )

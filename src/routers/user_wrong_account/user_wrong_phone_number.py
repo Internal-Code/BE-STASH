@@ -17,7 +17,6 @@ from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
     StashBaseApiError,
-    DatabaseQueryError,
     DataNotFoundError,
     EntityAlreadyFilledError,
     InvalidOperationError,
@@ -79,8 +78,6 @@ async def wrong_phone_number_endpoint(
             response.message = "Sending OTP into updated phone number."
             response.data = UniqueId(unique_id=account_record.unique_id)
 
-    except DatabaseQueryError:
-        raise
     except StashBaseApiError:
         raise
     except Exception as E:

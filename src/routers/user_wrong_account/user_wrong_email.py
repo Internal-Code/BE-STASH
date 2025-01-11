@@ -24,7 +24,7 @@ from utils.custom_error import (
 router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
-async def send_otp_email_endpoint(
+async def wrong_email_endpoint(
     schema: UserEmail, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
@@ -96,7 +96,7 @@ async def send_otp_email_endpoint(
 router.add_api_route(
     methods=["POST"],
     path="/email",
-    endpoint=send_otp_email_endpoint,
+    endpoint=wrong_email_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Send otp to validate user email.",
 )

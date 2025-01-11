@@ -11,7 +11,6 @@ from utils.query.general import find_record, update_record
 from services.postgres.models import User
 from utils.jwt import get_password_hash, create_access_token
 from utils.whatsapp_api import send_account_info_to_phone
-from utils.smtp import send_account_info_to_email
 from src.schema.request_format import UserPin
 from utils.custom_error import (
     ServiceError,
@@ -19,14 +18,13 @@ from utils.custom_error import (
     MandatoryInputError,
     DataNotFoundError,
     EntityAlreadyFilledError,
-    DatabaseQueryError,
 )
 
 config = Config()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
+async def create_pin_endpoint(schema: UserPin, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
     validated_pin = SecurityCodeValidator.validate_security_code(type="pin", value=schema.pin)
@@ -41,14 +39,6 @@ async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = D
 
         if not account_record.verified_phone_number:
             raise MandatoryInputError(detail="User should validate phone number first.")
-
-        if account_record.verified_email:
-            await send_account_info_to_email(
-                email=account_record.email,
-                full_name=account_record.full_name,
-                pin=validated_pin,
-                phone_number=account_record.phone_number,
-            )
 
         if account_record.verified_phone_number:
             await send_account_info_to_phone(
@@ -69,11 +59,8 @@ async def create_user_pin(schema: UserPin, unique_id: UUID, db: AsyncSession = D
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
         response.access_token = access_token
+
     except StashBaseApiError:
-        raise
-    except ServiceError:
-        raise
-    except DatabaseQueryError:
         raise
     except Exception as E:
         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
@@ -84,7 +71,7 @@ router.add_api_route(
     methods=["PATCH"],
     path="/create-pin/{unique_id}",
     response_model=ResponseToken,
-    endpoint=create_user_pin,
+    endpoint=create_pin_endpoint,
     status_code=status.HTTP_201_CREATED,
     summary="Create user pin.",
 )
