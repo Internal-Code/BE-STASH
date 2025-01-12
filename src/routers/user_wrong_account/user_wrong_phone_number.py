@@ -1,15 +1,14 @@
 from uuid import UUID
 from datetime import timedelta
 from utils.helper import local_time
-from utils.whatsapp_api import send_otp_whatsapp
-from fastapi import APIRouter, status, Depends
+from utils.whatsapp_api import send_whatsapp
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from services.postgres.connection import get_db
 from utils.generator import random_number
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
-from src.schema.validator import PhoneNumberValidatorMixin
 from src.schema.custom_state import RegisterAccountState
 from src.schema.request_format import UserPhoneNumber
 from utils.custom_error import (
@@ -26,14 +25,13 @@ router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def wrong_phone_number_endpoint(
-    schema: UserPhoneNumber, unique_id: UUID, db: AsyncSession = Depends(get_db)
+    schema: UserPhoneNumber, unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
-    validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=schema.phone_number)
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
-    registered_phone_number = await find_record(db=db, table=User, phone_number=validated_phone_number)
+    registered_phone_number = await find_record(db=db, table=User, phone_number=schema.phone_number)
     otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
     try:
         if not account_record:
@@ -42,7 +40,7 @@ async def wrong_phone_number_endpoint(
         if account_record.register_state == RegisterAccountState.SUCCESS:
             raise EntityAlreadyFilledError(detail="Account already set pin.")
 
-        if account_record.phone_number == validated_phone_number:
+        if account_record.phone_number == schema.phone_number:
             raise EntityForceInputSameDataError(detail="Cannot changed into same phone number.")
 
         if registered_phone_number:
@@ -52,13 +50,22 @@ async def wrong_phone_number_endpoint(
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
 
         if current_time > otp_record.save_to_hit_at:
-            await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
+            background_tasks.add_task(
+                send_whatsapp,
+                message_template=(
+                    "Your verification code is *{generated_otp}*. "
+                    "Please enter this code to complete your verification. "
+                    "Kindly note that this code will *expire in 3 minutes."
+                ),
+                phone_number=schema.phone_number,
+                generated_otp=generated_otp,
+            )
 
             await update_record(
                 db=db,
                 table=User,
                 conditions={"unique_id": str(unique_id)},
-                data={"phone_number": validated_phone_number, "updated_at": current_time},
+                data={"phone_number": schema.phone_number, "updated_at": current_time},
             )
 
             await update_record(
@@ -81,7 +88,7 @@ async def wrong_phone_number_endpoint(
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
     return response
 
 

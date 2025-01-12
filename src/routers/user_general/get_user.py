@@ -45,7 +45,7 @@ async def user_endpoint(
     except StashBaseApiError:
         raise
     except Exception as e:
-        raise ServiceError(detail=f"Service error: {e}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {e}.", name="STASH")
 
     return response
 

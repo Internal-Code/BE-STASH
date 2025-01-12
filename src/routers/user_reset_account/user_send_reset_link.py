@@ -205,7 +205,7 @@
 #         raise FTE
 
 #     except Exception as E:
-#         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+#         raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
 
 # router.add_api_route(

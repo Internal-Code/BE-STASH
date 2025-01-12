@@ -3,13 +3,12 @@ from datetime import timedelta
 from utils.logger import logging
 from utils.helper import local_time
 from src.schema.request_format import CreateUser
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from utils.query.general import find_record, insert_record
-from src.schema.validator import PhoneNumberValidatorMixin
-from utils.whatsapp_api import send_otp_whatsapp
+from utils.whatsapp_api import send_whatsapp
 from utils.generator import random_number
 from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import ServiceError, StashBaseApiError, EntityAlreadyExistError
@@ -17,12 +16,13 @@ from utils.custom_error import ServiceError, StashBaseApiError, EntityAlreadyExi
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def register_accountn_endpoint(schema: CreateUser, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
+async def register_accountn_endpoint(
+    schema: CreateUser, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+) -> ResponseDefault:
     unique_id = str(uuid4())
     generated_otp = random_number(6)
     response = ResponseDefault()
-    validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=schema.phone_number)
-    phone_number_record = await find_record(db=db, table=User, phone_number=validated_phone_number)
+    phone_number_record = await find_record(db=db, table=User, phone_number=schema.phone_number)
 
     try:
         if phone_number_record:
@@ -38,7 +38,6 @@ async def register_accountn_endpoint(schema: CreateUser, db: AsyncSession = Depe
             },
         )
 
-        logging.info("Inserting user otp entry.")
         await insert_record(
             db=db,
             table=SendOtp,
@@ -51,9 +50,17 @@ async def register_accountn_endpoint(schema: CreateUser, db: AsyncSession = Depe
         )
 
         logging.info("Sending OTP code.")
-        await send_otp_whatsapp(phone_number=validated_phone_number, generated_otp=generated_otp)
+        background_tasks.add_task(
+            send_whatsapp,
+            message_template=(
+                "Your verification code is *{generated_otp}*. "
+                "Please enter this code to complete your verification. "
+                "Kindly note that this code will *expire in 3 minutes."
+            ),
+            phone_number=schema.phone_number,
+            generated_otp=generated_otp,
+        )
 
-        response.success = True
         response.message = "Account successfully created."
         response.data = UniqueId(unique_id=unique_id)
 

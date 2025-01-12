@@ -1,12 +1,17 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr, field_validator
-from src.schema.validator import FullNameValidatorMixin, PhoneNumberValidatorMixin
 from utils.helper import local_time
 from enum import StrEnum
+from pydantic import BaseModel, Field, EmailStr, field_validator
+from src.schema.validator import FullNameValidatorMixin, PhoneNumberValidatorMixin, SecurityCodeValidator
 
 
 class UserPin(BaseModel):
     pin: str = None
+
+    @field_validator("pin")
+    @classmethod
+    def validate_pin(cls, value: str) -> str:
+        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
 class UserPhoneNumber(BaseModel, PhoneNumberValidatorMixin):
@@ -20,6 +25,11 @@ class UserPhoneNumber(BaseModel, PhoneNumberValidatorMixin):
 
 class UserOtp(BaseModel):
     otp: str = None
+
+    @field_validator("otp")
+    @classmethod
+    def validate_otp(cls, value: str) -> str:
+        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
 
 class UserEmail(BaseModel):
@@ -37,6 +47,27 @@ class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
     @classmethod
     def validate_full_name(cls, value: str) -> str:
         return cls.validate_fullname(value)
+
+
+class ChangePin(BaseModel, SecurityCodeValidator):
+    current_pin: str
+    updated_pin: str
+    confirmed_new_pin: str
+
+    @field_validator("current_pin")
+    @classmethod
+    def validate_current_pin(cls, value: str) -> str:
+        return cls.validate_security_code(value=value, type="otp")
+
+    @field_validator("updated_pin")
+    @classmethod
+    def validate_updated_pin(cls, value: str) -> str:
+        return cls.validate_security_code(value=value, type="otp")
+
+    @field_validator("confirmed_new_pin")
+    @classmethod
+    def validate_new_pin(cls, value: str) -> str:
+        return cls.validate_security_code(value=value, type="otp")
 
 
 class MonthlyCategory(BaseModel):
@@ -182,12 +213,6 @@ class ChangeUserPhoneNumber(BaseModel):
 
 class AddEmail(BaseModel):
     email: EmailStr
-
-
-class ChangePin(BaseModel):
-    current_pin: str
-    change_pin: str
-    confirmed_changed_pin: str
 
 
 class ChangeUserFullName(BaseModel):

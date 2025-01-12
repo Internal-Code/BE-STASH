@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from src.schema.validator import SecurityCodeValidator
 from utils.helper import local_time
 from src.schema.request_format import UserOtp
 from src.schema.response import ResponseDefault
@@ -25,7 +24,6 @@ async def verify_email_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
-    validated_otp = SecurityCodeValidator.validate_security_code(type="otp", value=schema.otp)
     otp_record = await find_record(db=db, table=SendOtp, unique_id=current_user.unique_id)
 
     try:
@@ -35,10 +33,10 @@ async def verify_email_endpoint(
         if current_time > otp_record.blacklisted_at:
             raise InvalidOperationError(detail="OTP already expired.")
 
-        if otp_record.otp_number != validated_otp:
+        if otp_record.otp_number != schema.otp:
             raise InvalidOperationError(detail="Invalid OTP code.")
 
-        if current_time < otp_record.blacklisted_at and otp_record.otp_number == validated_otp:
+        if current_time < otp_record.blacklisted_at and otp_record.otp_number == schema.otp:
             await update_record(
                 db=db,
                 table=User,
@@ -52,7 +50,7 @@ async def verify_email_endpoint(
         raise
 
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 

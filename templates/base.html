@@ -16,16 +16,16 @@
         border: 1px solid #ddd;
         border-radius: 5px;
       }
-      .header {
-        font-size: 18px;
-        font-weight: bold;
-      }
       .content {
         font-size: 16px;
         margin-top: 10px;
       }
       .content strong {
         color: #d32f2f;
+      }
+      .header {
+        font-size: 18px;
+        font-weight: bold;
       }
       .footer {
         margin-top: 20px;
@@ -38,14 +38,9 @@
     <div class="container">
       <div class="header">Dear {{ full_name }},</div>
       <div class="content">
-        <p>
-          We are pleased to inform you that your new account has been
-          successfully registered.
-        </p>
-        <p>You can now log in using the following credentials:</p>
-        <p>Email: <strong>{{ email }}</strong></p>
-        <p>PIN: <strong>{{ pin }}</strong></p>
-        <p>Please ensure that you keep your account information secure.</p>
+        {% block content %}
+        <!-- Content will be provided by child templates -->
+        {% endblock %}
       </div>
       <div class="footer">
         Best regards,<br />

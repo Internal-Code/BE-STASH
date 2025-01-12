@@ -15,7 +15,7 @@ async def detail_email_endpoint(current_user: Annotated[dict, Depends(get_curren
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
     return response
 
 

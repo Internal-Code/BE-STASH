@@ -1,44 +1,36 @@
-from datetime import timedelta
-from fastapi.templating import Jinja2Templates
 from uuid import uuid4
-from fastapi import APIRouter, status
-from starlette.requests import Request
-from utils.logger import logging
-
-# from utils.validator import check_fullname
-from src.schema.validator import FullNameValidatorMixin
-from authlib.integrations.starlette_client import OAuthError
-from utils.sso.general import google_oauth_configuration
+from datetime import timedelta
 from src.secret import Config
-from fastapi import Depends
-from services.postgres.models import User, SendOtp
-from utils.query.general import insert_record, find_record, update_record
-from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from utils.logger import logging
 from utils.smtp import send_gmail
 from utils.helper import local_time
+from utils.generator import random_number
 from src.schema.response import ResponseToken
+from fastapi.templating import Jinja2Templates
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.models import User, SendOtp
+from src.schema.validator import FullNameValidatorMixin
+from utils.sso.general import google_oauth_configuration
+from fastapi import APIRouter, status, Depends, Request, BackgroundTasks
+from authlib.integrations.starlette_client import OAuthError
 from utils.custom_error import ServiceError, StashBaseApiError
 from src.schema.custom_state import RegisterAccountState
-from utils.generator import random_number
-
-# from utils.database.general import (
-#     save_google_sso_account,
-#     save_otp_data,
-#     local_time,
-# )
 from utils.jwt import (
     get_password_hash,
     create_access_token,
     create_refresh_token,
 )
+from utils.query.general import insert_record, find_record, update_record
 
 
 config = Config()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def google_sso_auth_endpoint(request: Request, db: AsyncSession = Depends(get_db)) -> ResponseToken:
+async def google_sso_auth_endpoint(
+    request: Request, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+) -> ResponseToken:
     response = ResponseToken()
 
     oauth = await google_oauth_configuration()
@@ -79,7 +71,7 @@ async def google_sso_auth_endpoint(request: Request, db: AsyncSession = Depends(
             )
 
             email_body = templates.TemplateResponse(
-                "account_activation.html",
+                "email_activation.html",
                 context={
                     "request": {},
                     "full_name": validated_full_name,
@@ -88,7 +80,8 @@ async def google_sso_auth_endpoint(request: Request, db: AsyncSession = Depends(
                 },
             ).body.decode("utf-8")
 
-            await send_gmail(
+            background_tasks.add_task(
+                send_gmail,
                 email_receiver=user_info.email,
                 email_subject="STASH Account Registration",
                 email_body=email_body,
@@ -135,7 +128,7 @@ async def google_sso_auth_endpoint(request: Request, db: AsyncSession = Depends(
         raise ServiceError(detail="SSO error, please perform re-login.", name="Google SSO")
 
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 

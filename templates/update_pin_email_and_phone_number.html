@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p>
+  We are pleased to inform you that your PIN has been successfully updated.
+</p>
+<p>You can now log in using email or phone numberusing email or phone number:</p>
+<p>Email: <strong>{{ email }}</strong></p>
+<p>Phone Number: <strong>{{ phone_number }}</strong></p>
+<p>PIN: <strong>{{ pin }}</strong></p>
+<p>Please ensure that you keep your account information secure.</p>
+{% endblock %}

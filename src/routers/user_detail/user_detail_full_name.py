@@ -15,7 +15,7 @@ async def detail_full_name_endpoint(current_user: Annotated[dict, Depends(get_cu
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
     return response
 
 

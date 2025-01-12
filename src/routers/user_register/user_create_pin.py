@@ -2,15 +2,14 @@ from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
 from src.schema.custom_state import RegisterAccountState
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseToken
-from src.schema.validator import SecurityCodeValidator
 from utils.query.general import find_record, update_record
 from services.postgres.models import User
 from utils.jwt import get_password_hash, create_access_token
-from utils.whatsapp_api import send_account_info_to_phone
+from utils.whatsapp_api import send_whatsapp
 from src.schema.request_format import UserPin
 from utils.custom_error import (
     ServiceError,
@@ -24,11 +23,12 @@ config = Config()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def create_pin_endpoint(schema: UserPin, unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseToken:
+async def create_pin_endpoint(
+    schema: UserPin, unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
-    validated_pin = SecurityCodeValidator.validate_security_code(type="pin", value=schema.pin)
-    hashed_pin = get_password_hash(password=validated_pin)
+    hashed_pin = get_password_hash(password=schema.pin)
 
     try:
         if not account_record:
@@ -38,12 +38,23 @@ async def create_pin_endpoint(schema: UserPin, unique_id: UUID, db: AsyncSession
             raise EntityAlreadyFilledError(detail="Account already set pin.")
 
         if not account_record.verified_phone_number:
-            raise MandatoryInputError(detail="User should validate phone number first.")
+            raise MandatoryInputError(detail="Should validate phone number first.")
 
         if account_record.verified_phone_number:
-            await send_account_info_to_phone(
+            background_tasks.add_task(
+                send_whatsapp,
                 phone_number=account_record.phone_number,
-                pin=validated_pin,
+                message_template=(
+                    "Dear *{full_name}*,\n\n"
+                    "We are pleased to inform you that your new account has been successfully registered. "
+                    "You can now log in using the following credentials:\n\n"
+                    "Phone Number: *{phone_number}*\n"
+                    "PIN: *{pin}*\n\n"
+                    "Please ensure that you keep your account information secure.\n\n"
+                    "Best Regards,\n"
+                    "STASH Support Team"
+                ),
+                pin=schema.pin,
                 full_name=account_record.full_name,
             )
 
@@ -63,7 +74,7 @@ async def create_pin_endpoint(schema: UserPin, unique_id: UUID, db: AsyncSession
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
     return response
 
 

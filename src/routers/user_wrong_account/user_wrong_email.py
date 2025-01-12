@@ -1,7 +1,7 @@
 from fastapi.templating import Jinja2Templates
 from typing import Annotated
 from datetime import timedelta
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from utils.generator import random_number
@@ -25,7 +25,10 @@ router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def wrong_email_endpoint(
-    schema: UserEmail, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    schema: UserEmail,
+    background_tasks: BackgroundTasks,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
@@ -52,7 +55,8 @@ async def wrong_email_endpoint(
                 context={"request": {}, "full_name": current_user.full_name, "otp": generated_otp},
             ).body.decode("utf-8")
 
-            await send_gmail(
+            background_tasks.add_task(
+                send_gmail,
                 email_subject="OTP Email Verification.",
                 email_receiver=schema.email,
                 email_body=email_body,
@@ -88,7 +92,7 @@ async def wrong_email_endpoint(
         raise
 
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 

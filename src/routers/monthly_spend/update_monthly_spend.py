@@ -111,7 +111,7 @@
 #         raise FTE
 
 #     except Exception as E:
-#         raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+#         raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
 #     return response
 

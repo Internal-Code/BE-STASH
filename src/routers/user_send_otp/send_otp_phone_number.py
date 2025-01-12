@@ -6,10 +6,10 @@ from utils.helper import local_time
 from services.postgres.models import SendOtp, User
 from utils.generator import random_number
 from utils.query.general import find_record, update_record
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from utils.whatsapp_api import send_otp_whatsapp
+from utils.whatsapp_api import send_whatsapp
 from src.schema.response import ResponseDefault, UniqueId
 from utils.custom_error import (
     ServiceError,
@@ -23,7 +23,9 @@ config = Config()
 router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
-async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
+async def send_otp_phone_number_endpoint(
+    unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
@@ -46,7 +48,16 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
         if current_time > otp_record.save_to_hit_at:
             logging.info("Matched condition. Sending OTP using whatsapp API.")
 
-            await send_otp_whatsapp(phone_number=account_record.phone_number, generated_otp=generated_otp)
+            background_tasks.add_task(
+                send_whatsapp,
+                message_template=(
+                    "Your verification code is *{generated_otp}*. "
+                    "Please enter this code to complete your verification. "
+                    "Kindly note that this code will *expire in 3 minutes*."
+                ),
+                phone_number=account_record.phone_number,
+                generated_otp=generated_otp,
+            )
             await update_record(
                 db=db,
                 table=SendOtp,
@@ -65,7 +76,7 @@ async def send_otp_phone_number_endpoint(unique_id: UUID, db: AsyncSession = Dep
     except StashBaseApiError:
         raise
     except Exception as e:
-        raise ServiceError(detail=f"Service error: {e}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {e}.", name="STASH")
     return response
 
 

@@ -1,6 +1,6 @@
 from typing import Annotated
 from utils.logger import logging
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.jwt import get_current_user
@@ -9,7 +9,7 @@ from src.schema.request_format import UserPhoneNumber
 from src.schema.custom_state import RegisterAccountState
 from utils.query.general import update_record, find_record
 from services.postgres.models import User, SendOtp
-from utils.whatsapp_api import send_otp_whatsapp
+from utils.whatsapp_api import send_whatsapp
 from utils.generator import random_number
 from utils.helper import local_time
 from datetime import timedelta
@@ -32,8 +32,9 @@ from utils.custom_error import (
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
-async def change_phone_number_endpoint(
+async def update_phone_number_endpoint(
     schema: UserPhoneNumber,
+    background_tasks: BackgroundTasks,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -61,7 +62,17 @@ async def change_phone_number_endpoint(
         if current_time > otp_record.save_to_hit_at:
             logging.info("Matched condition. Sending OTP using whatsapp API.")
 
-            await send_otp_whatsapp(phone_number=schema.phone_number, generated_otp=generated_otp)
+            background_tasks.add_task(
+                send_whatsapp,
+                message_template=(
+                    "Your verification code is *{generated_otp}*. "
+                    "Please enter this code to complete your verification. "
+                    "Kindly note that this code will *expire in 3 minutes."
+                ),
+                phone_number=schema.phone_number,
+                generated_otp=generated_otp,
+            )
+
             await update_record(
                 db=db,
                 table=SendOtp,
@@ -87,7 +98,7 @@ async def change_phone_number_endpoint(
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 
@@ -95,7 +106,7 @@ async def change_phone_number_endpoint(
 router.add_api_route(
     methods=["PATCH"],
     path="/phone-number",
-    endpoint=change_phone_number_endpoint,
+    endpoint=update_phone_number_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Change user phone number.",
+    summary="Add or update user phone number.",
 )

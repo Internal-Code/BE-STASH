@@ -4,11 +4,11 @@ from utils.logger import logging
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import CategorySchema, MonthlySchema, UserToken, BlacklistToken
 from src.schema.response import ResponseDefault
 from utils.jwt import get_current_user
 from src.schema.request_format import MonthlyCategory
 from utils.query.general import insert_record, find_record
+from services.postgres.models import CategorySchema, MonthlySchema, UserToken, BlacklistToken
 from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
@@ -72,7 +72,7 @@ async def create_category_endpoint(
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 

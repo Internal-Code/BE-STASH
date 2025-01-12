@@ -17,7 +17,7 @@ from utils.custom_error import (
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
-async def change_full_name_endpoint(
+async def update_full_name_endpoint(
     schema: UpdateUserFullName,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: AsyncSession = Depends(get_db),
@@ -39,7 +39,7 @@ async def change_full_name_endpoint(
     except StashBaseApiError:
         raise
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 
@@ -47,7 +47,7 @@ async def change_full_name_endpoint(
 router.add_api_route(
     methods=["PATCH"],
     path="/full-name",
-    endpoint=change_full_name_endpoint,
+    endpoint=update_full_name_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Change user pin endpoint.",
 )

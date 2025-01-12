@@ -76,7 +76,7 @@ async def generate_refresh_token_endpoint(
         raise
 
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 

@@ -1,7 +1,7 @@
 from fastapi.templating import Jinja2Templates
 from typing import Annotated
 from datetime import timedelta
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from utils.generator import random_number
@@ -23,7 +23,9 @@ router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
 async def send_otp_email_endpoint(
-    current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    current_user: Annotated[dict, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
@@ -33,25 +35,26 @@ async def send_otp_email_endpoint(
 
     try:
         if not current_user.email:
-            raise MandatoryInputError(detail="User should add email first.")
+            raise MandatoryInputError(detail="Should add email first.")
 
         if current_user.verified_email:
             raise EntityAlreadyVerifiedError(detail="Email already verified.")
 
         if current_time < otp_record.save_to_hit_at:
-            raise InvalidOperationError(detail="Should wait in 1 minutes.")
+            raise InvalidOperationError(detail="Should wait in 1 minute.")
 
         if current_time > otp_record.save_to_hit_at:
             email_body = templates.TemplateResponse(
                 "otp_email.html",
                 context={
-                    "request": {},
+                    "request": {},  # Ensure proper request context in templates
                     "full_name": current_user.full_name,
                     "otp": generated_otp,
                 },
             ).body.decode("utf-8")
 
-            await send_gmail(
+            background_tasks.add_task(
+                send_gmail,
                 email_subject="OTP Email Verification.",
                 email_receiver=current_user.email,
                 email_body=email_body,
@@ -76,7 +79,7 @@ async def send_otp_email_endpoint(
         raise
 
     except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
 
     return response
 
