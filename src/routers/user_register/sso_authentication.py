@@ -67,7 +67,12 @@ async def google_sso_auth_endpoint(
             await insert_record(
                 db=db,
                 table=SendOtp,
-                data={"unique_id": unique_id, "save_to_hit_at": current_time, "blacklisted_at": current_time},
+                data={
+                    "unique_id": unique_id,
+                    "save_to_hit_at": current_time,
+                    "blacklisted_at": current_time,
+                    "current_api_hit": 1,
+                },
             )
 
             email_body = templates.TemplateResponse(

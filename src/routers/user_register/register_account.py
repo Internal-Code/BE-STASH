@@ -46,6 +46,7 @@ async def register_accountn_endpoint(
                 "otp_number": generated_otp,
                 "save_to_hit_at": local_time(),
                 "blacklisted_at": local_time() + timedelta(minutes=3),
+                "current_api_hit": 1,
             },
         )
 
