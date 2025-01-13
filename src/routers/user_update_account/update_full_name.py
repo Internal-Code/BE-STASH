@@ -34,7 +34,7 @@ async def update_full_name_endpoint(
         )
 
         response.success = True
-        response.message = "Success changed full name."
+        response.message = "Updated full name success."
 
     except StashBaseApiError:
         raise
