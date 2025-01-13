@@ -1,0 +1,57 @@
+import ssl
+import smtplib
+from pydantic import EmailStr
+from email.message import EmailMessage
+from utils.logger import logging
+from src.secret import Config
+from smtplib import (
+    SMTPAuthenticationError,
+    SMTPRecipientsRefused,
+    SMTPSenderRefused,
+    SMTPDataError,
+    SMTPConnectError,
+)
+from utils.custom_error import (
+    AuthenticationFailed,
+    ServiceError,
+    EntityDoesNotMatchedError,
+)
+
+
+config = Config()
+
+
+async def send_gmail(
+    email_receiver: EmailStr,
+    email_subject: str,
+    email_body: str,
+    email_sender: EmailStr = config.GOOGLE_DEFAULT_EMAIL,
+) -> None:
+    email = EmailMessage()
+    email["From"] = email_sender
+    email["To"] = email_receiver
+    email["Subject"] = email_subject
+    email.set_content(email_body, subtype="html")
+    context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL(host=config.GOOGLE_SMTP_SERVER, port=int(config.GOOGLE_SMTP_PORT), context=context) as smtp:
+        try:
+            smtp.login(user=config.GOOGLE_DEFAULT_EMAIL, password=config.GOOGLE_APP_PASSWORD)
+            smtp.send_message(email)
+            logging.info(f"Email successfully sent into {email_receiver}")
+        except SMTPAuthenticationError:
+            raise AuthenticationFailed(detail="SMTP Authentication failed. Please check your credentials.")
+        except SMTPRecipientsRefused:
+            raise EntityDoesNotMatchedError(detail="SMTP Recipients refused. The email address might be invalid.")
+        except SMTPSenderRefused:
+            raise EntityDoesNotMatchedError(detail="SMTP Sender refused. The sender's email address might be invalid.")
+        except SMTPDataError:
+            raise ServiceError(detail="SMTP Data error occurred while sending the email.", name="Google SMTP")
+        except SMTPConnectError:
+            raise ServiceError(detail="Failed to connect to the SMTP server.", name="Google SMTP")
+        except Exception as E:
+            logging.error(f"Error during sending smtp email: {E}")
+            raise ServiceError(detail=f"SMTP Error: {E}.", name="Google SMTP")
+        finally:
+            smtp.close()
+    return None

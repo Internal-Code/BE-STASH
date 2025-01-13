@@ -1,57 +1,61 @@
 services:
-  postgre_sql:
-    container_name: postgres_container
-    image: postgres:16.3-alpine
+  stash_postgre_sql:
+    container_name: stash_postgre_sql
+    image: postgres:${POSTGRES_VERSION}
     restart: always
     environment:
-      - POSTGRES_USER=${LOCAL_POSTGRESQL_USER}
-      - POSTGRES_PASSWORD=${LOCAL_POSTGRESQL_PASSWORD}
-      - POSTGRES_DB=${LOCAL_POSTGRESQL_DATABASE}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     ports:
       - 5432:5432
     volumes:
-      - postgre_sql:/var/lib/postgresql/data
+      - stash_postgre_sql:/var/lib/postgresql/data
     networks:
-      app_net:
-        ipv4_address: 172.18.0.30
+      stash_network:
+        ipv4_address: 172.18.0.2
 
-  pg_admin:
-    container_name: pgadmin4_container
-    image: dpage/pgadmin4:8.10
+
+  stash_pg_admin:
+    container_name: stash_pg_admin
+    image: dpage/pgadmin4:${PGADMIN_VERSION}
     restart: always
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
-      - PGADMIN_LISTEN_PORT=5050
     ports:
-      - 5050:5050
+      - 5050:80
     networks:
-      app_net:
-        ipv4_address: 172.18.0.31
+      stash_network:
+        ipv4_address: 172.18.0.3
+    volumes:
+      - stash_pg_admin:/var/lib/pgadmin
+    depends_on:
+      - stash_postgre_sql
 
-  whatsapp_services:
-    container_name: whatsapp_local_api
-    image: taufikdev88/simplewhatsappapi:latest
+  stash_whatsapp_api:
+    container_name: stash_whatsapp_api
+    image: taufikdev88/simplewhatsappapi:${WHATSAPP_API_VERSION}
     restart: always
     environment:
-      - SESSION_SECRET=${SECRET_SESSION}
-      - DB_CONNECTION_STRING=mongodb://localhost:27017/swa
+      - SESSION_SECRET=${WHATSAPP_API_SECRET_SESSION}
+      - DB_CONNECTION_STRING=${WHATSAPP_API_CONNECTION}
     volumes:
-      - ./data:/app/data
+      - stash_whatsapp_api:/app/data
     ports:
       - 80:80
     networks:
-      app_net:
-        ipv4_address: 172.18.0.32
+      stash_network:
+        ipv4_address: 172.18.0.4
 
 volumes:
-  postgre_sql:
-  whatsapp_services:
+  stash_postgre_sql:
+  stash_pg_admin:
+  stash_whatsapp_api:
 
 networks:
-  app_net:
+  stash_network:
     driver: bridge
     ipam:
-      driver: default
       config:
         - subnet: 172.18.0.0/16
