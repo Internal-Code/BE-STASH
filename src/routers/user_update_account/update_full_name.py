@@ -33,8 +33,7 @@ async def update_full_name_endpoint(
             data={"full_name": schema.change_full_name_into, "updated_at": current_time},
         )
 
-        response.success = True
-        response.message = "Updated full name success."
+        response.message = "Success update full name."
 
     except StashBaseApiError:
         raise

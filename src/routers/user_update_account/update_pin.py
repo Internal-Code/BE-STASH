@@ -146,7 +146,7 @@ async def update_pin_endpoint(
                 pin=schema.confirmed_new_pin,
             )
 
-        response.message = "Success updated pin. User should performed re-login."
+        response.message = "Success update PIN. User should performed re-login."
 
     except StashBaseApiError:
         raise

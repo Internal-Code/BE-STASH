@@ -21,13 +21,7 @@ from utils.custom_error import (
     StashBaseApiError,
     InvalidOperationError,
 )
-# from utils.database.general import (
-#     local_time,
-#     is_using_registered_phone_number,
-#     update_user_phone_number,
-#     save_otp_data,
-#     extract_data_otp,
-# )
+
 
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
@@ -92,7 +86,7 @@ async def update_phone_number_endpoint(
                 data={"updated_at": current_time, "phone_number": schema.phone_number},
             )
 
-            response.message = "Update phone number success."
+            response.message = "Success update phone number."
             response.data = UniqueId(unique_id=current_user.unique_id)
 
     except StashBaseApiError:

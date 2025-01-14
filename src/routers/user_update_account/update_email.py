@@ -52,7 +52,7 @@ async def update_email_endpoint(
             data={"updated_at": current_time, "email": schema.email, "verified_email": False},
         )
 
-        response.message = "Update email success."
+        response.message = "Success update email."
 
     except StashBaseApiError:
         raise
