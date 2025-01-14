@@ -2,12 +2,7 @@ from datetime import datetime
 from utils.helper import local_time
 from enum import StrEnum
 from pydantic import BaseModel, Field, EmailStr, field_validator
-from src.schema.validator import (
-    FullNameValidatorMixin, 
-    PhoneNumberValidatorMixin, 
-    SecurityCodeValidator,
-    YearValidator
-)
+from src.schema.validator import FullNameValidatorMixin, PhoneNumberValidatorMixin, SecurityCodeValidator, YearValidator
 
 
 class UserPin(BaseModel):
@@ -75,15 +70,15 @@ class ChangePin(BaseModel, SecurityCodeValidator):
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
 
-class ResetPin(BaseModel):
+class ResetPinRequest(BaseModel):
     pin: str
     confirm_new_pin: str
-    
+
     @field_validator("pin")
     @classmethod
     def validate_reset_pin(cls, value: str) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
-    
+
     @field_validator("confirm_new_pin")
     @classmethod
     def validate_confirmed_reset_pin(cls, value: str) -> str:
@@ -208,7 +203,6 @@ class SendMethod(StrEnum):
 
 class SendVerificationLink(BaseModel):
     method: SendMethod
-
 
 
 class GoogleSSOPayload(BaseModel):

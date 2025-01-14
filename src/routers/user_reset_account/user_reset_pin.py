@@ -4,10 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from src.schema.request_format import ResetPin
+from src.schema.request_format import ResetPinRequest
+from utils.helper import local_time
+from services.postgres.models import User, UserToken, ResetPin
+from utils.query.general import update_record, find_record, insert_record
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
+    DataNotFoundError,
+    InvalidOperationError
 )
 
 config = Config()
@@ -15,20 +20,30 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
 async def reset_password(
-    schema: ResetPin,
+    schema: ResetPinRequest,
     unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     
+    current_time = local_time()
+    
+    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
+    reset_pin_record = await find_record(db=db, table=ResetPin, unique_id=account_record.unique_id)
+    
     try:
+        if not account_record:
+            raise DataNotFoundError(detail="User not found.")
+        
+        if current_time > reset_pin_record.blacklisted_at:
+            raise InvalidOperationError(detail="Reset pin token expired.")
+        
+        # TODO: should refactor this endpoint
         pass
         # account = await get_user(unique_id=unique_id)
 
         # latest_data = await extract_reset_pin_data(user_uuid=unique_id)
-        # if not latest_data:
-        #     raise DataNotFoundError(detail="User not found.")
 
         # now_utc = datetime.now(timezone("UTC"))
 
