@@ -41,7 +41,7 @@ async def user_endpoint(
 
         response.message = "User found."
         response.data = UserStatus(
-            unique_id=account_record.unique_id, 
+            unique_id=account_record.unique_id,
             register_status=account_record.register_state,
             verified_email=account_record.verified_email,
             verified_phone_number=account_record.verified_phone_number,

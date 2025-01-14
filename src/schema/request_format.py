@@ -2,7 +2,12 @@ from datetime import datetime
 from utils.helper import local_time
 from enum import StrEnum
 from pydantic import BaseModel, Field, EmailStr, field_validator
-from src.schema.validator import FullNameValidatorMixin, PhoneNumberValidatorMixin, SecurityCodeValidator
+from src.schema.validator import (
+    FullNameValidatorMixin, 
+    PhoneNumberValidatorMixin, 
+    SecurityCodeValidator,
+    YearValidator
+)
 
 
 class UserPin(BaseModel):
@@ -46,7 +51,7 @@ class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
     @field_validator("change_full_name_into")
     @classmethod
     def validate_full_name(cls, value: str) -> str:
-        return cls.validate_fullname(value)
+        return FullNameValidatorMixin.validate_fullname(value)
 
 
 class ChangePin(BaseModel, SecurityCodeValidator):
@@ -57,17 +62,32 @@ class ChangePin(BaseModel, SecurityCodeValidator):
     @field_validator("current_pin")
     @classmethod
     def validate_current_pin(cls, value: str) -> str:
-        return cls.validate_security_code(value=value, type="otp")
+        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
     @field_validator("updated_pin")
     @classmethod
     def validate_updated_pin(cls, value: str) -> str:
-        return cls.validate_security_code(value=value, type="otp")
+        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
     @field_validator("confirmed_new_pin")
     @classmethod
     def validate_new_pin(cls, value: str) -> str:
-        return cls.validate_security_code(value=value, type="otp")
+        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
+
+
+class ResetPin(BaseModel):
+    pin: str
+    confirm_new_pin: str
+    
+    @field_validator("pin")
+    @classmethod
+    def validate_reset_pin(cls, value: str) -> str:
+        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
+    
+    @field_validator("confirm_new_pin")
+    @classmethod
+    def validate_confirmed_reset_pin(cls, value: str) -> str:
+        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
 class MonthlyCategory(BaseModel):
@@ -86,10 +106,8 @@ class DefaultSchema(BaseModel):
 
     @field_validator("year")
     @classmethod
-    def year_must_be_four_digits(cls, v: int) -> int:
-        if len(str(v)) != 4:
-            raise ValueError("year must be exactly 4 digits long")
-        return v
+    def validate_year(cls, value: int) -> str:
+        return YearValidator.year_must_be_four_digits(value=value)
 
 
 class UpdateCategorySpending(BaseModel):
@@ -191,10 +209,6 @@ class SendMethod(StrEnum):
 class SendVerificationLink(BaseModel):
     method: SendMethod
 
-
-class ForgotPin(BaseModel):
-    pin: str
-    confirm_new_pin: str
 
 
 class GoogleSSOPayload(BaseModel):

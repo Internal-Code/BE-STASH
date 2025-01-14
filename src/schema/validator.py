@@ -44,3 +44,11 @@ class UniqueIdValidator:
         except ValueError:
             raise InvalidOperationError(detail="Invalid unique id format.")
         return str(valid_uuid)
+
+
+class YearValidator:
+    @classmethod
+    def year_must_be_four_digits(cls, value: int) -> int:
+        if len(str(value)) != 4:
+            raise ValueError("year must be exactly 4 digits long")
+        return value

@@ -37,22 +37,24 @@ async def user_endpoint(
             raise InvalidOperationError("Should be a valid phone number or email.")
 
         account_record = await find_record(db=db, table=User, **query)
-        
+
         if not account_record:
             raise DataNotFoundError(detail="User not found.")
-        
+
         reset_pin_record = await find_record(db=db, table=ResetPin, unique_id=account_record.unique_id)
         updated_query = {**query, "save_to_hit_at": current_time, "unique_id": account_record.unique_id}
-        
+
         if not reset_pin_record:
             await insert_record(db=db, table=ResetPin, data=updated_query)
         else:
             updated_query = {**updated_query, "updated_at": current_time}
-            await update_record(db=db, table=ResetPin, conditions={"unique_id": account_record.unique_id}, data=updated_query)
+            await update_record(
+                db=db, table=ResetPin, conditions={"unique_id": account_record.unique_id}, data=updated_query
+            )
 
         response.message = "User found."
         response.data = UserStatus(
-            unique_id=account_record.unique_id, 
+            unique_id=account_record.unique_id,
             register_status=account_record.register_state,
             verified_email=account_record.verified_email,
             verified_phone_number=account_record.verified_phone_number,
