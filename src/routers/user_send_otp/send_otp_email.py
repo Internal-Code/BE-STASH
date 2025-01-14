@@ -1,16 +1,16 @@
-from fastapi.templating import Jinja2Templates
 from typing import Annotated
 from datetime import timedelta
-from fastapi import APIRouter, status, Depends, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
-from utils.generator import random_number
-from services.postgres.models import SendOtp
-from utils.query.general import find_record, update_record
-from src.schema.response import ResponseDefault
+from utils.smtp import send_gmail
 from utils.helper import local_time
 from utils.jwt import get_current_user
-from utils.smtp import send_gmail
+from utils.generator import random_number
+from services.postgres.models import SendOtp
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.connection import get_db
+from src.schema.response import ResponseDefault
+from utils.query.general import find_record, update_record
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
@@ -47,7 +47,7 @@ async def send_otp_email_endpoint(
             email_body = templates.TemplateResponse(
                 "otp_email.html",
                 context={
-                    "request": {},  # Ensure proper request context in templates
+                    "request": {},
                     "full_name": current_user.full_name,
                     "otp": generated_otp,
                 },

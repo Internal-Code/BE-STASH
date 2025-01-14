@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from utils.helper import local_time
 from sqlmodel import SQLModel, Field, Relationship
 from services.postgres.connection import database_connection
@@ -9,12 +10,12 @@ class User(SQLModel, table=True):
     __tablename__ = "user"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
-    updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(default=None, unique=True)
-    full_name: str | None = Field(default=None, unique=False, nullable=True)
-    email: str | None = Field(default=None, unique=True, nullable=True)
-    phone_number: str | None = Field(default=None, unique=True, nullable=True)
-    pin: str | None = Field(default=None, unique=False, nullable=True)
+    updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    unique_id: Optional[str] = Field(default=None, unique=True)
+    full_name: Optional[str] = Field(default=None, unique=False, nullable=True)
+    email: Optional[str] = Field(default=None, unique=True, nullable=True)
+    phone_number: Optional[str] = Field(default=None, unique=True, nullable=True)
+    pin: Optional[str] = Field(default=None, unique=False, nullable=True)
     verified_email: bool = Field(default=False)
     verified_phone_number: bool = Field(default=False)
     register_state: RegisterAccountState = Field(default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True)
@@ -31,15 +32,15 @@ class MoneySpend(SQLModel, table=True):
     __tablename__ = "money_spend"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
-    updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
-    spend_day: int | None = Field(default=None, unique=False, nullable=True)
-    spend_month: int | None = Field(default=None, unique=False, nullable=True)
-    spend_year: int | None = Field(default=None, unique=False, nullable=True)
-    category: str | None = Field(default=None, unique=False, nullable=True)
-    description: str | None = Field(default=None, unique=False, nullable=True)
-    amount: int | None = Field(default=None, unique=False, nullable=True)
+    updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    deleted_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    unique_id: Optional[str] = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
+    spend_day: Optional[int] = Field(default=None, unique=False, nullable=True)
+    spend_month: Optional[int] = Field(default=None, unique=False, nullable=True)
+    spend_year: Optional[int] = Field(default=None, unique=False, nullable=True)
+    category: Optional[str] = Field(default=None, unique=False, nullable=True)
+    description: Optional[str] = Field(default=None, unique=False, nullable=True)
+    amount: Optional[int] = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="money_spend")
 
 
@@ -47,12 +48,12 @@ class MonthlySchema(SQLModel, table=True):
     __tablename__ = "monthly_schema"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
-    updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
-    month_id: str | None = Field(default=None, unique=False, nullable=True)
-    month: int | None = Field(default=None, unique=False, nullable=True)
-    year: int | None = Field(default=None, unique=False, nullable=True)
+    updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    deleted_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    unique_id: Optional[str] = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
+    month_id: Optional[str] = Field(default=None, unique=False, nullable=True)
+    month: Optional[int] = Field(default=None, unique=False, nullable=True)
+    year: Optional[int] = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="monthly_schema")
 
 
@@ -60,12 +61,12 @@ class CategorySchema(SQLModel, table=True):
     __tablename__ = "category_schema"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
-    updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    deleted_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
-    category_id: str | None = Field(default=None, unique=False, nullable=True)
-    category: str | None = Field(default=None, unique=False, nullable=True)
-    budget: int | None = Field(default=None, unique=False, nullable=True)
+    updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    deleted_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    unique_id: Optional[str] = Field(default=None, unique=False, foreign_key="user.unique_id", ondelete="CASCADE")
+    category_id: Optional[str] = Field(default=None, unique=False, nullable=True)
+    category: Optional[str] = Field(default=None, unique=False, nullable=True)
+    budget: Optional[int] = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="category_schema")
 
 
@@ -73,11 +74,11 @@ class BlacklistToken(SQLModel, table=True):
     __tablename__ = "blacklist_token"
     id: int = Field(primary_key=True)
     blacklisted_at: datetime = Field(default=local_time())
-    unique_id: str | None = Field(
+    unique_id: Optional[str] = Field(
         default=None, unique=False, nullable=False, foreign_key="user.unique_id", ondelete="CASCADE"
     )
-    access_token: str | None = Field(default=None, unique=True, nullable=True)
-    refresh_token: str | None = Field(default=None, unique=True, nullable=True)
+    access_token: Optional[str] = Field(default=None, unique=True, nullable=True)
+    refresh_token: Optional[str] = Field(default=None, unique=True, nullable=True)
     user: User = Relationship(back_populates="blacklist_token")
 
 
@@ -85,24 +86,26 @@ class UserToken(SQLModel, table=True):
     __tablename__ = "user_token"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
-    unique_id: str | None = Field(
+    unique_id: Optional[str] = Field(
         default=None, unique=False, nullable=False, foreign_key="user.unique_id", ondelete="CASCADE"
     )
-    access_token: str | None = Field(default=None, unique=True, nullable=True)
-    refresh_token: str | None = Field(default=None, unique=True, nullable=True)
+    access_token: Optional[str] = Field(default=None, unique=True, nullable=True)
+    refresh_token: Optional[str] = Field(default=None, unique=True, nullable=True)
     user: User = Relationship(back_populates="user_token")
 
 
 class ResetPin(SQLModel, table=True):
     __tablename__ = "reset_pin"
     id: int = Field(primary_key=True)
-    unique_id: str | None = Field(
+    unique_id: Optional[str] = Field(
         default=None, unique=False, nullable=False, foreign_key="user.unique_id", ondelete="CASCADE"
     )
     created_at: datetime = Field(default=local_time())
-    email: str | None = Field(default=None, unique=False, nullable=True)
-    save_to_hit_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    blacklisted_at: datetime | None = Field(default=None, unique=False, nullable=True)
+    updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    phone_number: Optional[str] = Field(default=None, unique=False, nullable=True)
+    email: Optional[str] = Field(default=None, unique=False, nullable=True)
+    save_to_hit_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    blacklisted_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="reset_pin")
 
 
@@ -110,14 +113,14 @@ class SendOtp(SQLModel, table=True):
     __tablename__ = "send_otp"
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
-    updated_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    unique_id: str | None = Field(
+    updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    unique_id: Optional[str] = Field(
         default=None, unique=False, nullable=False, foreign_key="user.unique_id", ondelete="CASCADE"
     )
-    otp_number: str | None = Field(default=None, unique=False, nullable=True)
-    current_api_hit: int | None = Field(default=None, unique=False, nullable=True)
-    save_to_hit_at: datetime | None = Field(default=None, unique=False, nullable=True)
-    blacklisted_at: datetime | None = Field(default=None, unique=False, nullable=True)
+    otp_number: Optional[str] = Field(default=None, unique=False, nullable=True)
+    current_api_hit: Optional[int] = Field(default=None, unique=False, nullable=True)
+    save_to_hit_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    blacklisted_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="send_otp")
 
 

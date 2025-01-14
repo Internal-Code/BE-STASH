@@ -45,11 +45,11 @@ async def create_pin_endpoint(
                 send_whatsapp,
                 phone_number=account_record.phone_number,
                 message_template=(
-                    "Dear *{full_name}*,\n\n"
+                    f"Dear *{account_record.full_name}*,\n\n"
                     "We are pleased to inform you that your new account has been successfully registered. "
                     "You can now log in using the following credentials:\n\n"
-                    "Phone Number: *{phone_number}*\n"
-                    "PIN: *{pin}*\n\n"
+                    f"Phone Number: *{account_record.phone_number}*\n"
+                    f"PIN: *{schema.pin}*\n\n"
                     "Please ensure that you keep your account information secure.\n\n"
                     "Best Regards,\n"
                     "STASH Support Team"
