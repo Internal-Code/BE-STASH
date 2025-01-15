@@ -80,7 +80,7 @@
 #         raise FTE
 
 #     except Exception as E:
-#         raise ServiceError(detail=f"Service error: {E}.", name="STASH")
+#         raise ServiceError(detail="Internal Server Error.", name="STASH")
 
 #     return response
 

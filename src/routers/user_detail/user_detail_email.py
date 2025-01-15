@@ -14,8 +14,8 @@ async def detail_email_endpoint(current_user: Annotated[dict, Depends(get_curren
         response.data = {"email": current_user.email, "is_verified": current_user.verified_email}
     except StashBaseApiError:
         raise
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
     return response
 
 

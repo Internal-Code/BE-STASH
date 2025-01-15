@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
 from services.postgres.models import MonthlySchema, CategorySchema
 from src.schema.request_format import CreateSpend
-from utils.query.general import find_record, insert_record
+from utils.query.general import find_record
 from utils.custom_error import ServiceError, StashBaseApiError, DataNotFoundError
 
 router = APIRouter(tags=["Monthly Spend"], prefix="/spend")
@@ -108,8 +108,8 @@ async def create_spend(
     except StashBaseApiError:
         raise
 
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
 
     return response
 

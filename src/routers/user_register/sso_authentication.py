@@ -132,8 +132,8 @@ async def google_sso_auth_endpoint(
         logging.error(f"Oauth error in google_sso_auth: {OauthErr}.")
         raise ServiceError(detail="SSO error, please perform re-login.", name="Google SSO")
 
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
 
     return response
 

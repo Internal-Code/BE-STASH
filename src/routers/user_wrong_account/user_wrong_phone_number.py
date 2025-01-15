@@ -87,8 +87,8 @@ async def wrong_phone_number_endpoint(
 
     except StashBaseApiError:
         raise
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
     return response
 
 

@@ -10,9 +10,4 @@ async def root():
     return JSONResponse(content={"status": "Server running!"})
 
 
-router.add_api_route(
-    methods=["GET"],
-    path="/",
-    endpoint=root,
-    summary="Health check."
-)
+router.add_api_route(methods=["GET"], path="/", endpoint=root, summary="Health check.")

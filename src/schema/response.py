@@ -16,18 +16,19 @@ class ResponseToken(BaseModel):
 
 class UniqueId(BaseModel):
     unique_id: Optional[str] = None
-    
+
 
 class IsEmailVerified(BaseModel):
     is_email_verified: bool = False
-    
+
 
 class IsPhoneNumberVerified(BaseModel):
     is_phone_number_verified: bool = False
 
+
 class RegisterStatus(BaseModel):
     register_status: Optional[str] = None
-    
+
 
 class UserStatus(IsEmailVerified, IsPhoneNumberVerified, RegisterStatus, UniqueId):
     pass

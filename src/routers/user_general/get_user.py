@@ -49,8 +49,8 @@ async def user_endpoint(
 
     except StashBaseApiError:
         raise
-    except Exception as e:
-        raise ServiceError(detail=f"Service error: {e}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
 
     return response
 

@@ -16,8 +16,8 @@ async def detail_phone_number_endpoint(
         response.data = current_user.phone_number
     except StashBaseApiError:
         raise
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
     return response
 
 

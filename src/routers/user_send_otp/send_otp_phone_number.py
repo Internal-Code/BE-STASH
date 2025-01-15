@@ -75,8 +75,8 @@ async def send_otp_phone_number_endpoint(
             response.data = UniqueId(unique_id=str(unique_id))
     except StashBaseApiError:
         raise
-    except Exception as e:
-        raise ServiceError(detail=f"Service error: {e}.", name="STASH")
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
     return response
 
 
