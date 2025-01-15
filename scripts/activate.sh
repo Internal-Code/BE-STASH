@@ -11,6 +11,10 @@ else
       echo "Linux based OS detected"
       . .venv/bin/activate
       ;;
+    darwin*)
+      echo "macOS detected"
+      . .venv/bin/activate
+      ;;
     cygwin* | msys* | mingw*)
       echo "Windows based OS detected"
       . .venv/Scripts/activate
