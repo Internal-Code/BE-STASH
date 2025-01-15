@@ -18,6 +18,10 @@ class UniqueId(BaseModel):
     unique_id: Optional[str] = None
 
 
+class ServerStatus(BaseModel):
+    status: Optional[str] = None
+
+
 class IsEmailVerified(BaseModel):
     is_email_verified: bool = False
 

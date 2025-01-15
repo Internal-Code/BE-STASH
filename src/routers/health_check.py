@@ -1,13 +1,21 @@
 from fastapi import APIRouter
 from utils.logger import logging
-from fastapi.responses import JSONResponse
+from src.schema.response import ServerStatus
 
 router = APIRouter(tags=["Root"])
 
 
-async def root():
+async def root() -> ServerStatus:
     logging.info("Endpoint Root.")
-    return JSONResponse(content={"status": "Server running!"})
+    response = ServerStatus()
+    response.status = "Server running!"
+    return response
 
 
-router.add_api_route(methods=["GET"], path="/", endpoint=root, summary="Health check.")
+router.add_api_route(
+    methods=["GET"],
+    path="/",
+    endpoint=root,
+    summary="Health check.",
+    response_model=ServerStatus,
+)
