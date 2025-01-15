@@ -14,6 +14,7 @@ from src.routers.user_general import user_login, user_logout, get_user, user_gen
 from src.routers.user_wrong_account import user_wrong_phone_number, user_wrong_email
 from src.routers.user_register import user_create_pin, register_account, sso_authentication, sso_login
 from src.routers.user_update_account import update_full_name, update_phone_number, update_pin, update_email
+from src.routers.monthly_spend import create_spend
 from src.routers.user_detail import user_detail_full_name, user_detail_email, user_detail_phone_number, user_add_email
 from src.routers.user_reset_account import user_send_reset_link, reset_user, user_reset_pin
 from src.routers.monthly_schema import (
@@ -72,6 +73,7 @@ app.include_router(list_category.router)
 app.include_router(list_schema.router)
 app.include_router(update_category.router)
 app.include_router(update_schema.router)
+app.include_router(create_spend.router)
 app.include_router(user_add_email.router)
 app.include_router(user_detail_email.router)
 app.include_router(user_detail_full_name.router)

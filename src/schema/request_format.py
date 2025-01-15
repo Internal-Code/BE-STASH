@@ -127,12 +127,17 @@ class DeleteCategorySchema(BaseModel):
 
 
 class CreateSpend(BaseModel):
-    spend_day: int = Field(default=local_time().day, ge=1, le=31)
-    spend_month: int = Field(default=local_time().month, ge=1, le=12)
-    spend_year: int = Field(default=local_time().year, ge=1000, le=9999)
+    day: int = Field(default=local_time().day, ge=1, le=31)
+    month: int = Field(default=local_time().month, ge=1, le=12)
+    year: int = Field(default=local_time().year)
     category: str
     description: str
     amount: int
+
+    @field_validator("year")
+    @classmethod
+    def validate_year(cls, value: int) -> str:
+        return YearValidator.year_must_be_four_digits(value=value)
 
 
 class CreateUser(BaseModel, FullNameValidatorMixin, PhoneNumberValidatorMixin):

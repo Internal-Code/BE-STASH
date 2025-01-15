@@ -43,8 +43,8 @@ async def user_endpoint(
         response.data = UserStatus(
             unique_id=account_record.unique_id,
             register_status=account_record.register_state,
-            verified_email=account_record.verified_email,
-            verified_phone_number=account_record.verified_phone_number,
+            is_email_verified=account_record.verified_email,
+            is_phone_number_verified=account_record.verified_phone_number,
         )
 
     except StashBaseApiError:

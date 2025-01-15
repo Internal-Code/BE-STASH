@@ -41,7 +41,6 @@ async def create_category_endpoint(
     blacklist_refresh_token = await find_record(
         db=db, table=BlacklistToken, refresh_token=user_token_record.refresh_token
     )
-    print(blacklist_access_token)
 
     try:
         if blacklist_access_token:
