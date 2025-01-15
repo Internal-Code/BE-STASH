@@ -30,7 +30,10 @@ async def update_full_name_endpoint(
             db=db,
             table=User,
             conditions={"unique_id": current_user.unique_id},
-            data={"full_name": schema.change_full_name_into, "updated_at": current_time},
+            data={
+                "full_name": schema.change_full_name_into,
+                "updated_at": current_time,
+            },
         )
 
         response.message = "Success update full name."

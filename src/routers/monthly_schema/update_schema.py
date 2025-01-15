@@ -29,7 +29,11 @@ async def update_schema_endpoint(
     current_time = local_time()
 
     monthly_schema_record = await find_record(
-        db=db, table=MonthlySchema, unique_id=current_user.unique_id, month_id=str(month_id), deleted_at=None
+        db=db,
+        table=MonthlySchema,
+        unique_id=current_user.unique_id,
+        month_id=str(month_id),
+        deleted_at=None,
     )
     updated_schema_record = await find_record(
         db=db,
@@ -44,7 +48,9 @@ async def update_schema_endpoint(
         if not monthly_schema_record:
             raise DataNotFoundError(detail="Data not found.")
         if updated_schema_record:
-            raise EntityAlreadyExistError(detail=f"Data {schema.month}/{schema.year} already exist.")
+            raise EntityAlreadyExistError(
+                detail=f"Data {schema.month}/{schema.year} already exist."
+            )
 
         await update_record(
             db=db,
@@ -53,7 +59,11 @@ async def update_schema_endpoint(
                 "month_id": str(month_id),
                 "unique_id": current_user.unique_id,
             },
-            data={"month": schema.month, "year": schema.year, "updated_at": current_time},
+            data={
+                "month": schema.month,
+                "year": schema.year,
+                "updated_at": current_time,
+            },
         )
 
         response.message = "Schema successfully updated."

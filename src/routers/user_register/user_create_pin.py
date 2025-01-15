@@ -24,7 +24,10 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def create_pin_endpoint(
-    schema: UserPin, unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    schema: UserPin,
+    unique_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))

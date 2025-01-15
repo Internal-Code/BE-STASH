@@ -62,14 +62,18 @@ async def test_update_record_with_empty_conditions():
     faker = Faker()
     async for db in get_db():
         with pytest.raises(ValueError, match="Conditions cannot be empty"):
-            await update_record(db=db, table=User, conditions={}, data={"full_name": faker.name()})
+            await update_record(
+                db=db, table=User, conditions={}, data={"full_name": faker.name()}
+            )
 
 
 @pytest.mark.asyncio
 async def test_update_record_with_empty_data():
     async for db in get_db():
         with pytest.raises(ValueError, match="Data must be a non-empty dictionary."):
-            await update_record(db=db, table=User, conditions={"unique_id": str(uuid4())}, data={})
+            await update_record(
+                db=db, table=User, conditions={"unique_id": str(uuid4())}, data={}
+            )
 
 
 @pytest.mark.asyncio
@@ -77,15 +81,22 @@ async def test_update_record_with_random_conditions():
     random_column = random_word()
     random_value = random_word()
     async for db in get_db():
-        with pytest.raises(ValueError, match=f"Column {random_column} not found in {User.__name__.lower()} table!"):
-            await update_record(db=db, table=User, conditions={random_column: random_value}, data={})
+        with pytest.raises(
+            ValueError,
+            match=f"Column {random_column} not found in {User.__name__.lower()} table!",
+        ):
+            await update_record(
+                db=db, table=User, conditions={random_column: random_value}, data={}
+            )
 
 
 @pytest.mark.asyncio
 async def test_update_record_raised_database_query_error():
     async for db in get_db():
         with pytest.raises(DatabaseQueryError, match="Database query error."):
-            await update_record(db=db, table=User, conditions={"unique_id": uuid4()}, data={})
+            await update_record(
+                db=db, table=User, conditions={"unique_id": uuid4()}, data={}
+            )
 
 
 @pytest.mark.asyncio

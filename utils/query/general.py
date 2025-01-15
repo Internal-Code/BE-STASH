@@ -20,7 +20,9 @@ async def find_record(
         for col, value in kwargs.items():
             col_attr = getattr(table, col, None)
             if not col_attr:
-                raise ValueError(f"Column {col} not found in {table.__tablename__} table!")
+                raise ValueError(
+                    f"Column {col} not found in {table.__tablename__} table!"
+                )
 
             condition.append(col_attr == value)
 
@@ -46,7 +48,9 @@ async def find_record(
 async def insert_record(db: AsyncSession, table: type[SQLModel], data: dict) -> None:
     for column in data.keys():
         if not hasattr(table, column):
-            raise ValueError(f"Column '{column}' not found in {table.__tablename__} table!")
+            raise ValueError(
+                f"Column '{column}' not found in {table.__tablename__} table!"
+            )
 
     try:
         query = insert(table).values(**data)
@@ -59,7 +63,9 @@ async def insert_record(db: AsyncSession, table: type[SQLModel], data: dict) -> 
         raise DatabaseQueryError(detail="Database query error.")
 
 
-async def update_record(db: AsyncSession, table: type[SQLModel], conditions: dict, data: dict) -> None:
+async def update_record(
+    db: AsyncSession, table: type[SQLModel], conditions: dict, data: dict
+) -> None:
     target_records = await find_record(db=db, table=table, **conditions)
 
     try:
@@ -74,15 +80,24 @@ async def update_record(db: AsyncSession, table: type[SQLModel], conditions: dic
 
         for column in data.keys():
             if not hasattr(table, column):
-                raise ValueError(f"Column {column} not found in {table.__tablename__} table!")
+                raise ValueError(
+                    f"Column {column} not found in {table.__tablename__} table!"
+                )
 
         for column in conditions.keys():
             if not hasattr(table, column):
-                raise ValueError(f"Column {column} not found in {table.__tablename__} table!")
+                raise ValueError(
+                    f"Column {column} not found in {table.__tablename__} table!"
+                )
 
         query = (
             update(table)
-            .where(*(getattr(table, column) == value for column, value in conditions.items()))
+            .where(
+                *(
+                    getattr(table, column) == value
+                    for column, value in conditions.items()
+                )
+            )
             .values(**data)
         )
         await db.execute(query)
@@ -93,7 +108,9 @@ async def update_record(db: AsyncSession, table: type[SQLModel], conditions: dic
     except DataNotFoundError:
         raise
     except Exception as e:
-        logging.error(f"Failed to update record in table {table.__name__} with conditions {conditions}: {e}")
+        logging.error(
+            f"Failed to update record in table {table.__name__} with conditions {conditions}: {e}"
+        )
         raise DatabaseQueryError(detail="Database query error.")
 
 

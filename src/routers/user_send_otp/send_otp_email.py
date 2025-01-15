@@ -30,7 +30,9 @@ async def send_otp_email_endpoint(
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=current_user.unique_id)
+    otp_record = await find_record(
+        db=db, table=SendOtp, unique_id=current_user.unique_id
+    )
     templates = Jinja2Templates(directory="templates")
 
     try:
@@ -67,7 +69,9 @@ async def send_otp_email_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

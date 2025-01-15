@@ -10,13 +10,37 @@ from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.routers import health_check
 from src.routers.user_send_otp import send_otp_phone_number, send_otp_email
 from src.routers.user_verification import verify_phone_number, verify_email
-from src.routers.user_general import user_login, user_logout, get_user, user_generate_refresh_token
+from src.routers.user_general import (
+    user_login,
+    user_logout,
+    get_user,
+    user_generate_refresh_token,
+)
 from src.routers.user_wrong_account import user_wrong_phone_number, user_wrong_email
-from src.routers.user_register import user_create_pin, register_account, sso_authentication, sso_login
-from src.routers.user_update_account import update_full_name, update_phone_number, update_pin, update_email
+from src.routers.user_register import (
+    user_create_pin,
+    register_account,
+    sso_authentication,
+    sso_login,
+)
+from src.routers.user_update_account import (
+    update_full_name,
+    update_phone_number,
+    update_pin,
+    update_email,
+)
 from src.routers.monthly_spend import create_spend
-from src.routers.user_detail import user_detail_full_name, user_detail_email, user_detail_phone_number, user_add_email
-from src.routers.user_reset_account import user_send_reset_link, reset_user, user_reset_pin
+from src.routers.user_detail import (
+    user_detail_full_name,
+    user_detail_email,
+    user_detail_phone_number,
+    user_add_email,
+)
+from src.routers.user_reset_account import (
+    user_send_reset_link,
+    reset_user,
+    user_reset_pin,
+)
 from src.routers.monthly_schema import (
     create_category,
     create_schema,

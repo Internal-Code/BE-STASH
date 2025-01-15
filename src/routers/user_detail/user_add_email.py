@@ -21,7 +21,9 @@ router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
 async def add_email_endpoint(
-    schema: UserEmail, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    schema: UserEmail,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
@@ -30,10 +32,14 @@ async def add_email_endpoint(
 
     try:
         if registered_email:
-            raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
+            raise EntityAlreadyExistError(
+                detail="Email already taken. Please use another email."
+            )
 
         if user_record.verified_email:
-            raise EntityAlreadyVerifiedError(detail="User already have an verified email.")
+            raise EntityAlreadyVerifiedError(
+                detail="User already have an verified email."
+            )
 
         if user_record.email:
             raise EntityAlreadyExistError(detail="User already have an email.")

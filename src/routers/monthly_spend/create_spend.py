@@ -18,7 +18,9 @@ async def create_spend(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
-    schema_record = await find_record(db=db, table=MonthlySchema, month=schema.month, year=schema.year)
+    schema_record = await find_record(
+        db=db, table=MonthlySchema, month=schema.month, year=schema.year
+    )
     print(schema_record.month_id)
     # is_available = await filter_month_year_category(
     #     user_uuid=current_user.user_uuid,
@@ -30,7 +32,9 @@ async def create_spend(
     try:
         if not schema_record:
             raise DataNotFoundError("Monthly data not found.")
-        category_record = await find_record(db=db, table=CategorySchema, category_id=schema_record.month_id)
+        category_record = await find_record(
+            db=db, table=CategorySchema, category_id=schema_record.month_id
+        )
         print(category_record)
         pass
         # logging.info("Endpoint create spend money.")

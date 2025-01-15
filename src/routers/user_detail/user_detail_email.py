@@ -7,11 +7,16 @@ from utils.custom_error import ServiceError, StashBaseApiError
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
-async def detail_email_endpoint(current_user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def detail_email_endpoint(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> ResponseDefault:
     response = ResponseDefault()
     try:
         response.message = "Extracted email info."
-        response.data = {"email": current_user.email, "is_verified": current_user.verified_email}
+        response.data = {
+            "email": current_user.email,
+            "is_verified": current_user.verified_email,
+        }
     except StashBaseApiError:
         raise
     except Exception:

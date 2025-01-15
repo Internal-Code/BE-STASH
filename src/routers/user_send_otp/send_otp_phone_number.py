@@ -24,7 +24,9 @@ router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
 async def send_otp_phone_number_endpoint(
-    unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    unique_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
@@ -65,7 +67,9 @@ async def send_otp_phone_number_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

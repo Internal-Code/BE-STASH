@@ -2,7 +2,12 @@ from datetime import datetime
 from utils.helper import local_time
 from enum import StrEnum
 from pydantic import BaseModel, Field, EmailStr, field_validator
-from src.schema.validator import FullNameValidatorMixin, PhoneNumberValidatorMixin, SecurityCodeValidator, YearValidator
+from src.schema.validator import (
+    FullNameValidatorMixin,
+    PhoneNumberValidatorMixin,
+    SecurityCodeValidator,
+    YearValidator,
+)
 
 
 class UserPin(BaseModel):

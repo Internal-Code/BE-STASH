@@ -20,10 +20,13 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def login_endpoint(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: AsyncSession = Depends(get_db)
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
-    account_record = await authenticate_user(unique_id=form_data.username, pin=form_data.password)
+    account_record = await authenticate_user(
+        unique_id=form_data.username, pin=form_data.password
+    )
 
     try:
         if not account_record:
@@ -42,7 +45,11 @@ async def login_endpoint(
         await insert_record(
             db=db,
             table=UserToken,
-            data={"unique_id": account_record.unique_id, "access_token": access_token, "refresh_token": refresh_token},
+            data={
+                "unique_id": account_record.unique_id,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+            },
         )
 
         response.access_token = access_token

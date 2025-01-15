@@ -13,7 +13,9 @@ router = APIRouter(tags=["Monthly Schema"])
 
 
 async def list_category_endpoint(
-    month_id: UUID, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    month_id: UUID,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     month_entry = await find_record(

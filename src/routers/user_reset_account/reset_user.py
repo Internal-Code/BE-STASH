@@ -28,7 +28,9 @@ async def user_endpoint(
 
     try:
         if identifier.isdigit():
-            validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=identifier)
+            validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(
+                phone_number=identifier
+            )
             query["phone_number"] = validated_phone_number
         elif "@" in identifier:
             validated_email = UserEmail(email=identifier)
@@ -41,15 +43,24 @@ async def user_endpoint(
         if not account_record:
             raise DataNotFoundError(detail="User not found.")
 
-        reset_pin_record = await find_record(db=db, table=ResetPin, unique_id=account_record.unique_id)
-        updated_query = {**query, "save_to_hit_at": current_time, "unique_id": account_record.unique_id}
+        reset_pin_record = await find_record(
+            db=db, table=ResetPin, unique_id=account_record.unique_id
+        )
+        updated_query = {
+            **query,
+            "save_to_hit_at": current_time,
+            "unique_id": account_record.unique_id,
+        }
 
         if not reset_pin_record:
             await insert_record(db=db, table=ResetPin, data=updated_query)
         else:
             updated_query = {**updated_query, "updated_at": current_time}
             await update_record(
-                db=db, table=ResetPin, conditions={"unique_id": account_record.unique_id}, data=updated_query
+                db=db,
+                table=ResetPin,
+                conditions={"unique_id": account_record.unique_id},
+                data=updated_query,
             )
 
         response.message = "User found."

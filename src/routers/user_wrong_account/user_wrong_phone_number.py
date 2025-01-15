@@ -25,13 +25,18 @@ router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def wrong_phone_number_endpoint(
-    schema: UserPhoneNumber, unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    schema: UserPhoneNumber,
+    unique_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
-    registered_phone_number = await find_record(db=db, table=User, phone_number=schema.phone_number)
+    registered_phone_number = await find_record(
+        db=db, table=User, phone_number=schema.phone_number
+    )
     otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
     try:
         if not account_record:
@@ -41,7 +46,9 @@ async def wrong_phone_number_endpoint(
             raise EntityAlreadyFilledError(detail="Account already set pin.")
 
         if account_record.phone_number == schema.phone_number:
-            raise EntityForceInputSameDataError(detail="Cannot changed into same phone number.")
+            raise EntityForceInputSameDataError(
+                detail="Cannot changed into same phone number."
+            )
 
         if registered_phone_number:
             raise EntityAlreadyExistError(detail="Phone number already registered.")
@@ -75,7 +82,9 @@ async def wrong_phone_number_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

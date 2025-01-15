@@ -20,11 +20,15 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_email_endpoint(
-    schema: UserOtp, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    schema: UserOtp,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=current_user.unique_id)
+    otp_record = await find_record(
+        db=db, table=SendOtp, unique_id=current_user.unique_id
+    )
 
     try:
         if current_user.verified_email:
@@ -36,7 +40,10 @@ async def verify_email_endpoint(
         if otp_record.otp_number != schema.otp:
             raise InvalidOperationError(detail="Invalid OTP code.")
 
-        if current_time < otp_record.blacklisted_at and otp_record.otp_number == schema.otp:
+        if (
+            current_time < otp_record.blacklisted_at
+            and otp_record.otp_number == schema.otp
+        ):
             await update_record(
                 db=db,
                 table=User,

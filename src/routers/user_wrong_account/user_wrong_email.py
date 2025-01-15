@@ -33,7 +33,9 @@ async def wrong_email_endpoint(
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=current_user.unique_id)
+    otp_record = await find_record(
+        db=db, table=SendOtp, unique_id=current_user.unique_id
+    )
     templates = Jinja2Templates(directory="templates")
 
     try:
@@ -44,7 +46,9 @@ async def wrong_email_endpoint(
             raise EntityAlreadyVerifiedError(detail="Email already verified.")
 
         if current_user.email == schema.email:
-            raise EntityForceInputSameDataError(detail="Cannot changed into same email.")
+            raise EntityForceInputSameDataError(
+                detail="Cannot changed into same email."
+            )
 
         if current_time < otp_record.save_to_hit_at:
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
@@ -52,7 +56,11 @@ async def wrong_email_endpoint(
         if current_time > otp_record.save_to_hit_at:
             email_body = templates.TemplateResponse(
                 "otp_email.html",
-                context={"request": {}, "full_name": current_user.full_name, "otp": generated_otp},
+                context={
+                    "request": {},
+                    "full_name": current_user.full_name,
+                    "otp": generated_otp,
+                },
             ).body.decode("utf-8")
 
             background_tasks.add_task(
@@ -79,7 +87,9 @@ async def wrong_email_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

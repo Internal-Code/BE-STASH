@@ -32,7 +32,9 @@ def get_password_hash(password: str) -> str:
     return password_content.hash(password)
 
 
-async def get_user(phone_number: str = None, unique_id: str = None, email: EmailStr = None) -> UserInDB | None:
+async def get_user(
+    phone_number: str = None, unique_id: str = None, email: EmailStr = None
+) -> UserInDB | None:
     try:
         async with database_connection().connect() as session:
             try:
@@ -98,7 +100,9 @@ def create_access_token(data: dict, access_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + access_token_expires
     to_encode.update({"exp": expires})
-    encoded_access_token = jwt.encode(claims=to_encode, key=config.ACCESS_TOKEN_SECRET_KEY)
+    encoded_access_token = jwt.encode(
+        claims=to_encode, key=config.ACCESS_TOKEN_SECRET_KEY
+    )
     return encoded_access_token
 
 
@@ -106,7 +110,9 @@ def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + refresh_token_expires
     to_encode.update({"exp": expires})
-    encoded_refresh_token = jwt.encode(claims=to_encode, key=config.REFRESH_TOKEN_SECRET_KEY)
+    encoded_refresh_token = jwt.encode(
+        claims=to_encode, key=config.REFRESH_TOKEN_SECRET_KEY
+    )
     return encoded_refresh_token
 
 
@@ -116,11 +122,15 @@ async def get_access_token(access_token: str = Depends(oauth2_scheme)) -> str:
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row | None:
     async for db in get_db():
-        blacklisted_record = await find_record(db=db, table=BlacklistToken, access_token=token)
+        blacklisted_record = await find_record(
+            db=db, table=BlacklistToken, access_token=token
+        )
 
     try:
         if blacklisted_record:
-            raise AuthenticationFailed(detail="Session expired. Please perform re-login.")
+            raise AuthenticationFailed(
+                detail="Session expired. Please perform re-login."
+            )
 
         payload = jwt.decode(
             token=token,

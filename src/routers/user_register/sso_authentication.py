@@ -29,7 +29,9 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def google_sso_auth_endpoint(
-    request: Request, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
 
@@ -96,16 +98,23 @@ async def google_sso_auth_endpoint(
                 db=db,
                 table=User,
                 conditions={"unique_id": unique_id},
-                data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
+                data={
+                    "pin": hashed_pin,
+                    "register_state": RegisterAccountState.SUCCESS,
+                },
             )
 
             access_token = create_access_token(
                 data={"sub": unique_id},
-                access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
+                access_token_expires=timedelta(
+                    minutes=int(config.ACCESS_TOKEN_EXPIRED)
+                ),
             )
             refresh_token = create_refresh_token(
                 data={"sub": unique_id},
-                refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
+                refresh_token_expires=timedelta(
+                    minutes=int(config.REFRESH_TOKEN_EXPIRED)
+                ),
             )
 
             logging.info("Success registered account via google sso.")
@@ -115,11 +124,15 @@ async def google_sso_auth_endpoint(
         else:
             access_token = create_access_token(
                 data={"sub": account_record.unique_id},
-                access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
+                access_token_expires=timedelta(
+                    minutes=int(config.ACCESS_TOKEN_EXPIRED)
+                ),
             )
             refresh_token = create_refresh_token(
                 data={"sub": account_record.unique_id},
-                refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
+                refresh_token_expires=timedelta(
+                    minutes=int(config.REFRESH_TOKEN_EXPIRED)
+                ),
             )
             logging.info("Success login account via google sso.")
             response.access_token = access_token
@@ -130,7 +143,9 @@ async def google_sso_auth_endpoint(
 
     except OAuthError as OauthErr:
         logging.error(f"Oauth error in google_sso_auth: {OauthErr}.")
-        raise ServiceError(detail="SSO error, please perform re-login.", name="Google SSO")
+        raise ServiceError(
+            detail="SSO error, please perform re-login.", name="Google SSO"
+        )
 
     except Exception:
         raise ServiceError(detail="Internal Server Error.", name="STASH")

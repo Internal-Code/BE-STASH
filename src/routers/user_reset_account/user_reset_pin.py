@@ -12,7 +12,12 @@ from src.schema.request_format import ResetPinRequest
 from utils.jwt import get_password_hash
 from services.postgres.models import User, ResetPin
 from utils.query.general import update_record, find_record
-from utils.custom_error import ServiceError, StashBaseApiError, DataNotFoundError, InvalidOperationError
+from utils.custom_error import (
+    ServiceError,
+    StashBaseApiError,
+    DataNotFoundError,
+    InvalidOperationError,
+)
 
 config = Config()
 router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
@@ -33,7 +38,9 @@ async def reset_password(
     templates = Jinja2Templates(directory="templates")
 
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
-    reset_pin_record = await find_record(db=db, table=ResetPin, unique_id=account_record.unique_id)
+    reset_pin_record = await find_record(
+        db=db, table=ResetPin, unique_id=account_record.unique_id
+    )
 
     try:
         if not account_record:

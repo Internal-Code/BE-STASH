@@ -35,8 +35,12 @@ async def update_phone_number_endpoint(
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
-    registered_phone_number = await find_record(db=db, table=User, phone_number=schema.phone_number)
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=current_user.unique_id)
+    registered_phone_number = await find_record(
+        db=db, table=User, phone_number=schema.phone_number
+    )
+    otp_record = await find_record(
+        db=db, table=SendOtp, unique_id=current_user.unique_id
+    )
 
     try:
         logging.info("Endpoint update user phone number.")
@@ -47,7 +51,9 @@ async def update_phone_number_endpoint(
             raise EntityForceInputSameDataError(detail="Cannot use same phone number.")
 
         if current_user.register_state == RegisterAccountState.ON_PROCESS:
-            raise UserNotVerifiedError(detail="User should be validated, before changing phone number.")
+            raise UserNotVerifiedError(
+                detail="User should be validated, before changing phone number."
+            )
 
         if current_time < otp_record.save_to_hit_at:
             logging.info("User should wait API cooldown.")
@@ -74,7 +80,9 @@ async def update_phone_number_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

@@ -7,7 +7,9 @@ from utils.custom_error import ServiceError, StashBaseApiError
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
-async def detail_full_name_endpoint(current_user: Annotated[dict, Depends(get_current_user)]) -> ResponseDefault:
+async def detail_full_name_endpoint(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> ResponseDefault:
     response = ResponseDefault()
     try:
         response.message = "Extracted full name info."

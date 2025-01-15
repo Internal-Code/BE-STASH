@@ -34,7 +34,9 @@ async def send_reset_link_endpoint(
     current_time = local_time()
 
     account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
-    reset_pin_record = await find_record(db=db, table=ResetPin, unique_id=account_record.unique_id)
+    reset_pin_record = await find_record(
+        db=db, table=ResetPin, unique_id=account_record.unique_id
+    )
     reset_link = f"http://localhost:8000/api/v1/user/reset-account/reset-pin/{account_record.unique_id}"
 
     templates = Jinja2Templates(directory="templates")
@@ -83,7 +85,9 @@ async def send_reset_link_endpoint(
                     },
                 )
 
-                response.message = f"Password reset link sent to {account_record.email}."
+                response.message = (
+                    f"Password reset link sent to {account_record.email}."
+                )
                 response.data = UniqueId(unique_id=account_record.unique_id)
         else:
             if not account_record.phone_number:
@@ -117,7 +121,9 @@ async def send_reset_link_endpoint(
                     },
                 )
 
-                response.message = f"Password reset link sent to {account_record.phone_number}."
+                response.message = (
+                    f"Password reset link sent to {account_record.phone_number}."
+                )
                 response.data = UniqueId(unique_id=account_record.unique_id)
 
     except StashBaseApiError:

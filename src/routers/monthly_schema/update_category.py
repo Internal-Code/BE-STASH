@@ -50,7 +50,9 @@ async def update_category_endpoint(
         if not category_record:
             raise DataNotFoundError(detail="Data not found.")
         if updated_cagetory_record:
-            raise EntityAlreadyExistError(detail=f"Category {schema.changed_category_into} already exist.")
+            raise EntityAlreadyExistError(
+                detail=f"Category {schema.changed_category_into} already exist."
+            )
 
         await update_record(
             db=db,

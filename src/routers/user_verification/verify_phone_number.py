@@ -20,7 +20,10 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_phone_number_endpoint(
-    schema: UserOtp, unique_id: UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    schema: UserOtp,
+    unique_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
@@ -32,7 +35,9 @@ async def verify_phone_number_endpoint(
             raise DataNotFoundError(detail="Data not found.")
 
         if not otp_record.otp_number:
-            raise DataNotFoundError(detail="OTP code not found. Please request a new OTP code.")
+            raise DataNotFoundError(
+                detail="OTP code not found. Please request a new OTP code."
+            )
 
         if account_record.verified_phone_number:
             raise EntityAlreadyVerifiedError(detail="Phone number already verified.")
@@ -43,7 +48,10 @@ async def verify_phone_number_endpoint(
         if otp_record.otp_number != schema.otp:
             raise InvalidOperationError(detail="Invalid OTP code.")
 
-        if current_time < otp_record.blacklisted_at and otp_record.otp_number == schema.otp:
+        if (
+            current_time < otp_record.blacklisted_at
+            and otp_record.otp_number == schema.otp
+        ):
             await update_record(
                 db=db,
                 table=User,

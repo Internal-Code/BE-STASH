@@ -48,8 +48,18 @@ async def test_find_all_record_with_available_data_and_single_filter():
     faker = Faker()
     same_pin = random_number(length=6)
     records_to_insert = [
-        {"unique_id": str(uuid4()), "full_name": faker.name(), "phone_number": faker.phone_number(), "pin": same_pin},
-        {"unique_id": str(uuid4()), "full_name": faker.name(), "phone_number": faker.phone_number(), "pin": same_pin},
+        {
+            "unique_id": str(uuid4()),
+            "full_name": faker.name(),
+            "phone_number": faker.phone_number(),
+            "pin": same_pin,
+        },
+        {
+            "unique_id": str(uuid4()),
+            "full_name": faker.name(),
+            "phone_number": faker.phone_number(),
+            "pin": same_pin,
+        },
         {
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
@@ -68,10 +78,21 @@ async def test_find_all_record_with_available_data_and_single_filter():
     assert len(records) == 2
     assert type(records) is list
     normalized_fetched_data = {
-        (record["unique_id"], record["full_name"], record["phone_number"], record["pin"]) for record in records
+        (
+            record["unique_id"],
+            record["full_name"],
+            record["phone_number"],
+            record["pin"],
+        )
+        for record in records
     }
     normalized_expected_data = {
-        (record["unique_id"], record["full_name"], record["phone_number"], record["pin"])
+        (
+            record["unique_id"],
+            record["full_name"],
+            record["phone_number"],
+            record["pin"],
+        )
         for record in records_to_insert
         if record["pin"] == same_pin
     }
@@ -85,8 +106,18 @@ async def test_find_all_record_with_available_data_and_multi_filter():
     pin = random_number(length=6)
     phone_number = faker.phone_number()
     records_to_insert = [
-        {"unique_id": str(uuid4()), "full_name": faker.name(), "phone_number": phone_number, "pin": pin},
-        {"unique_id": str(uuid4()), "full_name": faker.name(), "phone_number": faker.phone_number(), "pin": pin},
+        {
+            "unique_id": str(uuid4()),
+            "full_name": faker.name(),
+            "phone_number": phone_number,
+            "pin": pin,
+        },
+        {
+            "unique_id": str(uuid4()),
+            "full_name": faker.name(),
+            "phone_number": faker.phone_number(),
+            "pin": pin,
+        },
         {
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
@@ -100,15 +131,28 @@ async def test_find_all_record_with_available_data_and_multi_filter():
         for record in records_to_insert:
             await insert_record(db=db, table=User, data=record)
 
-        records = await find_record(db=db, table=User, fetch_type="all", pin=pin, phone_number=phone_number)
+        records = await find_record(
+            db=db, table=User, fetch_type="all", pin=pin, phone_number=phone_number
+        )
 
     assert len(records) == 1
     assert type(records) is list
     normalized_fetched_data = {
-        (record["unique_id"], record["full_name"], record["phone_number"], record["pin"]) for record in records
+        (
+            record["unique_id"],
+            record["full_name"],
+            record["phone_number"],
+            record["pin"],
+        )
+        for record in records
     }
     normalized_expected_data = {
-        (record["unique_id"], record["full_name"], record["phone_number"], record["pin"])
+        (
+            record["unique_id"],
+            record["full_name"],
+            record["phone_number"],
+            record["pin"],
+        )
         for record in records_to_insert
         if record["pin"] == pin and record["phone_number"] == phone_number
     }
@@ -129,7 +173,9 @@ async def test_find_all_record_with_empty_data_and_no_filter():
 async def test_find_all_record_with_empty_data_and_single_filter():
     async for db in get_db():
         await delete_record(db=db, table=User)
-        records = await find_record(db=db, table=User, fetch_type="all", pin=random_number(length=6))
+        records = await find_record(
+            db=db, table=User, fetch_type="all", pin=random_number(length=6)
+        )
 
     assert records is None
 
@@ -140,7 +186,11 @@ async def test_find_all_record_with_empty_data_and_multi_filter():
     async for db in get_db():
         await delete_record(db=db, table=User)
         records = await find_record(
-            db=db, table=User, fetch_type="all", pin=random_number(length=6), phone_number=faker.phone_number()
+            db=db,
+            table=User,
+            fetch_type="all",
+            pin=random_number(length=6),
+            phone_number=faker.phone_number(),
         )
     assert records is None
 
@@ -158,7 +208,12 @@ async def test_find_single_record_with_available_data_and_no_filter():
         await insert_record(
             db=db,
             table=User,
-            data={"unique_id": unique_id, "full_name": full_name, "phone_number": phone_number, "pin": pin},
+            data={
+                "unique_id": unique_id,
+                "full_name": full_name,
+                "phone_number": phone_number,
+                "pin": pin,
+            },
         )
 
         records = await find_record(db=db, table=User)
@@ -182,7 +237,12 @@ async def test_find_single_record_with_available_data_and_single_filter():
         await insert_record(
             db=db,
             table=User,
-            data={"unique_id": unique_id, "full_name": full_name, "phone_number": phone_number, "pin": pin},
+            data={
+                "unique_id": unique_id,
+                "full_name": full_name,
+                "phone_number": phone_number,
+                "pin": pin,
+            },
         )
 
         records = await find_record(db=db, table=User, unique_id=unique_id)
@@ -206,10 +266,17 @@ async def test_find_single_record_with_available_data_and_multi_filter():
         await insert_record(
             db=db,
             table=User,
-            data={"unique_id": unique_id, "full_name": full_name, "phone_number": phone_number, "pin": pin},
+            data={
+                "unique_id": unique_id,
+                "full_name": full_name,
+                "phone_number": phone_number,
+                "pin": pin,
+            },
         )
 
-        records = await find_record(db=db, table=User, unique_id=unique_id, phone_number=phone_number)
+        records = await find_record(
+            db=db, table=User, unique_id=unique_id, phone_number=phone_number
+        )
 
     assert type(records) is Row
     assert records.unique_id == unique_id
@@ -241,7 +308,11 @@ async def test_find_single_record_with_empty_data_and_multi_filter():
     async for db in get_db():
         await delete_record(db=db, table=User)
         records = await find_record(
-            db=db, table=User, fetch_type="all", pin=random_number(length=6), phone_number=faker.phone_number()
+            db=db,
+            table=User,
+            fetch_type="all",
+            pin=random_number(length=6),
+            phone_number=faker.phone_number(),
         )
     assert records is None
 
@@ -249,15 +320,23 @@ async def test_find_single_record_with_empty_data_and_multi_filter():
 @pytest.mark.asyncio
 async def test_find_single_record_raised_with_invalid_filter():
     async for db in get_db():
-        with pytest.raises(ValueError, match=f"Column invalid_column not found in {User.__name__.lower()} table!"):
+        with pytest.raises(
+            ValueError,
+            match=f"Column invalid_column not found in {User.__name__.lower()} table!",
+        ):
             await find_record(db=db, table=User, invalid_column="invalid_value")
 
 
 @pytest.mark.asyncio
 async def test_find_all_record_raised_with_invalid_filter():
     async for db in get_db():
-        with pytest.raises(ValueError, match=f"Column invalid_column not found in {User.__name__.lower()} table!"):
-            await find_record(db=db, table=User, invalid_column="invalid_value", fetch_type="all")
+        with pytest.raises(
+            ValueError,
+            match=f"Column invalid_column not found in {User.__name__.lower()} table!",
+        ):
+            await find_record(
+                db=db, table=User, invalid_column="invalid_value", fetch_type="all"
+            )
 
 
 @pytest.mark.asyncio

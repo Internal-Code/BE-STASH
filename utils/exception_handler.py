@@ -20,7 +20,9 @@ from utils.custom_error import (
 def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         exc_class_or_status_code=InvalidOperationError,
-        handler=create_exception_handler(status.HTTP_400_BAD_REQUEST, "Can't perform the operation."),
+        handler=create_exception_handler(
+            status.HTTP_400_BAD_REQUEST, "Can't perform the operation."
+        ),
     )
 
     app.add_exception_handler(
@@ -33,12 +35,16 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     app.add_exception_handler(
         exc_class_or_status_code=DataNotFoundError,
-        handler=create_exception_handler(status.HTTP_404_NOT_FOUND, "Entity does not exist."),
+        handler=create_exception_handler(
+            status.HTTP_404_NOT_FOUND, "Entity does not exist."
+        ),
     )
 
     app.add_exception_handler(
         exc_class_or_status_code=EntityAlreadyFilledError,
-        handler=create_exception_handler(status.HTTP_403_FORBIDDEN, "Entity already filled."),
+        handler=create_exception_handler(
+            status.HTTP_403_FORBIDDEN, "Entity already filled."
+        ),
     )
 
     app.add_exception_handler(
@@ -67,7 +73,9 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     app.add_exception_handler(
         exc_class_or_status_code=UserNotVerifiedError,
-        handler=create_exception_handler(status.HTTP_403_FORBIDDEN, "Entity should verified."),
+        handler=create_exception_handler(
+            status.HTTP_403_FORBIDDEN, "Entity should verified."
+        ),
     )
 
     app.add_exception_handler(
@@ -80,7 +88,9 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     app.add_exception_handler(
         exc_class_or_status_code=InvalidTokenError,
-        handler=create_exception_handler(status.HTTP_401_UNAUTHORIZED, "Invalid token, please re-authenticate again."),
+        handler=create_exception_handler(
+            status.HTTP_401_UNAUTHORIZED, "Invalid token, please re-authenticate again."
+        ),
     )
 
     app.add_exception_handler(

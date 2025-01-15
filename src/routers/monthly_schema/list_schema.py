@@ -17,7 +17,11 @@ async def list_schema_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     entries = await find_record(
-        db=db, table=MonthlySchema, fetch_type="all", unique_id=current_user.unique_id, deleted_at=None
+        db=db,
+        table=MonthlySchema,
+        fetch_type="all",
+        unique_id=current_user.unique_id,
+        deleted_at=None,
     )
     try:
         if entries:

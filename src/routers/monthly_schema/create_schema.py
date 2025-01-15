@@ -35,7 +35,9 @@ async def create_schema_endpoint(
 
     try:
         if monthly_schema_record:
-            raise EntityAlreadyExistError(detail=f"Schema {schema.month}/{schema.year} already created.")
+            raise EntityAlreadyExistError(
+                detail=f"Schema {schema.month}/{schema.year} already created."
+            )
 
         await insert_record(
             db=db,

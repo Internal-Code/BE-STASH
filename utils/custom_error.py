@@ -7,7 +7,9 @@ from fastapi.responses import JSONResponse
 class StashBaseApiError(Exception):
     """base error exception."""
 
-    def __init__(self, detail: str = "Service is unavailable.", name: str = None) -> None:
+    def __init__(
+        self, detail: str = "Service is unavailable.", name: str = None
+    ) -> None:
         self.detail = detail
         self.name = name
         super().__init__(self.detail, self.name)
@@ -26,7 +28,9 @@ def create_exception_handler(
             detail["message"] = f"{detail['message']} [{exc.name}]"
 
         logging.error(exc)
-        return JSONResponse(status_code=status_code, content={"detail": detail["message"]})
+        return JSONResponse(
+            status_code=status_code, content={"detail": detail["message"]}
+        )
 
     return exception_handler
 

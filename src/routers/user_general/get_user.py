@@ -26,7 +26,9 @@ async def user_endpoint(
 
     try:
         if identifier.isdigit():
-            validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=identifier)
+            validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(
+                phone_number=identifier
+            )
             query["phone_number"] = validated_phone_number
         elif "@" in identifier:
             validated_email = UserEmail(email=identifier)

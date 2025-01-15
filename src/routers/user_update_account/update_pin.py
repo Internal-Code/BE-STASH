@@ -34,12 +34,20 @@ async def update_pin_endpoint(
 
     current_time = local_time()
 
-    validate_existing_pin = verify_pin(pin=schema.current_pin, hashed_pin=current_user.pin)
-    duplicated_updated_pin = verify_pin(pin=schema.updated_pin, hashed_pin=current_user.pin)
-    duplicated_confirmed_pin = verify_pin(pin=schema.confirmed_new_pin, hashed_pin=current_user.pin)
+    validate_existing_pin = verify_pin(
+        pin=schema.current_pin, hashed_pin=current_user.pin
+    )
+    duplicated_updated_pin = verify_pin(
+        pin=schema.updated_pin, hashed_pin=current_user.pin
+    )
+    duplicated_confirmed_pin = verify_pin(
+        pin=schema.confirmed_new_pin, hashed_pin=current_user.pin
+    )
     hashed_pin = get_password_hash(password=schema.updated_pin)
 
-    token_record = await find_record(db=db, table=UserToken, order_by="desc", unique_id=current_user.unique_id)
+    token_record = await find_record(
+        db=db, table=UserToken, order_by="desc", unique_id=current_user.unique_id
+    )
 
     templates = Jinja2Templates(directory="templates")
 
@@ -48,7 +56,9 @@ async def update_pin_endpoint(
             raise EntityDoesNotMatchedError(detail="Invalid existing pin.")
 
         if schema.updated_pin != schema.confirmed_new_pin:
-            raise EntityDoesNotMatchedError(detail="Updated PIN and confirmation PIN should be equal.")
+            raise EntityDoesNotMatchedError(
+                detail="Updated PIN and confirmation PIN should be equal."
+            )
 
         if duplicated_updated_pin and duplicated_confirmed_pin:
             raise EntityForceInputSameDataError(
@@ -84,7 +94,9 @@ async def update_pin_endpoint(
                 },
             ).body.decode("utf-8")
 
-            logging.info(f"Sending updated account into {current_user.email} and {current_user.phone_number}.")
+            logging.info(
+                f"Sending updated account into {current_user.email} and {current_user.phone_number}."
+            )
             background_tasks.add_task(
                 send_gmail,
                 email_subject="STASH Updated STASH Pin!",

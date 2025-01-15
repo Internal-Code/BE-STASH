@@ -18,19 +18,28 @@ router = APIRouter(tags=["Monthly Schema"])
 
 
 async def update_schema_endpoint(
-    month_id: UUID, current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    month_id: UUID,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     current_time = local_time()
     response = ResponseDefault()
     monthly_schema_record = await find_record(
-        db=db, table=MonthlySchema, unique_id=current_user.unique_id, month_id=str(month_id), deleted_at=None
+        db=db,
+        table=MonthlySchema,
+        unique_id=current_user.unique_id,
+        month_id=str(month_id),
+        deleted_at=None,
     )
 
     try:
         if not monthly_schema_record:
             raise DataNotFoundError(detail="Data not found.")
         await update_record(
-            db=db, table=MonthlySchema, conditions={"month_id": str(month_id)}, data={"deleted_at": current_time}
+            db=db,
+            table=MonthlySchema,
+            conditions={"month_id": str(month_id)},
+            data={"deleted_at": current_time},
         )
         response.message = "Data successfully deleted."
 

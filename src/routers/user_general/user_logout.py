@@ -17,16 +17,25 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def logout_endpoint(
-    current_user: Annotated[dict, Depends(get_current_user)], db: AsyncSession = Depends(get_db)
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
-    user_token_record = await find_record(db=db, table=UserToken, unique_id=current_user.unique_id, order_by="desc")
+    user_token_record = await find_record(
+        db=db, table=UserToken, unique_id=current_user.unique_id, order_by="desc"
+    )
     blacklist_access_token = await find_record(
-        db=db, table=BlacklistToken, access_token=user_token_record.access_token, order_by="desc"
+        db=db,
+        table=BlacklistToken,
+        access_token=user_token_record.access_token,
+        order_by="desc",
     )
     blacklist_refresh_token = await find_record(
-        db=db, table=BlacklistToken, refresh_token=user_token_record.refresh_token, order_by="desc"
+        db=db,
+        table=BlacklistToken,
+        refresh_token=user_token_record.refresh_token,
+        order_by="desc",
     )
 
     try:

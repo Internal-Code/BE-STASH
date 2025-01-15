@@ -8,7 +8,12 @@ from src.schema.response import ResponseDefault
 from utils.jwt import get_current_user
 from src.schema.request_format import MonthlyCategory
 from utils.query.general import insert_record, find_record
-from services.postgres.models import CategorySchema, MonthlySchema, UserToken, BlacklistToken
+from services.postgres.models import (
+    CategorySchema,
+    MonthlySchema,
+    UserToken,
+    BlacklistToken,
+)
 from utils.custom_error import (
     EntityAlreadyExistError,
     ServiceError,
@@ -35,9 +40,15 @@ async def create_category_endpoint(
         category_id=str(month_id),
         deleted_at=None,
     )
-    monthly_schema_record = await find_record(db=db, table=MonthlySchema, month_id=str(month_id))
-    user_token_record = await find_record(db=db, table=UserToken, unique_id=current_user.unique_id)
-    blacklist_access_token = await find_record(db=db, table=BlacklistToken, access_token=user_token_record.access_token)
+    monthly_schema_record = await find_record(
+        db=db, table=MonthlySchema, month_id=str(month_id)
+    )
+    user_token_record = await find_record(
+        db=db, table=UserToken, unique_id=current_user.unique_id
+    )
+    blacklist_access_token = await find_record(
+        db=db, table=BlacklistToken, access_token=user_token_record.access_token
+    )
     blacklist_refresh_token = await find_record(
         db=db, table=BlacklistToken, refresh_token=user_token_record.refresh_token
     )
@@ -54,7 +65,9 @@ async def create_category_endpoint(
 
         if category_record:
             logging.info(f"Category {schema.category} already created.")
-            raise EntityAlreadyExistError(detail=f"Category {schema.category} already created.")
+            raise EntityAlreadyExistError(
+                detail=f"Category {schema.category} already created."
+            )
 
         await insert_record(
             db=db,

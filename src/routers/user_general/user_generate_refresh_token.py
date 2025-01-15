@@ -28,8 +28,12 @@ async def generate_refresh_token_endpoint(
 ) -> ResponseToken:
     response = ResponseToken()
     current_time = local_time()
-    user_token_record = await find_record(db=db, table=UserToken, unique_id=current_user.unique_id)
-    blacklist_access_token = await find_record(db=db, table=BlacklistToken, access_token=user_token_record.access_token)
+    user_token_record = await find_record(
+        db=db, table=UserToken, unique_id=current_user.unique_id
+    )
+    blacklist_access_token = await find_record(
+        db=db, table=BlacklistToken, access_token=user_token_record.access_token
+    )
     blacklist_refresh_token = await find_record(
         db=db, table=BlacklistToken, refresh_token=user_token_record.refresh_token
     )
@@ -64,7 +68,12 @@ async def generate_refresh_token_endpoint(
         )
 
         await insert_record(
-            db=db, table=UserToken, data={"access_token": new_access_token, "refresh_token": schema.refresh_token}
+            db=db,
+            table=UserToken,
+            data={
+                "access_token": new_access_token,
+                "refresh_token": schema.refresh_token,
+            },
         )
 
         response.access_token = new_access_token

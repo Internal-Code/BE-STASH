@@ -43,13 +43,19 @@ async def update_email_endpoint(
             raise EntityForceInputSameDataError(detail="Cannot use same email.")
 
         if registered_email:
-            raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
+            raise EntityAlreadyExistError(
+                detail="Email already taken. Please use another email."
+            )
 
         await update_record(
             db=db,
             table=User,
             conditions={"unique_id": current_user.unique_id},
-            data={"updated_at": current_time, "email": schema.email, "verified_email": False},
+            data={
+                "updated_at": current_time,
+                "email": schema.email,
+                "verified_email": False,
+            },
         )
 
         response.message = "Success update email."

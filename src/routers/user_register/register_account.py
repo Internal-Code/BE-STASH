@@ -17,12 +17,16 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def register_accountn_endpoint(
-    schema: CreateUser, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    schema: CreateUser,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     unique_id = str(uuid4())
     generated_otp = random_number(6)
     response = ResponseDefault()
-    phone_number_record = await find_record(db=db, table=User, phone_number=schema.phone_number)
+    phone_number_record = await find_record(
+        db=db, table=User, phone_number=schema.phone_number
+    )
 
     try:
         if phone_number_record:
