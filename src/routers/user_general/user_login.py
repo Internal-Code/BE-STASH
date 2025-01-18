@@ -1,11 +1,10 @@
 from src.secret import Config
-from typing import Annotated
 from datetime import timedelta
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseToken
-from fastapi.security import OAuth2PasswordRequestForm
+from src.schema.request_format import UserLogin
 from utils.query.general import insert_record
 from services.postgres.models import UserToken
 from utils.jwt import authenticate_user, create_access_token, create_refresh_token
@@ -20,13 +19,11 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def login_endpoint(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    schema: UserLogin,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
-    account_record = await authenticate_user(
-        unique_id=form_data.username, pin=form_data.password
-    )
+    account_record = await authenticate_user(unique_id=schema.unique_id, pin=schema.pin)
 
     try:
         if not account_record:

@@ -1,5 +1,6 @@
 from datetime import datetime
 from utils.helper import local_time
+from typing import Optional
 from enum import StrEnum
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from src.schema.validator import (
@@ -7,33 +8,47 @@ from src.schema.validator import (
     PhoneNumberValidatorMixin,
     SecurityCodeValidator,
     YearValidator,
+    UniqueIdValidator,
 )
 
 
+class UserUniqueId(BaseModel):
+    unique_id: Optional[str] = None
+
+    @field_validator("unique_id")
+    @classmethod
+    def validate_unique_id(cls, value: Optional[str]) -> str:
+        return UniqueIdValidator.validate_uuid(unique_id=value)
+
+
 class UserPin(BaseModel):
-    pin: str = None
+    pin: Optional[str] = None
 
     @field_validator("pin")
     @classmethod
-    def validate_pin(cls, value: str) -> str:
+    def validate_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
+class UserLogin(UserPin, UserUniqueId):
+    pass
+
+
 class UserPhoneNumber(BaseModel, PhoneNumberValidatorMixin):
-    phone_number: str = None
+    phone_number: Optional[str] = None
 
     @field_validator("phone_number")
     @classmethod
-    def validate_phone_number(cls, value: str) -> str:
+    def validate_phone_number(cls, value: Optional[str]) -> str:
         return PhoneNumberValidatorMixin.validate_phone_number(value)
 
 
 class UserOtp(BaseModel):
-    otp: str = None
+    otp: Optional[str] = None
 
     @field_validator("otp")
     @classmethod
-    def validate_otp(cls, value: str) -> str:
+    def validate_otp(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
 
@@ -42,62 +57,62 @@ class UserEmail(BaseModel):
 
 
 class UserRefreshToken(BaseModel):
-    refresh_token: str = None
+    refresh_token: Optional[str] = None
 
 
 class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
-    change_full_name_into: str = None
+    change_full_name_into: Optional[str] = None
 
     @field_validator("change_full_name_into")
     @classmethod
-    def validate_full_name(cls, value: str) -> str:
+    def validate_full_name(cls, value: Optional[str]) -> str:
         return FullNameValidatorMixin.validate_fullname(value)
 
 
 class ChangePin(BaseModel, SecurityCodeValidator):
-    current_pin: str
-    updated_pin: str
-    confirmed_new_pin: str
+    current_pin: Optional[str]
+    updated_pin: Optional[str]
+    confirmed_new_pin: Optional[str]
 
     @field_validator("current_pin")
     @classmethod
-    def validate_current_pin(cls, value: str) -> str:
+    def validate_current_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
     @field_validator("updated_pin")
     @classmethod
-    def validate_updated_pin(cls, value: str) -> str:
+    def validate_updated_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
     @field_validator("confirmed_new_pin")
     @classmethod
-    def validate_new_pin(cls, value: str) -> str:
+    def validate_new_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
 
 class ResetPinRequest(BaseModel):
-    pin: str
-    confirm_new_pin: str
+    pin: Optional[str]
+    confirm_new_pin: Optional[str]
 
     @field_validator("pin")
     @classmethod
-    def validate_reset_pin(cls, value: str) -> str:
+    def validate_reset_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
     @field_validator("confirm_new_pin")
     @classmethod
-    def validate_confirmed_reset_pin(cls, value: str) -> str:
+    def validate_confirmed_reset_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
 class MonthlyCategory(BaseModel):
-    category: str = None
+    category: Optional[str] = None
     budget: int = 100000
 
 
 class UpdateCategorySchema(BaseModel):
-    category: str = None
-    changed_category_into: str = None
+    category: Optional[str] = None
+    changed_category_into: Optional[str] = None
 
 
 class DefaultSchema(BaseModel):
@@ -117,10 +132,10 @@ class UpdateCategorySpending(BaseModel):
     changed_spend_month: int = Field(default=local_time().month, ge=1, le=12)
     spend_year: int = Field(default=local_time().year, ge=1000, le=9999)
     changed_spend_year: int = Field(default=local_time().year, ge=1000, le=9999)
-    category: str
-    changed_category_into: str
-    description: str
-    changed_description_into: str
+    category: Optional[str]
+    changed_category_into: Optional[str]
+    description: Optional[str]
+    changed_description_into: Optional[str]
     amount: int
     changed_amount_into: int
 
@@ -128,15 +143,15 @@ class UpdateCategorySpending(BaseModel):
 class DeleteCategorySchema(BaseModel):
     month: int = Field(default=local_time().month, ge=1, le=12)
     year: int = Field(default=local_time().year, ge=1000, le=9999)
-    category: str
+    category: Optional[str]
 
 
 class CreateSpend(BaseModel):
     day: int = Field(default=local_time().day, ge=1, le=31)
     month: int = Field(default=local_time().month, ge=1, le=12)
     year: int = Field(default=local_time().year)
-    category: str
-    description: str
+    category: Optional[str]
+    description: Optional[str]
     amount: int
 
     @field_validator("year")
@@ -146,30 +161,30 @@ class CreateSpend(BaseModel):
 
 
 class CreateUser(BaseModel, FullNameValidatorMixin, PhoneNumberValidatorMixin):
-    full_name: str = None
-    phone_number: str = None
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
 
     @field_validator("full_name")
     @classmethod
-    def validate_fullname(cls, value: str) -> str:
+    def validate_fullname(cls, value: Optional[str]) -> str:
         return FullNameValidatorMixin.validate_fullname(value)
 
     @field_validator("phone_number")
     @classmethod
-    def validate_phone_number(cls, value: str) -> str:
+    def validate_phone_number(cls, value: Optional[str]) -> str:
         return PhoneNumberValidatorMixin.validate_phone_number(value)
 
 
 class TokenData(BaseModel):
-    user_uuid: str = None
+    user_uuid: Optional[str] = None
 
 
 class DetailUserFullName(BaseModel):
-    full_name: str
+    full_name: Optional[str]
 
 
 class DetailUserPhoneNumber(BaseModel):
-    phone_number: str
+    phone_number: Optional[str]
     verified_phone_number: bool
 
 
@@ -179,13 +194,13 @@ class DetailUserEmail(BaseModel):
 
 
 class UserInDB(CreateUser):
-    user_uuid: str
+    user_uuid: Optional[str]
     created_at: datetime
     updated_at: datetime | None = None
-    full_name: str | None = None
+    full_name: Optional[str] | None = None
     email: EmailStr | None = None
-    phone_number: str | None = None
-    pin: str | None = None
+    phone_number: Optional[str] | None = None
+    pin: Optional[str] | None = None
     verified_email: bool
     verified_phone_number: bool
 
@@ -216,17 +231,17 @@ class SendVerificationLink(BaseModel):
 
 
 class GoogleSSOPayload(BaseModel):
-    full_name: str
-    phone_number: str
+    full_name: Optional[str]
+    phone_number: Optional[str]
 
 
 class SendOTPPayload(BaseModel):
-    phoneNumber: str
-    message: str
+    phoneNumber: Optional[str]
+    message: Optional[str]
 
 
 class ChangeUserPhoneNumber(BaseModel):
-    phone_number: str
+    phone_number: Optional[str]
 
 
 class AddEmail(BaseModel):
@@ -234,4 +249,4 @@ class AddEmail(BaseModel):
 
 
 class ChangeUserFullName(BaseModel):
-    full_name: str
+    full_name: Optional[str]
