@@ -1,4 +1,3 @@
-from uuid import UUID
 from utils.helper import local_time
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,13 +20,12 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 async def verify_phone_number_endpoint(
     schema: UserOtp,
-    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
-    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
+    otp_record = await find_record(db=db, table=SendOtp, unique_id=schema.unique_id)
+    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
     current_time = local_time()
 
     try:
@@ -55,7 +53,7 @@ async def verify_phone_number_endpoint(
             await update_record(
                 db=db,
                 table=User,
-                conditions={"unique_id": str(unique_id)},
+                conditions={"unique_id": schema.unique_id},
                 data={"verified_phone_number": True},
             )
 
@@ -74,7 +72,7 @@ async def verify_phone_number_endpoint(
             )
 
             response.message = "Phone number successfully verified."
-            response.data = UniqueId(unique_id=str(unique_id))
+            response.data = UniqueId(unique_id=schema.unique_id)
 
     except StashBaseApiError:
         raise
@@ -86,7 +84,7 @@ async def verify_phone_number_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/phone-number/{unique_id}",
+    path="/phone-number",
     endpoint=verify_phone_number_endpoint,
     response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,

@@ -1,4 +1,3 @@
-from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
 from utils.logger import logging
@@ -8,6 +7,7 @@ from utils.generator import random_number
 from utils.query.general import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.schema.request_format import UserUniqueId
 from services.postgres.connection import get_db
 from utils.whatsapp_api import send_whatsapp
 from src.schema.response import ResponseDefault, UniqueId
@@ -24,15 +24,15 @@ router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
 async def send_otp_phone_number_endpoint(
-    unique_id: UUID,
+    schema: UserUniqueId,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     current_time = local_time()
     generated_otp = random_number(6)
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=str(unique_id))
-    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
+    otp_record = await find_record(db=db, table=SendOtp, unique_id=schema.unique_id)
+    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
 
     try:
         if not account_record:
@@ -63,7 +63,7 @@ async def send_otp_phone_number_endpoint(
             await update_record(
                 db=db,
                 table=SendOtp,
-                conditions={"unique_id": str(unique_id)},
+                conditions={"unique_id": schema.unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
@@ -76,7 +76,7 @@ async def send_otp_phone_number_endpoint(
             )
 
             response.message = f"OTP sent to {account_record.phone_number}."
-            response.data = UniqueId(unique_id=str(unique_id))
+            response.data = UniqueId(unique_id=schema.unique_id)
     except StashBaseApiError:
         raise
     except Exception:
@@ -86,7 +86,7 @@ async def send_otp_phone_number_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/phone-number/{unique_id}",
+    path="/phone-number",
     endpoint=send_otp_phone_number_endpoint,
     response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,

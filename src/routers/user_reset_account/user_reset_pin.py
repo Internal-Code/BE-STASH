@@ -1,4 +1,3 @@
-from uuid import UUID
 from src.secret import Config
 from utils.helper import local_time
 from utils.smtp import send_gmail
@@ -8,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from src.schema.request_format import ResetPinRequest
+from src.schema.request_format import UserResetPin
 from utils.jwt import get_password_hash
 from services.postgres.models import User, ResetPin
 from utils.query.general import update_record, find_record
@@ -24,8 +23,7 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
 async def reset_password(
-    schema: ResetPinRequest,
-    unique_id: UUID,
+    schema: UserResetPin,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -37,7 +35,7 @@ async def reset_password(
 
     templates = Jinja2Templates(directory="templates")
 
-    account_record = await find_record(db=db, table=User, unique_id=str(unique_id))
+    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
     reset_pin_record = await find_record(
         db=db, table=ResetPin, unique_id=account_record.unique_id
     )
@@ -141,7 +139,7 @@ async def reset_password(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/reset-pin/{unique_id}",
+    path="/reset-pin",
     response_model=ResponseDefault,
     endpoint=reset_password,
     status_code=status.HTTP_200_OK,

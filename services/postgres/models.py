@@ -117,8 +117,8 @@ class UserToken(SQLModel, table=True):
         foreign_key="user.unique_id",
         ondelete="CASCADE",
     )
-    access_token: Optional[str] = Field(default=None, unique=True, nullable=True)
-    refresh_token: Optional[str] = Field(default=None, unique=True, nullable=True)
+    access_token: Optional[str] = Field(default=None, unique=False, nullable=True)
+    refresh_token: Optional[str] = Field(default=None, unique=False, nullable=True)
     user: User = Relationship(back_populates="user_token")
 
 

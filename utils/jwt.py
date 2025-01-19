@@ -49,6 +49,7 @@ def create_access_token(data: dict, access_token_expires: timedelta) -> str:
     to_encode = data.copy()
     expires = local_time() + access_token_expires
     to_encode.update({"exp": expires})
+    logging.info(f"Creating access token with payload: {to_encode}")
     encoded_access_token = jwt.encode(
         claims=to_encode, key=config.ACCESS_TOKEN_SECRET_KEY
     )
@@ -66,6 +67,7 @@ def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row | None:
+    logging.info(f"Received token: {token}")
     async for db in get_db():
         blacklisted_record = await find_record(
             db=db, table=BlacklistToken, access_token=token

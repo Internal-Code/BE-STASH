@@ -21,17 +21,13 @@ class UserUniqueId(BaseModel):
         return UniqueIdValidator.validate_uuid(unique_id=value)
 
 
-class UserPin(BaseModel):
+class UserPin(UserUniqueId, BaseModel):
     pin: Optional[str] = None
 
     @field_validator("pin")
     @classmethod
     def validate_pin(cls, value: Optional[str]) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
-
-
-class UserLogin(UserPin, UserUniqueId):
-    pass
 
 
 class UserPhoneNumber(BaseModel, PhoneNumberValidatorMixin):
@@ -43,7 +39,7 @@ class UserPhoneNumber(BaseModel, PhoneNumberValidatorMixin):
         return PhoneNumberValidatorMixin.validate_phone_number(value)
 
 
-class UserOtp(BaseModel):
+class UserOtp(UserUniqueId, BaseModel):
     otp: Optional[str] = None
 
     @field_validator("otp")
@@ -58,6 +54,14 @@ class UserEmail(BaseModel):
 
 class UserRefreshToken(BaseModel):
     refresh_token: Optional[str] = None
+
+
+class UserLogin(UserPin, UserUniqueId):
+    pass
+
+
+class UserWrongPhoneNumber(UserPhoneNumber, UserUniqueId):
+    pass
 
 
 class UpdateUserFullName(BaseModel, FullNameValidatorMixin):
@@ -90,14 +94,8 @@ class ChangePin(BaseModel, SecurityCodeValidator):
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
 
 
-class ResetPinRequest(BaseModel):
-    pin: Optional[str]
+class UserResetPin(UserPin, UserUniqueId):
     confirm_new_pin: Optional[str]
-
-    @field_validator("pin")
-    @classmethod
-    def validate_reset_pin(cls, value: Optional[str]) -> str:
-        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
     @field_validator("confirm_new_pin")
     @classmethod
@@ -226,7 +224,7 @@ class SendMethod(StrEnum):
     EMAIL = "email"
 
 
-class SendVerificationLink(BaseModel):
+class SendVerificationLink(UserUniqueId):
     method: SendMethod
 
 

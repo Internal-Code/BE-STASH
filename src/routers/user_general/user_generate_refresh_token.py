@@ -52,6 +52,7 @@ async def generate_refresh_token_endpoint(
         )
 
         unique_id = payload.get("sub")
+        print(unique_id)
 
         if not unique_id:
             raise InvalidTokenError(detail="Invalid refresh token.")
@@ -71,6 +72,7 @@ async def generate_refresh_token_endpoint(
             db=db,
             table=UserToken,
             data={
+                "unique_id": unique_id,
                 "access_token": new_access_token,
                 "refresh_token": schema.refresh_token,
             },
