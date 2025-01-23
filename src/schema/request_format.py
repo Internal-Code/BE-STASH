@@ -94,7 +94,7 @@ class ChangePin(BaseModel, SecurityCodeValidator):
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
-class UserResetPin(UserPin, UserUniqueId):
+class UserResetPin(UserPin):
     confirm_new_pin: Optional[str]
 
     @field_validator("confirm_new_pin")
@@ -224,7 +224,7 @@ class SendMethod(StrEnum):
     EMAIL = "email"
 
 
-class SendVerificationLink(UserUniqueId):
+class SendVerificationLink(BaseModel):
     method: SendMethod
 
 

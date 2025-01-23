@@ -1,3 +1,4 @@
+from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
 from utils.helper import local_time
@@ -25,6 +26,7 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 async def send_reset_link_endpoint(
     schema: SendVerificationLink,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -32,7 +34,7 @@ async def send_reset_link_endpoint(
     query = QueryDatabase(db)
     current_time = local_time()
 
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=str(unique_id))
     reset_pin_record = await query.find(
         table=ResetPin, unique_id=account_record.unique_id
     )
@@ -134,7 +136,7 @@ async def send_reset_link_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/send-link",
+    path="/send-link/{unique_id}",
     response_model=ResponseDefault,
     endpoint=send_reset_link_endpoint,
     status_code=status.HTTP_200_OK,

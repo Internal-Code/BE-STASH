@@ -1,3 +1,4 @@
+from uuid import UUID
 from src.secret import Config
 from utils.jwt import JWTHandler
 from utils.smtp import send_gmail
@@ -25,6 +26,7 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 async def reset_pin_endpoint(
     schema: UserResetPin,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -37,7 +39,7 @@ async def reset_pin_endpoint(
 
     templates = Jinja2Templates(directory="templates")
 
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=str(unique_id))
     reset_pin_record = await query.find(
         table=ResetPin, unique_id=account_record.unique_id
     )
@@ -140,7 +142,7 @@ async def reset_pin_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/reset-pin",
+    path="/reset-pin/{unique_id}",
     response_model=ResponseDefault,
     endpoint=reset_pin_endpoint,
     status_code=status.HTTP_200_OK,
