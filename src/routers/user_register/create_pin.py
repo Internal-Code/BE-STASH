@@ -32,7 +32,7 @@ async def create_pin_endpoint(
 ) -> ResponseToken:
     response = ResponseToken()
     query = QueryDatabase(db)
-    account_record = await query.find(table=User, unique_id=unique_id)
+    account_record = await query.find(table=User, unique_id=str(unique_id))
     hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     try:
@@ -65,17 +65,17 @@ async def create_pin_endpoint(
 
         await query.update(
             table=User,
-            condition={"unique_id": unique_id},
+            condition={"unique_id": str(unique_id)},
             data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
         )
 
         access_token = jwt_handler.create_access_token(
-            data={"sub": unique_id},
+            data={"sub": str(unique_id)},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
         refresh_token = jwt_handler.create_refresh_token(
-            data={"sub": unique_id},
+            data={"sub": str(unique_id)},
             refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 

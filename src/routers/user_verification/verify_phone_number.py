@@ -29,8 +29,8 @@ async def verify_phone_number_endpoint(
     response = ResponseDefault()
     query = QueryDatabase(db)
 
-    otp_record = await query.find(table=SendOtp, unique_id=unique_id)
-    account_record = await query.find(table=User, unique_id=unique_id)
+    otp_record = await query.find(table=SendOtp, unique_id=str(unique_id))
+    account_record = await query.find(table=User, unique_id=str(unique_id))
     current_time = local_time()
 
     try:
@@ -57,7 +57,7 @@ async def verify_phone_number_endpoint(
         ):
             await query.update(
                 table=User,
-                condition={"unique_id": unique_id},
+                condition={"unique_id": str(unique_id)},
                 data={
                     "verified_phone_number": True,
                     "otp_state": RegisterAccountState.SUCCESS,
@@ -79,7 +79,7 @@ async def verify_phone_number_endpoint(
             )
 
             response.message = "Phone number successfully verified."
-            response.data = UniqueId(unique_id=unique_id)
+            response.data = UniqueId(unique_id=str(unique_id))
 
     except StashBaseApiError:
         raise
