@@ -15,10 +15,6 @@ show_help() {
   echo "--help             Show this help message."
 }
 
-# Default values for environment and test type
-ENV_FILE=""
-TEST_DIR=""
-
 # Parse arguments
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -64,19 +60,34 @@ if [ -z "$TEST_DIR" ]; then
 fi
 
 # Load environment variables
-set -a
-while IFS='=' read -r key value; do
-  # Skip comments and empty lines
-  if [ -n "$key" ] && [ "${key#\#}" != "$key" ]; then
-    # Preserve multi-word values by quoting them
-    export "$key=$value"
-  fi
-done < "$ENV_FILE"
-set +a
+export ENV_FILE
 sh ./scripts/load_env.sh
 
-# Activate the virtual environment
-sh ./scripts/activate.sh
+# Checking OS Environment
+echo "Checking OS Environment"
+if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+  echo "WSL detected"
+  . .venv/bin/activate
+else
+  case "$OSTYPE" in
+    linux*)
+      echo "Linux based OS detected"
+      source .venv/bin/activate
+      ;;
+    darwin*)
+      echo "macOS detected"
+      source .venv/bin/activate
+      ;;
+    cygwin* | msys* | mingw*)
+      echo "Windows based OS detected"
+      source .venv/Scripts/activate
+      ;;
+    *)
+      echo "Unsupported OS."
+      exit 1
+      ;;
+  esac
+fi
 
 # Run the tests
 echo "Running tests in $TEST_DIR on $ENV_FILE environment"
