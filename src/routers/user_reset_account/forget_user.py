@@ -79,7 +79,7 @@ async def forget_user_endpoint(
 
 
 router.add_api_route(
-    methods=["GET"],
+    methods=["POST"],
     path="/forget-user/{identifier}",
     response_model=ResponseDefault,
     endpoint=forget_user_endpoint,
