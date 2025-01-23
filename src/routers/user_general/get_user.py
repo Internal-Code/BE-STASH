@@ -16,7 +16,7 @@ from utils.custom_error import (
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
-async def user_endpoint(
+async def get_user_endpoint(
     identifier: str,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -31,10 +31,15 @@ async def user_endpoint(
             )
             query["phone_number"] = validated_phone_number
         elif "@" in identifier:
-            validated_email = UserEmail(email=identifier)
-            query["email"] = validated_email.email
+            try:
+                validated_email = UserEmail(email=identifier)  # Validate email format
+                query["email"] = validated_email.email
+            except ValueError:
+                raise InvalidOperationError("Email should be in a proper format.")
         else:
             raise InvalidOperationError("Should be a valid phone number or email.")
+
+        print(query)
 
         account_record = await find_record(db=db, table=User, **query)
 
@@ -44,7 +49,8 @@ async def user_endpoint(
         response.message = "User found."
         response.data = UserStatus(
             unique_id=account_record.unique_id,
-            register_status=account_record.register_state,
+            register_state=account_record.register_state,
+            otp_state=account_record.otp_state,
             is_email_verified=account_record.verified_email,
             is_phone_number_verified=account_record.verified_phone_number,
         )
@@ -61,7 +67,7 @@ router.add_api_route(
     methods=["GET"],
     path="/get-user/{identifier}",
     response_model=ResponseDefault,
-    endpoint=user_endpoint,
+    endpoint=get_user_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Get unique id user.",
 )

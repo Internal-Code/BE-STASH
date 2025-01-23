@@ -16,7 +16,7 @@ from utils.custom_error import ServiceError, StashBaseApiError, EntityAlreadyExi
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
-async def register_accountn_endpoint(
+async def register_account_endpoint(
     schema: CreateUser,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -80,7 +80,7 @@ router.add_api_route(
     methods=["POST"],
     path="/new-account",
     response_model=ResponseDefault,
-    endpoint=register_accountn_endpoint,
+    endpoint=register_account_endpoint,
     status_code=status.HTTP_201_CREATED,
     summary="Account registration.",
 )

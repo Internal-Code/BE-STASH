@@ -18,6 +18,9 @@ class User(SQLModel, table=True):
     pin: Optional[str] = Field(default=None, unique=False, nullable=True)
     verified_email: bool = Field(default=False)
     verified_phone_number: bool = Field(default=False)
+    otp_state: RegisterAccountState = Field(
+        default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True
+    )
     register_state: RegisterAccountState = Field(
         default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True
     )

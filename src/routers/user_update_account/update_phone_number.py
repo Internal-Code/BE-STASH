@@ -67,7 +67,7 @@ async def update_phone_number_endpoint(
                 message_template=(
                     "Your verification code is *{generated_otp}*. "
                     "Please enter this code to complete your verification. "
-                    "Kindly note that this code will *expire in 3 minutes."
+                    "Kindly note that this code will *expire in 3 minutes*."
                 ),
                 phone_number=schema.phone_number,
                 generated_otp=generated_otp,
@@ -91,7 +91,12 @@ async def update_phone_number_endpoint(
                 db=db,
                 table=User,
                 conditions={"unique_id": current_user.unique_id},
-                data={"updated_at": current_time, "phone_number": schema.phone_number},
+                data={
+                    "updated_at": current_time,
+                    "phone_number": schema.phone_number,
+                    "otp_state": RegisterAccountState.ON_PROCESS,
+                    "verified_phone_number": False,
+                },
             )
 
             response.message = "Success update phone number."

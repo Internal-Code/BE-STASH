@@ -1,12 +1,13 @@
 from utils.helper import local_time
-from fastapi import APIRouter, status, Depends, BackgroundTasks
+from utils.whatsapp_api import send_whatsapp
+from src.schema.request_format import UserOtp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
+from src.schema.custom_state import RegisterAccountState
 from src.schema.response import ResponseDefault, UniqueId
 from utils.query.general import find_record, update_record
-from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import UserOtp
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.custom_error import (
     ServiceError,
     StashBaseApiError,
@@ -30,7 +31,7 @@ async def verify_phone_number_endpoint(
 
     try:
         if not otp_record:
-            raise DataNotFoundError(detail="Data not found.")
+            raise DataNotFoundError(detail="OTP data not found.")
 
         if not otp_record.otp_number:
             raise DataNotFoundError(
@@ -54,7 +55,10 @@ async def verify_phone_number_endpoint(
                 db=db,
                 table=User,
                 conditions={"unique_id": schema.unique_id},
-                data={"verified_phone_number": True},
+                data={
+                    "verified_phone_number": True,
+                    "otp_state": RegisterAccountState.SUCCESS,
+                },
             )
 
             background_tasks.add_task(

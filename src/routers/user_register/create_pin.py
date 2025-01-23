@@ -29,7 +29,6 @@ async def create_pin_endpoint(
 ) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
-    print(account_record)
     hashed_pin = get_password_hash(password=schema.pin)
 
     try:

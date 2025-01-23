@@ -22,7 +22,7 @@ config = Config()
 router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
-async def reset_password(
+async def reset_pin_endpoint(
     schema: UserResetPin,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -141,7 +141,7 @@ router.add_api_route(
     methods=["PATCH"],
     path="/reset-pin",
     response_model=ResponseDefault,
-    endpoint=reset_password,
+    endpoint=reset_pin_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Create new pin from forgot pin endpoint.",
 )

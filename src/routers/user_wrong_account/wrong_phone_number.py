@@ -49,7 +49,9 @@ async def wrong_phone_number_endpoint(
             )
 
         if registered_phone_number:
-            raise EntityAlreadyExistError(detail="Phone number already registered.")
+            raise EntityAlreadyExistError(
+                detail="Phone number already taken. Please use another phone number."
+            )
 
         if current_time < otp_record.save_to_hit_at:
             raise InvalidOperationError(detail="Should wait in 1 minutes.")

@@ -2,7 +2,6 @@
 
 # Default value
 HOST="127.0.0.1"
-ENV_FILE="env/.env.development"
 
 # Checking for existing processes on port 8000
 echo "Checking for existing processes on port 8000"
@@ -33,7 +32,6 @@ case "$1" in
   --development)
     echo "Using development environment configuration"
     ENV_FILE="env/.env.development"
-    HOST="127.0.0.1"
     ;;
   --staging)
     echo "Using staging environment configuration"
@@ -63,19 +61,34 @@ case "$1" in
 esac
 
 # Load the environment variables using the external script
-set -a
-while IFS='=' read -r key value; do
-  # Skip comments and empty lines
-  if [ -n "$key" ] && [ "${key#\#}" != "$key" ]; then
-    # Preserve multi-word values by quoting them
-    export "$key=$value"
-  fi
-done < "$ENV_FILE"
-set +a
+export ENV_FILE
 sh ./scripts/load_env.sh
 
-# Activate virtualenv
-sh ./scripts/activate.sh
+# Checking OS Environment
+echo "Checking OS Environment"
+if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+  echo "WSL detected"
+  . .venv/bin/activate
+else
+  case "$OSTYPE" in
+    linux*)
+      echo "Linux based OS detected"
+      source .venv/bin/activate
+      ;;
+    darwin*)
+      echo "macOS detected"
+      source .venv/bin/activate
+      ;;
+    cygwin* | msys* | mingw*)
+      echo "Windows based OS detected"
+      source .venv/Scripts/activate
+      ;;
+    *)
+      echo "Unsupported OS."
+      exit 1
+      ;;
+  esac
+fi
 
 # Start the server
 echo "Running uvicorn server in debug mode"

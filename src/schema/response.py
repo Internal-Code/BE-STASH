@@ -30,9 +30,15 @@ class IsPhoneNumberVerified(BaseModel):
     is_phone_number_verified: bool = False
 
 
-class RegisterStatus(BaseModel):
-    register_status: Optional[str] = None
+class RegisterState(BaseModel):
+    register_state: Optional[str] = None
 
 
-class UserStatus(IsEmailVerified, IsPhoneNumberVerified, RegisterStatus, UniqueId):
+class OTPState(BaseModel):
+    otp_state: Optional[str] = None
+
+
+class UserStatus(
+    IsEmailVerified, IsPhoneNumberVerified, RegisterState, OTPState, UniqueId
+):
     pass

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from dotenv import load_dotenv
 
-env_file = os.getenv("ENV_FILE_PATH", "env/.env.development")
+env_file = os.getenv("ENV_FILE", "env/.env.development")
 if os.path.exists(env_file):
     load_dotenv(dotenv_path=env_file)
 else:

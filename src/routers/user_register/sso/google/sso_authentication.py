@@ -25,10 +25,10 @@ from utils.query.general import insert_record, find_record, update_record
 
 
 config = Config()
-router = APIRouter(tags=["User Register"], prefix="/user/register")
+router = APIRouter(tags=["SSO"], prefix="/user/register")
 
 
-async def google_sso_auth_endpoint(
+async def sso_authentication_endpoint(
     request: Request,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -156,7 +156,7 @@ async def google_sso_auth_endpoint(
 router.add_api_route(
     methods=["GET"],
     path="/google/auth",
-    endpoint=google_sso_auth_endpoint,
+    endpoint=sso_authentication_endpoint,
     status_code=status.HTTP_201_CREATED,
     summary="Authorization using google sso.",
     name="google_sso_auth",

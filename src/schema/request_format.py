@@ -81,17 +81,17 @@ class ChangePin(BaseModel, SecurityCodeValidator):
     @field_validator("current_pin")
     @classmethod
     def validate_current_pin(cls, value: Optional[str]) -> str:
-        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
+        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
     @field_validator("updated_pin")
     @classmethod
     def validate_updated_pin(cls, value: Optional[str]) -> str:
-        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
+        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
     @field_validator("confirmed_new_pin")
     @classmethod
     def validate_new_pin(cls, value: Optional[str]) -> str:
-        return SecurityCodeValidator.validate_security_code(value=value, type="otp")
+        return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
 class UserResetPin(UserPin, UserUniqueId):

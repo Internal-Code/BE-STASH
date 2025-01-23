@@ -108,7 +108,7 @@ async def wrong_email_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/email",
     endpoint=wrong_email_endpoint,
     status_code=status.HTTP_200_OK,

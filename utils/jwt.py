@@ -67,7 +67,6 @@ def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row | None:
-    logging.info(f"Received token: {token}")
     async for db in get_db():
         blacklisted_record = await find_record(
             db=db, table=BlacklistToken, access_token=token
@@ -87,13 +86,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row
 
         user_uuid = payload.get("sub")
 
-        async for db in get_db():
-            users = await find_record(db=db, table=User, unique_id=user_uuid)
-
         if not user_uuid:
             raise AuthenticationFailed(detail="Could not validate credentials.")
 
+        async for db in get_db():
+            users = await find_record(db=db, table=User, unique_id=user_uuid)
+
     except JWTError as e:
         logging.error(f"JWTError: {e}")
-        raise AuthenticationFailed(detail="Could not validate credentials.", name="JWT")
+        raise AuthenticationFailed(detail="Token expired, please perform re-login.")
     return users
