@@ -66,7 +66,12 @@ class JWTHandler:
         )
         return encoded_refresh_token
 
-    async def get_current_user(self, token: Annotated[str, Depends]) -> Optional[Row]:
+    async def get_current_user(
+        self,
+        token: Annotated[
+            str, Depends(OAuth2PasswordBearer(tokenUrl="/user/general/login"))
+        ],
+    ) -> Optional[Row]:
         async for db in get_db():
             query = QueryDatabase(db)
             blacklisted_record = await query.find(

@@ -25,7 +25,7 @@ async def update_full_name_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
-    query = QueryDatabase()
+    query = QueryDatabase(db)
     current_time = local_time()
     try:
         logging.info("Endpoint update full name.")
