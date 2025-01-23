@@ -1,3 +1,4 @@
+from uuid import UUID
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
@@ -21,14 +22,15 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 async def verify_phone_number_endpoint(
     schema: UserOtp,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     query = QueryDatabase(db)
 
-    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    otp_record = await query.find(table=SendOtp, unique_id=unique_id)
+    account_record = await query.find(table=User, unique_id=unique_id)
     current_time = local_time()
 
     try:
@@ -55,7 +57,7 @@ async def verify_phone_number_endpoint(
         ):
             await query.update(
                 table=User,
-                condition={"unique_id": schema.unique_id},
+                condition={"unique_id": unique_id},
                 data={
                     "verified_phone_number": True,
                     "otp_state": RegisterAccountState.SUCCESS,
@@ -77,7 +79,7 @@ async def verify_phone_number_endpoint(
             )
 
             response.message = "Phone number successfully verified."
-            response.data = UniqueId(unique_id=schema.unique_id)
+            response.data = UniqueId(unique_id=unique_id)
 
     except StashBaseApiError:
         raise
@@ -89,7 +91,7 @@ async def verify_phone_number_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/phone-number",
+    path="/phone-number/{unique_id}",
     endpoint=verify_phone_number_endpoint,
     response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,

@@ -21,7 +21,7 @@ class UserUniqueId(BaseModel):
         return UniqueIdValidator.validate_uuid(unique_id=value)
 
 
-class UserPin(UserUniqueId, BaseModel):
+class UserPin(BaseModel):
     pin: Optional[str] = None
 
     @field_validator("pin")
@@ -39,7 +39,7 @@ class UserPhoneNumber(BaseModel, PhoneNumberValidatorMixin):
         return PhoneNumberValidatorMixin.validate_phone_number(value)
 
 
-class UserOtp(UserUniqueId, BaseModel):
+class UserOtp(BaseModel):
     otp: Optional[str] = None
 
     @field_validator("otp")

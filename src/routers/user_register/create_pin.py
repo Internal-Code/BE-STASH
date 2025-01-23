@@ -1,3 +1,4 @@
+from uuid import UUID
 from src.secret import Config
 from datetime import timedelta
 from utils.jwt import JWTHandler
@@ -25,12 +26,13 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 async def create_pin_endpoint(
     schema: UserPin,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
     query = QueryDatabase(db)
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=unique_id)
     hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     try:
@@ -63,17 +65,17 @@ async def create_pin_endpoint(
 
         await query.update(
             table=User,
-            condition={"unique_id": schema.unique_id},
+            condition={"unique_id": unique_id},
             data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
         )
 
         access_token = jwt_handler.create_access_token(
-            data={"sub": schema.unique_id},
+            data={"sub": unique_id},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
         refresh_token = jwt_handler.create_refresh_token(
-            data={"sub": schema.unique_id},
+            data={"sub": unique_id},
             refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 
@@ -89,7 +91,7 @@ async def create_pin_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/create-pin",
+    path="/create-pin/{unique_id}",
     response_model=ResponseToken,
     endpoint=create_pin_endpoint,
     status_code=status.HTTP_201_CREATED,
