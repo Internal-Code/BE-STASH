@@ -19,7 +19,6 @@ class JWTHandler:
     def __init__(self, config: Config):
         self.config = config
         self.password_content = CryptContext(schemes=["bcrypt"])
-        self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/general/login")
 
     def verify_pin(self, pin: str, hashed_pin: str) -> bool:
         return self.password_content.verify(pin, hashed_pin)
