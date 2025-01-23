@@ -4,7 +4,7 @@ from sqlmodel import SQLModel
 from sqlalchemy import select, insert, update, delete, and_, or_
 from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.custom_error import DatabaseQueryError, DataNotFoundError
+from utils.error import DatabaseQueryError, DataNotFoundError
 
 
 async def find_record(

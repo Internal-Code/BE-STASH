@@ -6,9 +6,9 @@ from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
 from src.schema.custom_state import RegisterAccountState
 from src.schema.response import ResponseDefault, UniqueId
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,

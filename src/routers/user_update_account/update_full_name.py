@@ -4,22 +4,24 @@ from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.jwt import get_current_user
+from utils.jwt import JWTHandler
+from src.secret import Config
 from src.schema.request_format import UpdateUserFullName
 from utils.helper import local_time
-from utils.query.general import update_record
+from utils.query import update_record
 from services.postgres.models import User
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
 )
 
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_full_name_endpoint(
     schema: UpdateUserFullName,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()

@@ -1,15 +1,16 @@
 from typing import Annotated
 from utils.logger import logging
 from utils.helper import local_time
-from utils.jwt import get_current_user
+from utils.jwt import JWTHandler
+from src.secret import Config
 from services.postgres.models import User
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.request_format import UserEmail
 from src.schema.response import ResponseDefault
-from utils.query.general import find_record, update_record
-from utils.custom_error import (
+from utils.query import find_record, update_record
+from utils.error import (
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
     ServiceError,
@@ -18,12 +19,13 @@ from utils.custom_error import (
 )
 
 
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_email_endpoint(
     schema: UserEmail,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from utils.query.general import find_record
+from utils.query import find_record
 from services.postgres.models import User
 from src.schema.request_format import UserEmail
 from src.schema.response import ResponseDefault, UserStatus
 from src.schema.validator import PhoneNumberValidatorMixin
-from utils.custom_error import (
+from utils.error import (
     DataNotFoundError,
     ServiceError,
     StashBaseApiError,

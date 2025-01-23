@@ -5,12 +5,12 @@ from fastapi import APIRouter, status, Depends, BackgroundTasks
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseToken
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from services.postgres.models import User
-from utils.jwt import get_password_hash, create_access_token, create_refresh_token
+from utils.jwt import JWTHandler
 from utils.whatsapp_api import send_whatsapp
 from src.schema.request_format import UserPin
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     MandatoryInputError,
@@ -19,6 +19,7 @@ from utils.custom_error import (
 )
 
 config = Config()
+jwt_handler = JWTHandler(config)
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
@@ -29,7 +30,7 @@ async def create_pin_endpoint(
 ) -> ResponseToken:
     response = ResponseToken()
     account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
-    hashed_pin = get_password_hash(password=schema.pin)
+    hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     try:
         if not account_record:
@@ -66,12 +67,12 @@ async def create_pin_endpoint(
             data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
         )
 
-        access_token = create_access_token(
+        access_token = jwt_handler.create_access_token(
             data={"sub": schema.unique_id},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
-        refresh_token = create_refresh_token(
+        refresh_token = jwt_handler.create_refresh_token(
             data={"sub": schema.unique_id},
             refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
         )

@@ -5,16 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseToken
 from src.schema.request_format import UserLogin
-from utils.query.general import insert_record
+from utils.query import insert_record
 from services.postgres.models import UserToken
-from utils.jwt import authenticate_user, create_access_token, create_refresh_token
-from utils.custom_error import (
+from utils.jwt import JWTHandler
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     DataNotFoundError,
 )
 
 config = Config()
+jwt_handler = JWTHandler(config)
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
@@ -23,18 +24,20 @@ async def login_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
-    account_record = await authenticate_user(unique_id=schema.unique_id, pin=schema.pin)
+    account_record = await jwt_handler.authenticate_user(
+        unique_id=schema.unique_id, pin=schema.pin
+    )
 
     try:
         if not account_record:
             raise DataNotFoundError(detail="User not found.")
 
-        access_token = create_access_token(
+        access_token = jwt_handler.create_access_token(
             data={"sub": account_record.unique_id},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
-        refresh_token = create_refresh_token(
+        refresh_token = jwt_handler.create_refresh_token(
             data={"sub": account_record.unique_id},
             refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
         )

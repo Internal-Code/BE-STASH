@@ -7,23 +7,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseToken
 from src.schema.request_format import UserRefreshToken
-from utils.jwt import get_current_user
+from utils.jwt import JWTHandler
 from utils.helper import local_time
-from utils.query.general import insert_record, find_record
+from utils.query import insert_record, find_record
 from src.secret import Config
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     InvalidTokenError,
 )
 
 config = Config()
+jwt_handler = JWTHandler(config)
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def generate_refresh_token_endpoint(
     schema: UserRefreshToken,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()

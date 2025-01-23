@@ -2,16 +2,16 @@ from datetime import timedelta
 from src.secret import Config
 from utils.logger import logging
 from utils.helper import local_time
+from utils.generator import Generator
 from services.postgres.models import SendOtp, User
-from utils.generator import random_number
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.request_format import UserUniqueId
 from services.postgres.connection import get_db
 from utils.whatsapp_api import send_whatsapp
 from src.schema.response import ResponseDefault, UniqueId
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     DataNotFoundError,
@@ -29,8 +29,9 @@ async def send_otp_phone_number_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    generator = Generator()
     current_time = local_time()
-    generated_otp = random_number(6)
+    generated_otp = generator.random_number(6)
     otp_record = await find_record(db=db, table=SendOtp, unique_id=schema.unique_id)
     account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
 

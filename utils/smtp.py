@@ -11,7 +11,7 @@ from smtplib import (
     SMTPDataError,
     SMTPConnectError,
 )
-from utils.custom_error import (
+from utils.error import (
     AuthenticationFailed,
     ServiceError,
     EntityDoesNotMatchedError,

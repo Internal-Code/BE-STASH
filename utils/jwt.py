@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from datetime import timedelta
 from jose import JWTError, jwt
 from sqlalchemy.engine.row import Row
@@ -11,88 +11,89 @@ from src.schema.validator import SecurityCodeValidator, UniqueIdValidator
 from src.secret import Config
 from utils.helper import local_time
 from services.postgres.models import User, BlacklistToken
-from utils.query.general import find_record
-from utils.custom_error import AuthenticationFailed, DataNotFoundError
+from utils.query import find_record
+from utils.error import AuthenticationFailed, DataNotFoundError
 
 
-config = Config()
-password_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/general/login")
+class JWTHandler:
+    def __init__(self, config: Config, tokenUrl: str = "/user/general/login"):
+        self.config = config
+        self.password_content = CryptContext(schemes=["bcrypt"])
+        self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl=tokenUrl)
 
+    def verify_pin(self, pin: str, hashed_pin: str) -> bool:
+        return self.password_content.verify(pin, hashed_pin)
 
-def verify_pin(pin: str, hashed_pin: str) -> str:
-    return password_content.verify(pin, hashed_pin)
+    def get_password_hash(self, password: str) -> str:
+        return self.password_content.hash(password)
 
-
-def get_password_hash(password: str) -> str:
-    return password_content.hash(password)
-
-
-async def authenticate_user(unique_id: str, pin: str) -> Row | None:
-    validated_uuid = UniqueIdValidator.validate_uuid(unique_id=unique_id)
-    validated_pin = SecurityCodeValidator.validate_security_code(type="pin", value=pin)
-
-    async for db in get_db():
-        account_record = await find_record(db=db, table=User, unique_id=validated_uuid)
-
-    if not account_record:
-        raise DataNotFoundError(detail="User not found.")
-    if not account_record.pin:
-        raise AuthenticationFailed(detail="User has not set pin.")
-    if not verify_pin(pin=validated_pin, hashed_pin=account_record.pin):
-        raise AuthenticationFailed(detail="invalid pin.")
-
-    return account_record
-
-
-def create_access_token(data: dict, access_token_expires: timedelta) -> str:
-    to_encode = data.copy()
-    expires = local_time() + access_token_expires
-    to_encode.update({"exp": expires})
-    logging.info(f"Creating access token with payload: {to_encode}")
-    encoded_access_token = jwt.encode(
-        claims=to_encode, key=config.ACCESS_TOKEN_SECRET_KEY
-    )
-    return encoded_access_token
-
-
-def create_refresh_token(data: dict, refresh_token_expires: timedelta) -> str:
-    to_encode = data.copy()
-    expires = local_time() + refresh_token_expires
-    to_encode.update({"exp": expires})
-    encoded_refresh_token = jwt.encode(
-        claims=to_encode, key=config.REFRESH_TOKEN_SECRET_KEY
-    )
-    return encoded_refresh_token
-
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Row | None:
-    async for db in get_db():
-        blacklisted_record = await find_record(
-            db=db, table=BlacklistToken, access_token=token
+    async def authenticate_user(self, unique_id: str, pin: str) -> Optional[Row]:
+        validated_uuid = UniqueIdValidator.validate_uuid(unique_id=unique_id)
+        validated_pin = SecurityCodeValidator.validate_security_code(
+            type="pin", value=pin
         )
-
-    try:
-        if blacklisted_record:
-            raise AuthenticationFailed(
-                detail="Session expired. Please perform re-login."
-            )
-
-        payload = jwt.decode(
-            token=token,
-            key=config.ACCESS_TOKEN_SECRET_KEY,
-            algorithms=[config.ACCESS_TOKEN_ALGORITHM],
-        )
-
-        user_uuid = payload.get("sub")
-
-        if not user_uuid:
-            raise AuthenticationFailed(detail="Could not validate credentials.")
 
         async for db in get_db():
-            users = await find_record(db=db, table=User, unique_id=user_uuid)
+            account_record = await find_record(
+                db=db, table=User, unique_id=validated_uuid
+            )
 
-    except JWTError as e:
-        logging.error(f"JWTError: {e}")
-        raise AuthenticationFailed(detail="Token expired, please perform re-login.")
-    return users
+            if not account_record:
+                raise DataNotFoundError(detail="User not found.")
+            if not account_record.pin:
+                raise AuthenticationFailed(detail="User has not set pin.")
+            if not self.verify_pin(pin=validated_pin, hashed_pin=account_record.pin):
+                raise AuthenticationFailed(detail="invalid pin.")
+
+            return account_record
+
+    def create_access_token(self, data: dict, access_token_expires: timedelta) -> str:
+        to_encode = data.copy()
+        expires = local_time() + access_token_expires
+        to_encode.update({"exp": expires})
+        logging.info(f"Creating access token with payload: {to_encode}")
+        encoded_access_token = jwt.encode(
+            claims=to_encode, key=self.config.ACCESS_TOKEN_SECRET_KEY
+        )
+
+        return encoded_access_token
+
+    def create_refresh_token(self, data: dict, refresh_token_expires: timedelta) -> str:
+        to_encode = data.copy()
+        expires = local_time() + refresh_token_expires
+        to_encode.update({"exp": expires})
+        encoded_refresh_token = jwt.encode(
+            claims=to_encode, key=self.config.REFRESH_TOKEN_SECRET_KEY
+        )
+        return encoded_refresh_token
+
+    async def get_current_user(self, token: Annotated[str, Depends]) -> Optional[Row]:
+        async for db in get_db():
+            blacklisted_record = await find_record(
+                db=db, table=BlacklistToken, access_token=token
+            )
+
+        try:
+            if blacklisted_record:
+                raise AuthenticationFailed(
+                    detail="Session expired. Please perform re-login."
+                )
+
+            payload = jwt.decode(
+                token=token,
+                key=self.config.ACCESS_TOKEN_SECRET_KEY,
+                algorithms=[self.config.ACCESS_TOKEN_ALGORITHM],
+            )
+
+            user_uuid = payload.get("sub")
+
+            if not user_uuid:
+                raise AuthenticationFailed(detail="Could not validate credentials.")
+
+            async for db in get_db():
+                users = await find_record(db=db, table=User, unique_id=user_uuid)
+
+        except JWTError as e:
+            logging.error(f"JWTError: {e}")
+            raise AuthenticationFailed(detail="Token expired, please perform re-login.")
+        return users

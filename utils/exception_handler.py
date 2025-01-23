@@ -1,6 +1,6 @@
 from fastapi import status, FastAPI
-from utils.custom_error import create_exception_handler
-from utils.custom_error import (
+from utils.error import create_exception_handler
+from utils.error import (
     AuthenticationFailed,
     EntityAlreadyExistError,
     DataNotFoundError,
@@ -105,7 +105,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc_class_or_status_code=DatabaseQueryError,
         handler=create_exception_handler(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "Database error.",
+            "Database query error.",
         ),
     )
 
@@ -113,6 +113,6 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc_class_or_status_code=MandatoryInputError,
         handler=create_exception_handler(
             status.HTTP_403_FORBIDDEN,
-            "User not inputed mandatory data yet.",
+            "User not inputted mandatory data yet.",
         ),
     )

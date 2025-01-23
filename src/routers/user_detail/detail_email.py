@@ -1,14 +1,16 @@
 from typing import Annotated
 from fastapi import APIRouter, status, Depends
 from src.schema.response import ResponseDefault
-from utils.jwt import get_current_user
-from utils.custom_error import ServiceError, StashBaseApiError
+from utils.jwt import JWTHandler
+from src.secret import Config
+from utils.error import ServiceError, StashBaseApiError
 
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
 async def detail_email_endpoint(
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
 ) -> ResponseDefault:
     response = ResponseDefault()
     try:

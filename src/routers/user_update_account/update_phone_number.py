@@ -1,19 +1,20 @@
 from typing import Annotated
 from utils.logger import logging
-from fastapi import APIRouter, status, Depends, BackgroundTasks
-from services.postgres.connection import get_db
+from utils.generator import Generator
+from utils.jwt import JWTHandler
+from src.secret import Config
+from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.jwt import get_current_user
-from src.schema.response import ResponseDefault, UniqueId
+from services.postgres.connection import get_db
+from services.postgres.models import User, SendOtp
 from src.schema.request_format import UserPhoneNumber
 from src.schema.custom_state import RegisterAccountState
-from utils.query.general import update_record, find_record
-from services.postgres.models import User, SendOtp
-from utils.whatsapp_api import send_whatsapp
-from utils.generator import random_number
+from utils.query import update_record, find_record
+from src.schema.response import ResponseDefault, UniqueId
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.helper import local_time
 from datetime import timedelta
-from utils.custom_error import (
+from utils.error import (
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
     UserNotVerifiedError,
@@ -22,19 +23,20 @@ from utils.custom_error import (
     InvalidOperationError,
 )
 
-
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_phone_number_endpoint(
     schema: UserPhoneNumber,
     background_tasks: BackgroundTasks,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    generator = Generator()
     current_time = local_time()
-    generated_otp = random_number(6)
+    generated_otp = generator.random_number(6)
     registered_phone_number = await find_record(
         db=db, table=User, phone_number=schema.phone_number
     )

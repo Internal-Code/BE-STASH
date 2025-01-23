@@ -1,18 +1,19 @@
-from fastapi.templating import Jinja2Templates
 from typing import Annotated
 from datetime import timedelta
-from fastapi import APIRouter, status, Depends, BackgroundTasks
+from utils.smtp import send_gmail
+from utils.helper import local_time
+from utils.generator import Generator
+from utils.jwt import JWTHandler
+from src.secret import Config
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from utils.generator import random_number
-from services.postgres.models import SendOtp, User
-from utils.query.general import find_record, update_record
-from src.schema.response import ResponseDefault, UniqueId
 from src.schema.request_format import UserEmail
-from utils.helper import local_time
-from utils.jwt import get_current_user
-from utils.smtp import send_gmail
-from utils.custom_error import (
+from services.postgres.models import SendOtp, User
+from utils.query import find_record, update_record
+from src.schema.response import ResponseDefault, UniqueId
+from fastapi import APIRouter, status, Depends, BackgroundTasks
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,
@@ -21,18 +22,20 @@ from utils.custom_error import (
     EntityForceInputSameDataError,
 )
 
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def wrong_email_endpoint(
     schema: UserEmail,
     background_tasks: BackgroundTasks,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    generator = Generator()
     current_time = local_time()
-    generated_otp = random_number(6)
+    generated_otp = generator.random_number(6)
     otp_record = await find_record(
         db=db, table=SendOtp, unique_id=current_user.unique_id
     )

@@ -1,27 +1,28 @@
-from utils.query.general import find_record, update_record
-from services.postgres.models import SendOtp, User
 from typing import Annotated
+from utils.jwt import JWTHandler
+from src.secret import Config
+from utils.helper import local_time
+from utils.query import find_record, update_record
+from services.postgres.models import SendOtp, User
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from utils.helper import local_time
 from src.schema.request_format import UserOtp
 from src.schema.response import ResponseDefault
-from utils.jwt import get_current_user
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,
     InvalidOperationError,
 )
 
-
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_email_endpoint(
     schema: UserOtp,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()

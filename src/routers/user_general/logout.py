@@ -4,20 +4,22 @@ from services.postgres.models import BlacklistToken, UserToken
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
-from utils.jwt import get_current_user
+from utils.jwt import JWTHandler
+from src.secret import Config
 from utils.helper import local_time
-from utils.query.general import insert_record, find_record
-from utils.custom_error import (
+from utils.query import insert_record, find_record
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     InvalidTokenError,
 )
 
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def logout_endpoint(
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()

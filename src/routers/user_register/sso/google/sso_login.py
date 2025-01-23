@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, Request
-from utils.sso.general import google_oauth_configuration
+from utils.sso.google import google_oauth_configuration
 
 router = APIRouter(tags=["SSO"], prefix="/user/register")
 

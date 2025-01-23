@@ -3,10 +3,13 @@ from uuid import uuid4
 from faker import Faker
 from sqlalchemy.engine.row import Row
 from services.postgres.connection import get_db
-from utils.generator import random_number
-from utils.custom_error import DatabaseQueryError
+from utils.generator import Generator
+from utils.error import DatabaseQueryError
 from services.postgres.models import User
-from utils.query.general import find_record, delete_record, insert_record
+from utils.query import find_record, delete_record, insert_record
+
+
+generator = Generator()
 
 
 @pytest.mark.asyncio
@@ -17,13 +20,13 @@ async def test_find_all_record_with_available_data_and_no_filter():
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": random_number(length=6),
+            "pin": generator.random_number(length=6),
         },
         {
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": random_number(length=6),
+            "pin": generator.random_number(length=6),
         },
     ]
 
@@ -46,7 +49,7 @@ async def test_find_all_record_with_available_data_and_no_filter():
 @pytest.mark.asyncio
 async def test_find_all_record_with_available_data_and_single_filter():
     faker = Faker()
-    same_pin = random_number(length=6)
+    same_pin = generator.random_number(length=6)
     records_to_insert = [
         {
             "unique_id": str(uuid4()),
@@ -64,7 +67,7 @@ async def test_find_all_record_with_available_data_and_single_filter():
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": random_number(length=6),
+            "pin": generator.random_number(length=6),
         },
     ]
 
@@ -103,7 +106,7 @@ async def test_find_all_record_with_available_data_and_single_filter():
 @pytest.mark.asyncio
 async def test_find_all_record_with_available_data_and_multi_filter():
     faker = Faker()
-    pin = random_number(length=6)
+    pin = generator.random_number(length=6)
     phone_number = faker.phone_number()
     records_to_insert = [
         {
@@ -122,7 +125,7 @@ async def test_find_all_record_with_available_data_and_multi_filter():
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": random_number(length=6),
+            "pin": generator.random_number(length=6),
         },
     ]
 
@@ -174,7 +177,7 @@ async def test_find_all_record_with_empty_data_and_single_filter():
     async for db in get_db():
         await delete_record(db=db, table=User)
         records = await find_record(
-            db=db, table=User, fetch_type="all", pin=random_number(length=6)
+            db=db, table=User, fetch_type="all", pin=generator.random_number(length=6)
         )
 
     assert records is None
@@ -189,7 +192,7 @@ async def test_find_all_record_with_empty_data_and_multi_filter():
             db=db,
             table=User,
             fetch_type="all",
-            pin=random_number(length=6),
+            pin=generator.random_number(length=6),
             phone_number=faker.phone_number(),
         )
     assert records is None
@@ -201,7 +204,7 @@ async def test_find_single_record_with_available_data_and_no_filter():
     unique_id = str(uuid4())
     full_name = faker.name()
     phone_number = faker.phone_number()
-    pin = random_number(length=6)
+    pin = generator.random_number(length=6)
 
     async for db in get_db():
         await delete_record(db=db, table=User)
@@ -231,7 +234,7 @@ async def test_find_single_record_with_available_data_and_single_filter():
     unique_id = str(uuid4())
     full_name = faker.name()
     phone_number = faker.phone_number()
-    pin = random_number(length=6)
+    pin = generator.random_number(length=6)
     async for db in get_db():
         await delete_record(db=db, table=User)
         await insert_record(
@@ -260,7 +263,7 @@ async def test_find_single_record_with_available_data_and_multi_filter():
     unique_id = str(uuid4())
     full_name = faker.name()
     phone_number = faker.phone_number()
-    pin = random_number(length=6)
+    pin = generator.random_number(length=6)
     async for db in get_db():
         await delete_record(db=db, table=User)
         await insert_record(
@@ -298,7 +301,9 @@ async def test_find_single_record_with_empty_data_and_no_filter():
 async def test_find_single_record_with_empty_data_and_single_filter():
     async for db in get_db():
         await delete_record(db=db, table=User)
-        records = await find_record(db=db, table=User, pin=random_number(length=6))
+        records = await find_record(
+            db=db, table=User, pin=generator.random_number(length=6)
+        )
     assert records is None
 
 
@@ -311,7 +316,7 @@ async def test_find_single_record_with_empty_data_and_multi_filter():
             db=db,
             table=User,
             fetch_type="all",
-            pin=random_number(length=6),
+            pin=generator.random_number(length=6),
             phone_number=faker.phone_number(),
         )
     assert records is None

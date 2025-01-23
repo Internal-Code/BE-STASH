@@ -2,11 +2,13 @@ import pytest
 from uuid import uuid4
 from faker import Faker
 from sqlalchemy.engine.row import Row
+from utils.generator import Generator
 from services.postgres.models import User
 from services.postgres.connection import get_db
-from utils.custom_error import DataNotFoundError, DatabaseQueryError
-from utils.generator import random_number, random_word
-from utils.query.general import find_record, delete_record, insert_record, update_record
+from utils.error import DataNotFoundError, DatabaseQueryError
+from utils.query import find_record, delete_record, insert_record, update_record
+
+generator = Generator()
 
 
 @pytest.mark.asyncio
@@ -15,12 +17,12 @@ async def test_update_record_with_available_data_inside_table():
     unique_id = str(uuid4())
     old_full_name = faker.name()
     new_full_name = faker.name()
-    old_pin = random_number(length=6)
-    new_pin = random_number(length=6)
+    old_pin = generator.random_number(length=6)
+    new_pin = generator.random_number(length=6)
     old_email = faker.email()
     new_email = faker.email()
-    old_phone_number = random_number(length=10)
-    new_phone_number = random_number(length=10)
+    old_phone_number = generator.random_number(length=10)
+    new_phone_number = generator.random_number(length=10)
 
     async for db in get_db():
         await delete_record(db=db, table=User)
@@ -78,8 +80,8 @@ async def test_update_record_with_empty_data():
 
 @pytest.mark.asyncio
 async def test_update_record_with_random_conditions():
-    random_column = random_word()
-    random_value = random_word()
+    random_column = generator.random_word()
+    random_value = generator.random_word()
     async for db in get_db():
         with pytest.raises(
             ValueError,
@@ -107,5 +109,5 @@ async def test_update_record_raised_data_not_found_error():
                 db=db,
                 table=User,
                 conditions={"unique_id": str(uuid4())},
-                data={"phone_number": random_number(length=10)},
+                data={"phone_number": generator.random_number(length=10)},
             )

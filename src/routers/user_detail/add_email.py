@@ -4,11 +4,12 @@ from src.schema.request_format import UserEmail
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from services.postgres.models import User
+from src.secret import Config
 from utils.helper import local_time
-from utils.jwt import get_current_user
-from utils.custom_error import (
+from utils.jwt import JWTHandler
+from utils.error import (
     EntityAlreadyVerifiedError,
     EntityAlreadyExistError,
     EntityForceInputSameDataError,
@@ -18,11 +19,12 @@ from utils.custom_error import (
 
 
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
+jwt_handler = JWTHandler(Config)
 
 
 async def add_email_endpoint(
     schema: UserEmail,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()

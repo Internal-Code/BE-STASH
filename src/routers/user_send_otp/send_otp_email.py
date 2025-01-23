@@ -2,16 +2,17 @@ from typing import Annotated
 from datetime import timedelta
 from utils.smtp import send_gmail
 from utils.helper import local_time
-from utils.jwt import get_current_user
-from utils.generator import random_number
+from utils.jwt import JWTHandler
+from src.secret import Config
+from utils.generator import Generator
 from services.postgres.models import SendOtp
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,
@@ -19,17 +20,21 @@ from utils.custom_error import (
     InvalidOperationError,
 )
 
+jwt_handler = JWTHandler(Config)
 router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
 async def send_otp_email_endpoint(
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    generator = Generator()
+
+    generated_otp = generator.random_number(6)
     current_time = local_time()
-    generated_otp = random_number(6)
+
     otp_record = await find_record(
         db=db, table=SendOtp, unique_id=current_user.unique_id
     )

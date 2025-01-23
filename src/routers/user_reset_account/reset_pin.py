@@ -8,10 +8,10 @@ from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from src.schema.request_format import UserResetPin
-from utils.jwt import get_password_hash
+from utils.jwt import JWTHandler
 from services.postgres.models import User, ResetPin
-from utils.query.general import update_record, find_record
-from utils.custom_error import (
+from utils.query import update_record, find_record
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     DataNotFoundError,
@@ -19,6 +19,7 @@ from utils.custom_error import (
 )
 
 config = Config()
+jwt_handler = JWTHandler(config)
 router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
@@ -31,7 +32,7 @@ async def reset_pin_endpoint(
 
     current_time = local_time()
 
-    hashed_pin = get_password_hash(password=schema.pin)
+    hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     templates = Jinja2Templates(directory="templates")
 

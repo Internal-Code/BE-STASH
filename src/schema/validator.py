@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import Literal
-from utils.custom_error import InvalidOperationError
+from utils.error import InvalidOperationError
 
 
 class FullNameValidatorMixin:

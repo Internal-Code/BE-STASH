@@ -2,11 +2,11 @@ from fastapi import APIRouter
 from utils.logger import logging
 from src.schema.response import ServerStatus
 
-router = APIRouter(tags=["health_check_endpoint"])
+router = APIRouter(tags=["Root"])
 
 
 async def health_check_endpoint() -> ServerStatus:
-    logging.info("Endpoint health_check_endpoint.")
+    logging.info("Endpoint health check.")
     response = ServerStatus()
     response.status = "Server running!"
     return response

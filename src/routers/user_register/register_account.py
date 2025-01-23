@@ -7,11 +7,11 @@ from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
-from utils.query.general import find_record, insert_record
+from utils.query import find_record, insert_record
 from utils.whatsapp_api import send_whatsapp
-from utils.generator import random_number
+from utils.generator import Generator
 from src.schema.response import ResponseDefault, UniqueId
-from utils.custom_error import ServiceError, StashBaseApiError, EntityAlreadyExistError
+from utils.error import ServiceError, StashBaseApiError, EntityAlreadyExistError
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
@@ -21,8 +21,9 @@ async def register_account_endpoint(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    generator = Generator()
     unique_id = str(uuid4())
-    generated_otp = random_number(6)
+    generated_otp = generator.random_number(6)
     response = ResponseDefault()
     phone_number_record = await find_record(
         db=db, table=User, phone_number=schema.phone_number

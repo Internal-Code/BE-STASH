@@ -7,9 +7,9 @@ from src.schema.response import ResponseDefault
 from utils.jwt import get_current_user
 from services.postgres.models import CategorySchema
 from src.schema.request_format import UpdateCategorySchema
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from utils.helper import local_time
-from utils.custom_error import (
+from utils.error import (
     EntityAlreadyExistError,
     ServiceError,
     StashBaseApiError,

@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
 from services.postgres.models import MonthlySchema, CategorySchema
 from src.schema.request_format import CreateSpend
-from utils.query.general import find_record
-from utils.custom_error import ServiceError, StashBaseApiError, DataNotFoundError
+from utils.query import find_record
+from utils.error import ServiceError, StashBaseApiError, DataNotFoundError
 
 router = APIRouter(tags=["Monthly Spend"], prefix="/spend")
 

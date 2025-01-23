@@ -9,11 +9,11 @@ from src.schema.response import ResponseDefault
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, BlacklistToken, UserToken
-from utils.query.general import update_record, insert_record, find_record
+from utils.query import update_record, insert_record, find_record
 from src.schema.request_format import ChangePin
 from utils.whatsapp_api import send_whatsapp
-from utils.jwt import get_current_user, verify_pin, get_password_hash
-from utils.custom_error import (
+from utils.jwt import JWTHandler
+from utils.error import (
     EntityForceInputSameDataError,
     ServiceError,
     StashBaseApiError,
@@ -21,12 +21,13 @@ from utils.custom_error import (
 )
 
 config = Config()
+jwt_handler = JWTHandler(config)
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_pin_endpoint(
     schema: ChangePin,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -34,16 +35,16 @@ async def update_pin_endpoint(
 
     current_time = local_time()
 
-    validate_existing_pin = verify_pin(
+    validate_existing_pin = jwt_handler.verify_pin(
         pin=schema.current_pin, hashed_pin=current_user.pin
     )
-    duplicated_updated_pin = verify_pin(
+    duplicated_updated_pin = jwt_handler.verify_pin(
         pin=schema.updated_pin, hashed_pin=current_user.pin
     )
-    duplicated_confirmed_pin = verify_pin(
+    duplicated_confirmed_pin = jwt_handler.verify_pin(
         pin=schema.confirmed_new_pin, hashed_pin=current_user.pin
     )
-    hashed_pin = get_password_hash(password=schema.updated_pin)
+    hashed_pin = jwt_handler.get_password_hash(password=schema.updated_pin)
 
     token_record = await find_record(
         db=db, table=UserToken, order_by="desc", unique_id=current_user.unique_id

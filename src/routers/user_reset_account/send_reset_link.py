@@ -8,10 +8,10 @@ from services.postgres.connection import get_db
 from services.postgres.models import User, ResetPin
 from src.schema.response import ResponseDefault, UniqueId
 from src.schema.request_format import SendVerificationLink
-from utils.query.general import find_record, update_record
+from utils.query import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.smtp import send_gmail
-from utils.custom_error import (
+from utils.error import (
     ServiceError,
     StashBaseApiError,
     MandatoryInputError,

@@ -4,27 +4,24 @@ from src.secret import Config
 from utils.logger import logging
 from utils.smtp import send_gmail
 from utils.helper import local_time
-from utils.generator import random_number
+from utils.generator import Generator
 from src.schema.response import ResponseToken
 from fastapi.templating import Jinja2Templates
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, SendOtp
 from src.schema.validator import FullNameValidatorMixin
-from utils.sso.general import google_oauth_configuration
+from utils.sso.google import google_oauth_configuration
 from fastapi import APIRouter, status, Depends, Request, BackgroundTasks
 from authlib.integrations.starlette_client import OAuthError
-from utils.custom_error import ServiceError, StashBaseApiError
+from utils.error import ServiceError, StashBaseApiError
 from src.schema.custom_state import RegisterAccountState
-from utils.jwt import (
-    get_password_hash,
-    create_access_token,
-    create_refresh_token,
-)
-from utils.query.general import insert_record, find_record, update_record
+from utils.jwt import JWTHandler
+from utils.query import insert_record, find_record, update_record
 
 
 config = Config()
+jwt_handler = JWTHandler(config)
 router = APIRouter(tags=["SSO"], prefix="/user/register")
 
 
@@ -34,6 +31,7 @@ async def sso_authentication_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
+    generator = Generator()
 
     oauth = await google_oauth_configuration()
     token = await oauth.google.authorize_access_token(request)
@@ -42,8 +40,8 @@ async def sso_authentication_endpoint(
 
     unique_id = str(uuid4())
     current_time = local_time()
-    generated_pin = random_number(length=6)
-    hashed_pin = get_password_hash(password=generated_pin)
+    generated_pin = generator.random_number(6)
+    hashed_pin = jwt_handler.get_password_hash(password=generated_pin)
 
     validated_full_name = FullNameValidatorMixin.validate_fullname(value=user_info.name)
     account_record = await find_record(db=db, table=User, email=user_info.email)
@@ -104,13 +102,13 @@ async def sso_authentication_endpoint(
                 },
             )
 
-            access_token = create_access_token(
+            access_token = jwt_handler.create_access_token(
                 data={"sub": unique_id},
                 access_token_expires=timedelta(
                     minutes=int(config.ACCESS_TOKEN_EXPIRED)
                 ),
             )
-            refresh_token = create_refresh_token(
+            refresh_token = jwt_handler.create_refresh_token(
                 data={"sub": unique_id},
                 refresh_token_expires=timedelta(
                     minutes=int(config.REFRESH_TOKEN_EXPIRED)
@@ -122,13 +120,13 @@ async def sso_authentication_endpoint(
             response.refresh_token = refresh_token
             return response
         else:
-            access_token = create_access_token(
+            access_token = jwt_handler.create_access_token(
                 data={"sub": account_record.unique_id},
                 access_token_expires=timedelta(
                     minutes=int(config.ACCESS_TOKEN_EXPIRED)
                 ),
             )
-            refresh_token = create_refresh_token(
+            refresh_token = jwt_handler.create_refresh_token(
                 data={"sub": account_record.unique_id},
                 refresh_token_expires=timedelta(
                     minutes=int(config.REFRESH_TOKEN_EXPIRED)
