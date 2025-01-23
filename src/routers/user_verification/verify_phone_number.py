@@ -1,4 +1,5 @@
 from utils.helper import local_time
+from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
 from src.schema.request_format import UserOtp
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,6 @@ from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
 from src.schema.custom_state import RegisterAccountState
 from src.schema.response import ResponseDefault, UniqueId
-from utils.query import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,
@@ -25,8 +25,10 @@ async def verify_phone_number_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=schema.unique_id)
-    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
+    query = QueryDatabase(db)
+
+    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=schema.unique_id)
     current_time = local_time()
 
     try:
@@ -51,10 +53,9 @@ async def verify_phone_number_endpoint(
             current_time < otp_record.blacklisted_at
             and otp_record.otp_number == schema.otp
         ):
-            await update_record(
-                db=db,
+            await query.update(
                 table=User,
-                conditions={"unique_id": schema.unique_id},
+                condition={"unique_id": schema.unique_id},
                 data={
                     "verified_phone_number": True,
                     "otp_state": RegisterAccountState.SUCCESS,

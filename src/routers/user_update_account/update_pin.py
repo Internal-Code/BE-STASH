@@ -9,7 +9,7 @@ from src.schema.response import ResponseDefault
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, BlacklistToken, UserToken
-from utils.query import update_record, insert_record, find_record
+from utils.query import QueryDatabase
 from src.schema.request_format import ChangePin
 from utils.whatsapp_api import send_whatsapp
 from utils.jwt import JWTHandler
@@ -32,6 +32,7 @@ async def update_pin_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase(db)
 
     current_time = local_time()
 
@@ -46,8 +47,8 @@ async def update_pin_endpoint(
     )
     hashed_pin = jwt_handler.get_password_hash(password=schema.updated_pin)
 
-    token_record = await find_record(
-        db=db, table=UserToken, order_by="desc", unique_id=current_user.unique_id
+    token_record = await query.find(
+        table=UserToken, order_by="desc", unique_id=current_user.unique_id
     )
 
     templates = Jinja2Templates(directory="templates")
@@ -66,15 +67,13 @@ async def update_pin_endpoint(
                 detail="Cannot changed into existing PIN. Please choose a different PIN."
             )
 
-        await update_record(
-            db=db,
+        await query.update(
             table=User,
-            conditions={"unique_id": current_user.unique_id},
+            condition={"unique_id": current_user.unique_id},
             data={"pin": hashed_pin, "updated_at": current_time},
         )
 
-        await insert_record(
-            db=db,
+        await query.insert(
             table=BlacklistToken,
             data={
                 "unique_id": current_user.unique_id,

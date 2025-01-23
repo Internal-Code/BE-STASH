@@ -6,36 +6,37 @@ from services.postgres.connection import get_db
 from utils.generator import Generator
 from utils.error import DatabaseQueryError
 from services.postgres.models import User
-from utils.query import find_record, delete_record, insert_record
+from utils.query import QueryDatabase
 
 
 generator = Generator()
+faker = Faker()
 
 
 @pytest.mark.asyncio
 async def test_find_all_record_with_available_data_and_no_filter():
-    faker = Faker()
     records_to_insert = [
         {
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": generator.random_number(length=6),
+            "pin": generator.random_number(6),
         },
         {
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": generator.random_number(length=6),
+            "pin": generator.random_number(6),
         },
     ]
 
     async for db in get_db():
-        await delete_record(db=db, table=User)
+        query = QueryDatabase(db)
+        await query.delete(table=User)
         for record in records_to_insert:
-            await insert_record(db=db, table=User, data=record)
+            await query.insert(table=User, data=record)
 
-        records = await find_record(db=db, table=User, fetch_type="all")
+        records = await query.find(table=User, fetch="all")
 
     assert len(records) == len(records_to_insert)
     assert type(records) is list
@@ -48,8 +49,7 @@ async def test_find_all_record_with_available_data_and_no_filter():
 
 @pytest.mark.asyncio
 async def test_find_all_record_with_available_data_and_single_filter():
-    faker = Faker()
-    same_pin = generator.random_number(length=6)
+    same_pin = generator.random_number(6)
     records_to_insert = [
         {
             "unique_id": str(uuid4()),
@@ -67,16 +67,17 @@ async def test_find_all_record_with_available_data_and_single_filter():
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": generator.random_number(length=6),
+            "pin": generator.random_number(6),
         },
     ]
 
     async for db in get_db():
-        await delete_record(db=db, table=User)
+        query = QueryDatabase(db)
+        await query.delete(table=User)
         for record in records_to_insert:
-            await insert_record(db=db, table=User, data=record)
+            await query.insert(table=User, data=record)
 
-        records = await find_record(db=db, table=User, fetch_type="all", pin=same_pin)
+        records = await query.find(table=User, fetch="all", pin=same_pin)
 
     assert len(records) == 2
     assert type(records) is list
@@ -105,8 +106,7 @@ async def test_find_all_record_with_available_data_and_single_filter():
 
 @pytest.mark.asyncio
 async def test_find_all_record_with_available_data_and_multi_filter():
-    faker = Faker()
-    pin = generator.random_number(length=6)
+    pin = generator.random_number(6)
     phone_number = faker.phone_number()
     records_to_insert = [
         {
@@ -125,17 +125,18 @@ async def test_find_all_record_with_available_data_and_multi_filter():
             "unique_id": str(uuid4()),
             "full_name": faker.name(),
             "phone_number": faker.phone_number(),
-            "pin": generator.random_number(length=6),
+            "pin": generator.random_number(6),
         },
     ]
 
     async for db in get_db():
-        await delete_record(db=db, table=User)
+        query = QueryDatabase(db)
+        await query.delete(table=User)
         for record in records_to_insert:
-            await insert_record(db=db, table=User, data=record)
+            await query.insert(table=User, data=record)
 
-        records = await find_record(
-            db=db, table=User, fetch_type="all", pin=pin, phone_number=phone_number
+        records = await query.find(
+            table=User, fetch="all", pin=pin, phone_number=phone_number
         )
 
     assert len(records) == 1
@@ -165,19 +166,20 @@ async def test_find_all_record_with_available_data_and_multi_filter():
 
 @pytest.mark.asyncio
 async def test_find_all_record_with_empty_data_and_no_filter():
-    """Should returning None record due to no data"""
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        records = await find_record(db=db, table=User, fetch_type="all")
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        records = await query.find(table=User, fetch="all")
     assert records is None
 
 
 @pytest.mark.asyncio
 async def test_find_all_record_with_empty_data_and_single_filter():
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        records = await find_record(
-            db=db, table=User, fetch_type="all", pin=generator.random_number(length=6)
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        records = await query.find(
+            table=User, fetch="all", pin=generator.random_number(6)
         )
 
     assert records is None
@@ -185,14 +187,13 @@ async def test_find_all_record_with_empty_data_and_single_filter():
 
 @pytest.mark.asyncio
 async def test_find_all_record_with_empty_data_and_multi_filter():
-    faker = Faker()
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        records = await find_record(
-            db=db,
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        records = await query.find(
             table=User,
-            fetch_type="all",
-            pin=generator.random_number(length=6),
+            fetch="all",
+            pin=generator.random_number(6),
             phone_number=faker.phone_number(),
         )
     assert records is None
@@ -200,16 +201,15 @@ async def test_find_all_record_with_empty_data_and_multi_filter():
 
 @pytest.mark.asyncio
 async def test_find_single_record_with_available_data_and_no_filter():
-    faker = Faker()
     unique_id = str(uuid4())
     full_name = faker.name()
     phone_number = faker.phone_number()
-    pin = generator.random_number(length=6)
+    pin = generator.random_number(6)
 
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        await insert_record(
-            db=db,
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        await query.insert(
             table=User,
             data={
                 "unique_id": unique_id,
@@ -219,7 +219,7 @@ async def test_find_single_record_with_available_data_and_no_filter():
             },
         )
 
-        records = await find_record(db=db, table=User)
+        records = await query.find(table=User)
 
     assert type(records) is Row
     assert records.unique_id == unique_id
@@ -230,15 +230,14 @@ async def test_find_single_record_with_available_data_and_no_filter():
 
 @pytest.mark.asyncio
 async def test_find_single_record_with_available_data_and_single_filter():
-    faker = Faker()
     unique_id = str(uuid4())
     full_name = faker.name()
     phone_number = faker.phone_number()
-    pin = generator.random_number(length=6)
+    pin = generator.random_number(6)
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        await insert_record(
-            db=db,
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        await query.insert(
             table=User,
             data={
                 "unique_id": unique_id,
@@ -248,7 +247,7 @@ async def test_find_single_record_with_available_data_and_single_filter():
             },
         )
 
-        records = await find_record(db=db, table=User, unique_id=unique_id)
+        records = await query.find(table=User, unique_id=unique_id)
 
     assert type(records) is Row
     assert records.unique_id == unique_id
@@ -259,15 +258,14 @@ async def test_find_single_record_with_available_data_and_single_filter():
 
 @pytest.mark.asyncio
 async def test_find_single_record_with_available_data_and_multi_filter():
-    faker = Faker()
     unique_id = str(uuid4())
     full_name = faker.name()
     phone_number = faker.phone_number()
-    pin = generator.random_number(length=6)
+    pin = generator.random_number(6)
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        await insert_record(
-            db=db,
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        await query.insert(
             table=User,
             data={
                 "unique_id": unique_id,
@@ -277,8 +275,8 @@ async def test_find_single_record_with_available_data_and_multi_filter():
             },
         )
 
-        records = await find_record(
-            db=db, table=User, unique_id=unique_id, phone_number=phone_number
+        records = await query.find(
+            table=User, unique_id=unique_id, phone_number=phone_number
         )
 
     assert type(records) is Row
@@ -288,35 +286,33 @@ async def test_find_single_record_with_available_data_and_multi_filter():
     assert records.pin == pin
 
 
-# Here
 @pytest.mark.asyncio
 async def test_find_single_record_with_empty_data_and_no_filter():
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        records = await find_record(db=db, table=User)
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        records = await query.find(table=User)
     assert records is None
 
 
 @pytest.mark.asyncio
 async def test_find_single_record_with_empty_data_and_single_filter():
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        records = await find_record(
-            db=db, table=User, pin=generator.random_number(length=6)
-        )
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        records = await query.find(table=User, pin=generator.random_number(6))
     assert records is None
 
 
 @pytest.mark.asyncio
 async def test_find_single_record_with_empty_data_and_multi_filter():
-    faker = Faker()
     async for db in get_db():
-        await delete_record(db=db, table=User)
-        records = await find_record(
-            db=db,
+        query = QueryDatabase(db)
+        await query.delete(table=User)
+        records = await query.find(
             table=User,
-            fetch_type="all",
-            pin=generator.random_number(length=6),
+            fetch="all",
+            pin=generator.random_number(6),
             phone_number=faker.phone_number(),
         )
     assert records is None
@@ -325,27 +321,28 @@ async def test_find_single_record_with_empty_data_and_multi_filter():
 @pytest.mark.asyncio
 async def test_find_single_record_raised_with_invalid_filter():
     async for db in get_db():
+        query = QueryDatabase(db)
         with pytest.raises(
             ValueError,
             match=f"Column invalid_column not found in {User.__name__.lower()} table!",
         ):
-            await find_record(db=db, table=User, invalid_column="invalid_value")
+            await query.find(table=User, invalid_column="invalid_value")
 
 
 @pytest.mark.asyncio
 async def test_find_all_record_raised_with_invalid_filter():
     async for db in get_db():
+        query = QueryDatabase(db)
         with pytest.raises(
             ValueError,
             match=f"Column invalid_column not found in {User.__name__.lower()} table!",
         ):
-            await find_record(
-                db=db, table=User, invalid_column="invalid_value", fetch_type="all"
-            )
+            await query.find(table=User, invalid_column="invalid_value", fetch="all")
 
 
 @pytest.mark.asyncio
 async def test_find_record_raised_database_query_error():
     async for db in get_db():
+        query = QueryDatabase(db)
         with pytest.raises(DatabaseQueryError, match="Database query error."):
-            await find_record(db=db, table=User, unique_id=uuid4())
+            await query.find(table=User, unique_id=uuid4())

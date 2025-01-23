@@ -1,13 +1,13 @@
 from src.secret import Config
 from datetime import timedelta
+from utils.jwt import JWTHandler
+from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseToken
 from src.schema.request_format import UserLogin
-from utils.query import insert_record
 from services.postgres.models import UserToken
-from utils.jwt import JWTHandler
 from utils.error import (
     ServiceError,
     StashBaseApiError,
@@ -24,6 +24,7 @@ async def login_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
+    query = QueryDatabase(db)
     account_record = await jwt_handler.authenticate_user(
         unique_id=schema.unique_id, pin=schema.pin
     )
@@ -42,8 +43,7 @@ async def login_endpoint(
             refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 
-        await insert_record(
-            db=db,
+        await query.insert(
             table=UserToken,
             data={
                 "unique_id": account_record.unique_id,

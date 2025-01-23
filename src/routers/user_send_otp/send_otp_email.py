@@ -1,16 +1,16 @@
+from src.secret import Config
+from utils.jwt import JWTHandler
 from typing import Annotated
 from datetime import timedelta
 from utils.smtp import send_gmail
 from utils.helper import local_time
-from utils.jwt import JWTHandler
-from src.secret import Config
 from utils.generator import Generator
+from utils.query import QueryDatabase
 from services.postgres.models import SendOtp
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
-from utils.query import find_record, update_record
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,
@@ -31,13 +31,12 @@ async def send_otp_email_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     generator = Generator()
+    query = QueryDatabase(db)
 
     generated_otp = generator.random_number(6)
     current_time = local_time()
 
-    otp_record = await find_record(
-        db=db, table=SendOtp, unique_id=current_user.unique_id
-    )
+    otp_record = await query.find(table=SendOtp, unique_id=current_user.unique_id)
     templates = Jinja2Templates(directory="templates")
 
     try:
@@ -67,10 +66,9 @@ async def send_otp_email_endpoint(
                 email_body=email_body,
             )
 
-            await update_record(
-                db=db,
+            await query.update(
                 table=SendOtp,
-                conditions={"unique_id": current_user.unique_id},
+                condition={"unique_id": current_user.unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,

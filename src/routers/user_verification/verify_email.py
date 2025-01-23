@@ -2,7 +2,7 @@ from typing import Annotated
 from utils.jwt import JWTHandler
 from src.secret import Config
 from utils.helper import local_time
-from utils.query import find_record, update_record
+from utils.query import QueryDatabase
 from services.postgres.models import SendOtp, User
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,10 +26,9 @@ async def verify_email_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase(db)
     current_time = local_time()
-    otp_record = await find_record(
-        db=db, table=SendOtp, unique_id=current_user.unique_id
-    )
+    otp_record = await query.find(table=SendOtp, unique_id=current_user.unique_id)
 
     try:
         if current_user.verified_email:
@@ -45,10 +44,9 @@ async def verify_email_endpoint(
             current_time < otp_record.blacklisted_at
             and otp_record.otp_number == schema.otp
         ):
-            await update_record(
-                db=db,
+            await query.update(
                 table=User,
-                conditions={"unique_id": current_user.unique_id},
+                condition={"unique_id": current_user.unique_id},
                 data={"verified_email": True},
             )
 

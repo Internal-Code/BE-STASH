@@ -1,15 +1,15 @@
-from datetime import timedelta
 from src.secret import Config
-from src.schema.custom_state import RegisterAccountState
-from fastapi import APIRouter, status, Depends, BackgroundTasks
-from services.postgres.connection import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.schema.response import ResponseToken
-from utils.query import find_record, update_record
-from services.postgres.models import User
+from datetime import timedelta
 from utils.jwt import JWTHandler
+from utils.query import QueryDatabase
+from services.postgres.models import User
 from utils.whatsapp_api import send_whatsapp
 from src.schema.request_format import UserPin
+from src.schema.response import ResponseToken
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.connection import get_db
+from src.schema.custom_state import RegisterAccountState
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,
     StashBaseApiError,
@@ -29,7 +29,8 @@ async def create_pin_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
-    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
+    query = QueryDatabase(db)
+    account_record = await query.find(table=User, unique_id=schema.unique_id)
     hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     try:
@@ -60,10 +61,9 @@ async def create_pin_endpoint(
                 full_name=account_record.full_name,
             )
 
-        await update_record(
-            db=db,
+        await query.update(
             table=User,
-            conditions={"unique_id": schema.unique_id},
+            condition={"unique_id": schema.unique_id},
             data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
         )
 

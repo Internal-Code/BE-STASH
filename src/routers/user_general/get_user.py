@@ -1,9 +1,9 @@
+from utils.query import QueryDatabase
+from services.postgres.models import User
+from src.schema.request_format import UserEmail
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from utils.query import find_record
-from services.postgres.models import User
-from src.schema.request_format import UserEmail
 from src.schema.response import ResponseDefault, UserStatus
 from src.schema.validator import PhoneNumberValidatorMixin
 from utils.error import (
@@ -21,27 +21,26 @@ async def get_user_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase(db)
 
-    query = {}
+    filter = {}
 
     try:
         if identifier.isdigit():
             validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(
                 phone_number=identifier
             )
-            query["phone_number"] = validated_phone_number
+            filter["phone_number"] = validated_phone_number
         elif "@" in identifier:
             try:
                 validated_email = UserEmail(email=identifier)  # Validate email format
-                query["email"] = validated_email.email
+                filter["email"] = validated_email.email
             except ValueError:
                 raise InvalidOperationError("Email should be in a proper format.")
         else:
             raise InvalidOperationError("Should be a valid phone number or email.")
 
-        print(query)
-
-        account_record = await find_record(db=db, table=User, **query)
+        account_record = await query.find(table=User, **filter)
 
         if not account_record:
             raise DataNotFoundError(detail="User not found.")

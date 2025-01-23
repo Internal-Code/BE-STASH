@@ -1,12 +1,12 @@
 from datetime import timedelta
 from utils.helper import local_time
 from utils.generator import Generator
+from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
-from utils.query import find_record, update_record
 from src.schema.custom_state import RegisterAccountState
 from src.schema.request_format import UserWrongPhoneNumber
 from fastapi import APIRouter, status, Depends, BackgroundTasks
@@ -30,13 +30,17 @@ async def wrong_phone_number_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     generator = Generator()
+    query = QueryDatabase(db)
+
     current_time = local_time()
     generated_otp = generator.random_number(6)
-    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
-    registered_phone_number = await find_record(
-        db=db, table=User, phone_number=schema.phone_number
+
+    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    registered_phone_number = await query.find(
+        table=User, phone_number=schema.phone_number
     )
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=schema.unique_id)
+    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
+
     try:
         if not account_record:
             raise DataNotFoundError(detail="Account not found.")
@@ -69,17 +73,15 @@ async def wrong_phone_number_endpoint(
                 generated_otp=generated_otp,
             )
 
-            await update_record(
-                db=db,
+            await query.update(
                 table=User,
-                conditions={"unique_id": schema.unique_id},
+                condition={"unique_id": schema.unique_id},
                 data={"phone_number": schema.phone_number, "updated_at": current_time},
             )
 
-            await update_record(
-                db=db,
+            await query.update(
                 table=SendOtp,
-                conditions={"unique_id": schema.unique_id},
+                condition={"unique_id": schema.unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,

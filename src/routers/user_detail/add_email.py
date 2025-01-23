@@ -4,7 +4,7 @@ from src.schema.request_format import UserEmail
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.query import find_record, update_record
+from utils.query import QueryDatabase
 from services.postgres.models import User
 from src.secret import Config
 from utils.helper import local_time
@@ -28,9 +28,11 @@ async def add_email_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase(db)
+
     current_time = local_time()
-    registered_email = await find_record(db=db, table=User, email=schema.email)
-    user_record = await find_record(db=db, table=User, unique_id=current_user.unique_id)
+    registered_email = await query.find(table=User, email=schema.email)
+    user_record = await query.find(table=User, unique_id=current_user.unique_id)
 
     try:
         if registered_email:
@@ -49,10 +51,9 @@ async def add_email_endpoint(
         if user_record.email == schema.email:
             raise EntityForceInputSameDataError(detail="Cannot update into same email.")
 
-        await update_record(
-            db=db,
+        await query.update(
             table=User,
-            conditions={"unique_id": current_user.unique_id},
+            condition={"unique_id": current_user.unique_id},
             data={"email": schema.email, "updated_at": current_time},
         )
 

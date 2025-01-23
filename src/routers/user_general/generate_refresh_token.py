@@ -9,7 +9,7 @@ from src.schema.response import ResponseToken
 from src.schema.request_format import UserRefreshToken
 from utils.jwt import JWTHandler
 from utils.helper import local_time
-from utils.query import insert_record, find_record
+from utils.query import QueryDatabase
 from src.secret import Config
 from utils.error import (
     ServiceError,
@@ -28,15 +28,17 @@ async def generate_refresh_token_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
+    query = QueryDatabase(db)
+
     current_time = local_time()
-    user_token_record = await find_record(
-        db=db, table=UserToken, unique_id=current_user.unique_id
+    user_token_record = await query.find(
+        table=UserToken, unique_id=current_user.unique_id
     )
-    blacklist_access_token = await find_record(
-        db=db, table=BlacklistToken, access_token=user_token_record.access_token
+    blacklist_access_token = await query.find(
+        table=BlacklistToken, access_token=user_token_record.access_token
     )
-    blacklist_refresh_token = await find_record(
-        db=db, table=BlacklistToken, refresh_token=user_token_record.refresh_token
+    blacklist_refresh_token = await query.find(
+        table=BlacklistToken, refresh_token=user_token_record.refresh_token
     )
 
     try:
@@ -69,8 +71,7 @@ async def generate_refresh_token_endpoint(
             algorithm=config.ACCESS_TOKEN_ALGORITHM,
         )
 
-        await insert_record(
-            db=db,
+        await query.insert(
             table=UserToken,
             data={
                 "unique_id": unique_id,

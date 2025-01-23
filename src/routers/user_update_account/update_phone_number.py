@@ -1,15 +1,15 @@
 from typing import Annotated
-from utils.logger import logging
-from utils.generator import Generator
-from utils.jwt import JWTHandler
 from src.secret import Config
+from utils.jwt import JWTHandler
+from utils.logger import logging
+from utils.query import QueryDatabase
+from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from src.schema.request_format import UserPhoneNumber
 from src.schema.custom_state import RegisterAccountState
-from utils.query import update_record, find_record
 from src.schema.response import ResponseDefault, UniqueId
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.helper import local_time
@@ -35,14 +35,14 @@ async def update_phone_number_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     generator = Generator()
+    query = QueryDatabase(db)
+
     current_time = local_time()
     generated_otp = generator.random_number(6)
-    registered_phone_number = await find_record(
-        db=db, table=User, phone_number=schema.phone_number
+    registered_phone_number = await query.find(
+        table=User, phone_number=schema.phone_number
     )
-    otp_record = await find_record(
-        db=db, table=SendOtp, unique_id=current_user.unique_id
-    )
+    otp_record = await query.find(table=SendOtp, unique_id=current_user.unique_id)
 
     try:
         logging.info("Endpoint update user phone number.")
@@ -75,10 +75,9 @@ async def update_phone_number_endpoint(
                 generated_otp=generated_otp,
             )
 
-            await update_record(
-                db=db,
+            await query.update(
                 table=SendOtp,
-                conditions={"unique_id": current_user.unique_id},
+                condition={"unique_id": current_user.unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
@@ -89,10 +88,9 @@ async def update_phone_number_endpoint(
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },
             )
-            await update_record(
-                db=db,
+            await query.update(
                 table=User,
-                conditions={"unique_id": current_user.unique_id},
+                condition={"unique_id": current_user.unique_id},
                 data={
                     "updated_at": current_time,
                     "phone_number": schema.phone_number,

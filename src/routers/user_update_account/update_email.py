@@ -9,7 +9,7 @@ from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.request_format import UserEmail
 from src.schema.response import ResponseDefault
-from utils.query import find_record, update_record
+from utils.query import QueryDatabase
 from utils.error import (
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
@@ -29,8 +29,9 @@ async def update_email_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase(db)
     current_time = local_time()
-    registered_email = await find_record(db=db, table=User, email=schema.email)
+    registered_email = await query.find(table=User, email=schema.email)
 
     try:
         pass
@@ -49,10 +50,9 @@ async def update_email_endpoint(
                 detail="Email already taken. Please use another email."
             )
 
-        await update_record(
-            db=db,
+        await query.update(
             table=User,
-            conditions={"unique_id": current_user.unique_id},
+            condition={"unique_id": current_user.unique_id},
             data={
                 "updated_at": current_time,
                 "email": schema.email,

@@ -1,13 +1,13 @@
 from typing import Annotated
+from utils.jwt import JWTHandler
+from src.secret import Config
+from utils.helper import local_time
+from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
 from services.postgres.models import BlacklistToken, UserToken
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
-from utils.jwt import JWTHandler
-from src.secret import Config
-from utils.helper import local_time
-from utils.query import insert_record, find_record
 from utils.error import (
     ServiceError,
     StashBaseApiError,
@@ -23,18 +23,17 @@ async def logout_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase(db)
     current_time = local_time()
-    user_token_record = await find_record(
-        db=db, table=UserToken, unique_id=current_user.unique_id, order_by="desc"
+    user_token_record = await query.find(
+        table=UserToken, unique_id=current_user.unique_id, order_by="desc"
     )
-    blacklist_access_token = await find_record(
-        db=db,
+    blacklist_access_token = await query.find(
         table=BlacklistToken,
         access_token=user_token_record.access_token,
         order_by="desc",
     )
-    blacklist_refresh_token = await find_record(
-        db=db,
+    blacklist_refresh_token = await query.find(
         table=BlacklistToken,
         refresh_token=user_token_record.refresh_token,
         order_by="desc",
@@ -48,8 +47,7 @@ async def logout_endpoint(
             raise InvalidTokenError(detail="Refresh token already blacklisted.")
 
         if not (blacklist_refresh_token and blacklist_access_token):
-            await insert_record(
-                db=db,
+            await query.insert(
                 table=BlacklistToken,
                 data={
                     "blacklisted_at": current_time,

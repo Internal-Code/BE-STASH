@@ -4,6 +4,8 @@ from src.secret import Config
 from utils.logger import logging
 from utils.smtp import send_gmail
 from utils.helper import local_time
+from utils.jwt import JWTHandler
+from utils.query import QueryDatabase
 from utils.generator import Generator
 from src.schema.response import ResponseToken
 from fastapi.templating import Jinja2Templates
@@ -16,8 +18,6 @@ from fastapi import APIRouter, status, Depends, Request, BackgroundTasks
 from authlib.integrations.starlette_client import OAuthError
 from utils.error import ServiceError, StashBaseApiError
 from src.schema.custom_state import RegisterAccountState
-from utils.jwt import JWTHandler
-from utils.query import insert_record, find_record, update_record
 
 
 config = Config()
@@ -32,6 +32,7 @@ async def sso_authentication_endpoint(
 ) -> ResponseToken:
     response = ResponseToken()
     generator = Generator()
+    query = QueryDatabase(db)
 
     oauth = await google_oauth_configuration()
     token = await oauth.google.authorize_access_token(request)
@@ -44,7 +45,7 @@ async def sso_authentication_endpoint(
     hashed_pin = jwt_handler.get_password_hash(password=generated_pin)
 
     validated_full_name = FullNameValidatorMixin.validate_fullname(value=user_info.name)
-    account_record = await find_record(db=db, table=User, email=user_info.email)
+    account_record = await query.find(table=User, email=user_info.email)
 
     templates = Jinja2Templates(directory="templates")
 
@@ -53,8 +54,7 @@ async def sso_authentication_endpoint(
             raise ServiceError(detail="Google login failed.", name="Google SSO")
 
         if not account_record:
-            await insert_record(
-                db=db,
+            await query.insert(
                 table=User,
                 data={
                     "unique_id": unique_id,
@@ -64,8 +64,7 @@ async def sso_authentication_endpoint(
                 },
             )
 
-            await insert_record(
-                db=db,
+            await query.insert(
                 table=SendOtp,
                 data={
                     "unique_id": unique_id,
@@ -92,10 +91,9 @@ async def sso_authentication_endpoint(
                 email_body=email_body,
             )
 
-            await update_record(
-                db=db,
+            await query.update(
                 table=User,
-                conditions={"unique_id": unique_id},
+                condition={"unique_id": unique_id},
                 data={
                     "pin": hashed_pin,
                     "register_state": RegisterAccountState.SUCCESS,

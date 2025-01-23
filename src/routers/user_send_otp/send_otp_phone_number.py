@@ -2,14 +2,14 @@ from datetime import timedelta
 from src.secret import Config
 from utils.logger import logging
 from utils.helper import local_time
+from utils.query import QueryDatabase
 from utils.generator import Generator
-from services.postgres.models import SendOtp, User
-from utils.query import find_record, update_record
-from fastapi import APIRouter, status, Depends, BackgroundTasks
+from utils.whatsapp_api import send_whatsapp
+from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.request_format import UserUniqueId
-from services.postgres.connection import get_db
-from utils.whatsapp_api import send_whatsapp
+from services.postgres.models import SendOtp, User
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from src.schema.response import ResponseDefault, UniqueId
 from utils.error import (
     ServiceError,
@@ -30,10 +30,11 @@ async def send_otp_phone_number_endpoint(
 ) -> ResponseDefault:
     response = ResponseDefault()
     generator = Generator()
+    query = QueryDatabase(db)
     current_time = local_time()
     generated_otp = generator.random_number(6)
-    otp_record = await find_record(db=db, table=SendOtp, unique_id=schema.unique_id)
-    account_record = await find_record(db=db, table=User, unique_id=schema.unique_id)
+    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=schema.unique_id)
 
     try:
         if not account_record:
@@ -61,10 +62,9 @@ async def send_otp_phone_number_endpoint(
                 phone_number=account_record.phone_number,
                 generated_otp=generated_otp,
             )
-            await update_record(
-                db=db,
+            await query.update(
                 table=SendOtp,
-                conditions={"unique_id": schema.unique_id},
+                condition={"unique_id": schema.unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,

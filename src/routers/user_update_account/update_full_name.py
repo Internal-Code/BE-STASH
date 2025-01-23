@@ -8,7 +8,7 @@ from utils.jwt import JWTHandler
 from src.secret import Config
 from src.schema.request_format import UpdateUserFullName
 from utils.helper import local_time
-from utils.query import update_record
+from utils.query import QueryDatabase
 from services.postgres.models import User
 from utils.error import (
     ServiceError,
@@ -25,13 +25,13 @@ async def update_full_name_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
+    query = QueryDatabase()
     current_time = local_time()
     try:
         logging.info("Endpoint update full name.")
-        await update_record(
-            db=db,
+        await query.update(
             table=User,
-            conditions={"unique_id": current_user.unique_id},
+            condition={"unique_id": current_user.unique_id},
             data={
                 "full_name": schema.change_full_name_into,
                 "updated_at": current_time,

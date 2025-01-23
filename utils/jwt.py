@@ -1,25 +1,25 @@
-from typing import Annotated, Optional
+from fastapi import Depends
 from datetime import timedelta
 from jose import JWTError, jwt
-from sqlalchemy.engine.row import Row
-from passlib.context import CryptContext
+from src.secret import Config
+from utils.helper import local_time
 from utils.logger import logging
-from fastapi import Depends
+from sqlalchemy.engine.row import Row
+from typing import Annotated, Optional
+from passlib.context import CryptContext
+from utils.query import QueryDatabase
 from fastapi.security import OAuth2PasswordBearer
 from services.postgres.connection import get_db
 from src.schema.validator import SecurityCodeValidator, UniqueIdValidator
-from src.secret import Config
-from utils.helper import local_time
 from services.postgres.models import User, BlacklistToken
-from utils.query import find_record
 from utils.error import AuthenticationFailed, DataNotFoundError
 
 
 class JWTHandler:
-    def __init__(self, config: Config, tokenUrl: str = "/user/general/login"):
+    def __init__(self, config: Config):
         self.config = config
         self.password_content = CryptContext(schemes=["bcrypt"])
-        self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl=tokenUrl)
+        self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/general/login")
 
     def verify_pin(self, pin: str, hashed_pin: str) -> bool:
         return self.password_content.verify(pin, hashed_pin)
@@ -34,9 +34,8 @@ class JWTHandler:
         )
 
         async for db in get_db():
-            account_record = await find_record(
-                db=db, table=User, unique_id=validated_uuid
-            )
+            query = QueryDatabase(db)
+            account_record = await query.find(table=User, unique_id=validated_uuid)
 
             if not account_record:
                 raise DataNotFoundError(detail="User not found.")
@@ -69,8 +68,9 @@ class JWTHandler:
 
     async def get_current_user(self, token: Annotated[str, Depends]) -> Optional[Row]:
         async for db in get_db():
-            blacklisted_record = await find_record(
-                db=db, table=BlacklistToken, access_token=token
+            query = QueryDatabase(db)
+            blacklisted_record = await query.find(
+                table=BlacklistToken, access_token=token
             )
 
         try:
@@ -91,7 +91,8 @@ class JWTHandler:
                 raise AuthenticationFailed(detail="Could not validate credentials.")
 
             async for db in get_db():
-                users = await find_record(db=db, table=User, unique_id=user_uuid)
+                query = QueryDatabase(db)
+                users = await query.record(table=User, unique_id=user_uuid)
 
         except JWTError as e:
             logging.error(f"JWTError: {e}")

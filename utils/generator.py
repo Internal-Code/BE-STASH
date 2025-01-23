@@ -3,8 +3,7 @@ import string
 
 
 class Generator:
-    @staticmethod
-    def random_number(length: int = 1) -> str:
+    def random_number(self, length: int = 1) -> str:
         if length < 1:
             raise ValueError("length parameter should be more than 0")
 
@@ -13,8 +12,7 @@ class Generator:
 
         return str(random.randint(lower_bound, upper_bound))
 
-    @staticmethod
-    def random_word(length: int = 4) -> str:
+    def random_word(self, length: int = 4) -> str:
         if length < 1:
             raise ValueError("length parameter should be more than 0")
 

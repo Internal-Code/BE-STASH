@@ -2,14 +2,14 @@ from uuid import uuid4
 from datetime import timedelta
 from utils.logger import logging
 from utils.helper import local_time
+from utils.query import QueryDatabase
+from utils.generator import Generator
+from utils.whatsapp_api import send_whatsapp
 from src.schema.request_format import CreateUser
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
-from utils.query import find_record, insert_record
-from utils.whatsapp_api import send_whatsapp
-from utils.generator import Generator
 from src.schema.response import ResponseDefault, UniqueId
 from utils.error import ServiceError, StashBaseApiError, EntityAlreadyExistError
 
@@ -22,19 +22,18 @@ async def register_account_endpoint(
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     generator = Generator()
+    query = QueryDatabase(db)
     unique_id = str(uuid4())
     generated_otp = generator.random_number(6)
     response = ResponseDefault()
-    phone_number_record = await find_record(
-        db=db, table=User, phone_number=schema.phone_number
-    )
+
+    phone_number_record = await query.find(table=User, phone_number=schema.phone_number)
 
     try:
         if phone_number_record:
             raise EntityAlreadyExistError(detail="Phone number already registered.")
 
-        await insert_record(
-            db=db,
+        await query.insert(
             table=User,
             data={
                 "unique_id": unique_id,
@@ -43,8 +42,7 @@ async def register_account_endpoint(
             },
         )
 
-        await insert_record(
-            db=db,
+        await query.insert(
             table=SendOtp,
             data={
                 "unique_id": unique_id,

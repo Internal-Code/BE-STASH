@@ -5,7 +5,13 @@ from fastapi.responses import JSONResponse
 
 
 class StashBaseApiError(Exception):
-    """base error exception."""
+    """
+    Base error exception.
+
+    Attributes:
+        - detail (str): A description of the error. Default is "Service is unavailable."
+        - name (str, optional): An optional identifier for the error.
+    """
 
     def __init__(
         self, detail: str = "Service is unavailable.", name: str = None
@@ -18,6 +24,16 @@ class StashBaseApiError(Exception):
 def create_exception_handler(
     status_code: int, detail_message: str
 ) -> Callable[[Request, StashBaseApiError], JSONResponse]:
+    """
+    Create a custom exception handler for FastAPI.
+
+    Args:
+        - status_code (int): The HTTP status code to return with the response.
+        - detail_message (str): The default error message if no custom error detail is provided.
+
+    Returns:
+        - Callable: An asynchronous function to handle the specified error.
+    """
     detail = {"message": detail_message}
 
     async def exception_handler(_: Request, exc: StashBaseApiError) -> JSONResponse:
@@ -36,78 +52,80 @@ def create_exception_handler(
 
 
 class ServiceError(StashBaseApiError):
-    """failures in external API or Services, like DB or third-party services."""
-
-    pass
+    """
+    Failures in external API or services, such as database or third-party services.
+    """
 
 
 class DataNotFoundError(StashBaseApiError):
-    """database returns nothing"""
-
-    pass
+    """
+    Raised when a query to the database or service returns no results.
+    """
 
 
 class EntityAlreadyVerifiedError(StashBaseApiError):
-    """user trying input new data into already verified data."""
-
-    pass
+    """
+    Raised when a user attempts to input new data into an already verified entity.
+    """
 
 
 class UserNotVerifiedError(StashBaseApiError):
-    """user trying input new data into already verified data."""
-
-    pass
+    """
+    Raised when a user attempts to perform an action requiring verification,
+    but their account or data is not verified.
+    """
 
 
 class EntityForceInputSameDataError(StashBaseApiError):
-    """user trying input new data which same with old data."""
-
-    pass
+    """
+    Raised when a user tries to input new data that matches the previously saved data exactly.
+    """
 
 
 class EntityAlreadyFilledError(StashBaseApiError):
-    """user try to input new data into not null data"""
-
-    pass
+    """
+    Raised when a user attempts to input data into a non-null field that already contains a value.
+    """
 
 
 class EntityDoesNotMatchedError(StashBaseApiError):
-    """user input data that not matched into saved record"""
-
-    pass
+    """
+    Raised when a user inputs data that does not match an existing saved record.
+    """
 
 
 class MandatoryInputError(StashBaseApiError):
-    """user should input data before proceeding to next endpoint"""
-
-    pass
+    """
+    Raised when a user does not provide required data to proceed to the next step or endpoint.
+    """
 
 
 class DatabaseQueryError(StashBaseApiError):
-    """exception for database query error"""
-
-    pass
+    """
+    Raised when there is an error executing a database query.
+    """
 
 
 class EntityAlreadyExistError(StashBaseApiError):
-    """conflicted data, user trying to create something that already saved."""
-
-    pass
+    """
+    Raised when a user attempts to create a resource or entity that already exists in the database.
+    """
 
 
 class InvalidOperationError(StashBaseApiError):
-    """invalid operations like trying to delete a non-existing entity, etc."""
-
-    pass
+    """
+    Raised for invalid operations, such as attempting to delete a non-existing entity or performing
+    an unsupported action.
+    """
 
 
 class AuthenticationFailed(StashBaseApiError):
-    """invalid authentication credentials"""
-
-    pass
+    """
+    Raised when user authentication fails due to invalid credentials.
+    """
 
 
 class InvalidTokenError(StashBaseApiError):
-    """invalid token"""
-
-    pass
+    """
+    Raised when a provided token is invalid or malformed.
+    """
