@@ -1,6 +1,5 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
-from src.secret import Config
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from services.postgres.models import SendOtp, User
@@ -16,7 +15,7 @@ from utils.error import (
     InvalidOperationError,
 )
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 

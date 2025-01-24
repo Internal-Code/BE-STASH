@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import timedelta
 from src.secret import Config
 from utils.jwt import JWTHandler
 from utils.smtp import send_gmail
@@ -20,7 +21,7 @@ from utils.error import (
 )
 
 config = Config()
-jwt_handler = JWTHandler(config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
@@ -44,15 +45,24 @@ async def reset_pin_endpoint(
         table=ResetPin, unique_id=account_record.unique_id
     )
 
+    save_to_update = account_record.created_pin_at + timedelta(days=1)
+
     try:
         if not account_record:
             raise DataNotFoundError(detail="User not found.")
 
         if current_time > reset_pin_record.blacklisted_at:
-            raise InvalidOperationError(detail="Reset pin token expired.")
+            raise InvalidOperationError(detail="Reset PIN token expired.")
 
         if schema.pin != schema.confirm_new_pin:
-            raise InvalidOperationError(detail="PIN and Confirm PIN shoud be matched.")
+            raise InvalidOperationError(detail="PIN and confirm PIN should be matched.")
+
+        if current_time < save_to_update:
+            time_difference = save_to_update - current_time
+            formatted_time = f"{time_difference.seconds // 3600} hr {time_difference.seconds % 3600 // 60} minutes"
+            raise InvalidOperationError(
+                detail=f"Cannot reset PIN, please wait for {formatted_time}."
+            )
 
         if current_time < reset_pin_record.blacklisted_at:
             if account_record.verified_email and account_record.verified_phone_number:
@@ -127,7 +137,11 @@ async def reset_pin_endpoint(
             await query.update(
                 table=User,
                 condition={"unique_id": account_record.unique_id},
-                data={"updated_at": current_time, "pin": hashed_pin},
+                data={
+                    "updated_at": current_time,
+                    "pin": hashed_pin,
+                    "created_pin_at": current_time,
+                },
             )
 
             response.message = "Success reset PIN."

@@ -18,7 +18,7 @@ from utils.error import (
 )
 
 config = Config()
-jwt_handler = JWTHandler(config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
@@ -55,7 +55,6 @@ async def generate_refresh_token_endpoint(
         )
 
         unique_id = payload.get("sub")
-        print(unique_id)
 
         if not unique_id:
             raise InvalidTokenError(detail="Invalid refresh token.")
@@ -83,7 +82,7 @@ async def generate_refresh_token_endpoint(
         response.access_token = new_access_token
 
     except JWTError:
-        raise InvalidTokenError(detail="Invalid JWT Token.")
+        raise InvalidTokenError(detail="Invalid refresh token.")
 
     except StashBaseApiError:
         raise

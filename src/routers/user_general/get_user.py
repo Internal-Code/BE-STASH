@@ -1,7 +1,7 @@
 from utils.query import QueryDatabase
 from services.postgres.models import User
-from src.schema.request_format import UserEmail
 from fastapi import APIRouter, status, Depends
+from src.schema.request_format import UserEmail
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault, UserStatus

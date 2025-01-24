@@ -1,24 +1,14 @@
+from enum import StrEnum
+from typing import Optional
 from datetime import datetime
 from utils.helper import local_time
-from typing import Optional
-from enum import StrEnum
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from src.schema.validator import (
     FullNameValidatorMixin,
     PhoneNumberValidatorMixin,
     SecurityCodeValidator,
     YearValidator,
-    UniqueIdValidator,
 )
-
-
-class UserUniqueId(BaseModel):
-    unique_id: Optional[str] = None
-
-    @field_validator("unique_id")
-    @classmethod
-    def validate_unique_id(cls, value: Optional[str]) -> str:
-        return UniqueIdValidator.validate_uuid(unique_id=value)
 
 
 class UserPin(BaseModel):
@@ -56,11 +46,11 @@ class UserRefreshToken(BaseModel):
     refresh_token: Optional[str] = None
 
 
-class UserLogin(UserPin, UserUniqueId):
+class UserLogin(UserPin):
     pass
 
 
-class UserWrongPhoneNumber(UserPhoneNumber, UserUniqueId):
+class UserWrongPhoneNumber(UserPhoneNumber):
     pass
 
 

@@ -1,5 +1,4 @@
 from typing import Annotated
-from src.secret import Config
 from datetime import timedelta
 from utils.jwt import JWTHandler
 from utils.smtp import send_gmail
@@ -20,9 +19,10 @@ from utils.error import (
     MandatoryInputError,
     InvalidOperationError,
     EntityForceInputSameDataError,
+    EntityAlreadyExistError,
 )
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
@@ -43,6 +43,13 @@ async def wrong_email_endpoint(
     templates = Jinja2Templates(directory="templates")
 
     try:
+        if schema.email != current_user.email:
+            registered_email = await query.find(table=User, email=schema.email)
+            if registered_email:
+                raise EntityAlreadyExistError(
+                    detail="Email already taken. Please use another email."
+                )
+
         if not current_user.email:
             raise MandatoryInputError(detail="User should add email first.")
 

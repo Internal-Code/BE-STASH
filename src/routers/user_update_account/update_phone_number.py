@@ -1,19 +1,18 @@
+# TODO: Refactor this endpoint
 from typing import Annotated
-from src.secret import Config
 from utils.jwt import JWTHandler
+from datetime import timedelta
 from utils.logger import logging
 from utils.query import QueryDatabase
+from utils.helper import local_time
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from src.schema.request_format import UserPhoneNumber
-from src.schema.custom_state import RegisterAccountState
 from src.schema.response import ResponseDefault, UniqueId
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.helper import local_time
-from datetime import timedelta
 from utils.error import (
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
@@ -23,7 +22,7 @@ from utils.error import (
     InvalidOperationError,
 )
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
@@ -39,20 +38,23 @@ async def update_phone_number_endpoint(
 
     current_time = local_time()
     generated_otp = generator.random_number(6)
-    registered_phone_number = await query.find(
-        table=User, phone_number=schema.phone_number
-    )
     otp_record = await query.find(table=SendOtp, unique_id=current_user.unique_id)
 
     try:
         logging.info("Endpoint update user phone number.")
-        if registered_phone_number:
-            raise EntityAlreadyExistError(detail="Phone number already used.")
+        if current_user.phone_number != schema.phone_number:
+            registered_phone_number = await query.find(
+                table=User, phone_number=schema.phone_number
+            )
+            if registered_phone_number:
+                raise EntityAlreadyExistError(
+                    detail="Phone number already registered. Please use another phone number."
+                )
 
         if schema.phone_number == current_user.phone_number:
             raise EntityForceInputSameDataError(detail="Cannot use same phone number.")
 
-        if current_user.register_state == RegisterAccountState.ON_PROCESS:
+        if not current_user.register_state:
             raise UserNotVerifiedError(
                 detail="User should be validated, before changing phone number."
             )
@@ -94,7 +96,7 @@ async def update_phone_number_endpoint(
                 data={
                     "updated_at": current_time,
                     "phone_number": schema.phone_number,
-                    "otp_state": RegisterAccountState.ON_PROCESS,
+                    "otp_state": False,
                     "verified_phone_number": False,
                 },
             )

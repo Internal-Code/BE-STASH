@@ -1,3 +1,4 @@
+from uuid import UUID
 from fastapi import Depends
 from datetime import timedelta
 from jose import JWTError, jwt
@@ -10,14 +11,14 @@ from passlib.context import CryptContext
 from utils.query import QueryDatabase
 from fastapi.security import OAuth2PasswordBearer
 from services.postgres.connection import get_db
-from src.schema.validator import SecurityCodeValidator, UniqueIdValidator
+from src.schema.validator import SecurityCodeValidator
 from services.postgres.models import User, BlacklistToken
 from utils.error import AuthenticationFailed, DataNotFoundError
 
 
 class JWTHandler:
-    def __init__(self, config: Config):
-        self.config = config
+    def __init__(self):
+        self.config = Config()
         self.password_content = CryptContext(schemes=["bcrypt"])
 
     def verify_pin(self, pin: str, hashed_pin: str) -> bool:
@@ -26,22 +27,21 @@ class JWTHandler:
     def get_password_hash(self, password: str) -> str:
         return self.password_content.hash(password)
 
-    async def authenticate_user(self, unique_id: str, pin: str) -> Optional[Row]:
-        validated_uuid = UniqueIdValidator.validate_uuid(unique_id=unique_id)
+    async def authenticate_user(self, unique_id: UUID, pin: str) -> Optional[Row]:
         validated_pin = SecurityCodeValidator.validate_security_code(
             type="pin", value=pin
         )
 
         async for db in get_db():
             query = QueryDatabase(db)
-            account_record = await query.find(table=User, unique_id=validated_uuid)
+            account_record = await query.find(table=User, unique_id=unique_id)
 
             if not account_record:
                 raise DataNotFoundError(detail="User not found.")
             if not account_record.pin:
                 raise AuthenticationFailed(detail="User has not set pin.")
             if not self.verify_pin(pin=validated_pin, hashed_pin=account_record.pin):
-                raise AuthenticationFailed(detail="invalid pin.")
+                raise AuthenticationFailed(detail="Invalid PIN.")
 
             return account_record
 
@@ -49,7 +49,6 @@ class JWTHandler:
         to_encode = data.copy()
         expires = local_time() + access_token_expires
         to_encode.update({"exp": expires})
-        logging.info(f"Creating access token with payload: {to_encode}")
         encoded_access_token = jwt.encode(
             claims=to_encode, key=self.config.ACCESS_TOKEN_SECRET_KEY
         )
@@ -96,7 +95,7 @@ class JWTHandler:
 
             async for db in get_db():
                 query = QueryDatabase(db)
-                users = await query.record(table=User, unique_id=user_uuid)
+                users = await query.find(table=User, unique_id=user_uuid)
 
         except JWTError as e:
             logging.error(f"JWTError: {e}")

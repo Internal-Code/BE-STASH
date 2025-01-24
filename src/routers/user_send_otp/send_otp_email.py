@@ -1,4 +1,3 @@
-from src.secret import Config
 from utils.jwt import JWTHandler
 from typing import Annotated
 from datetime import timedelta
@@ -20,7 +19,7 @@ from utils.error import (
     InvalidOperationError,
 )
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 

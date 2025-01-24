@@ -1,3 +1,4 @@
+from uuid import UUID
 from src.secret import Config
 from datetime import timedelta
 from utils.jwt import JWTHandler
@@ -15,18 +16,19 @@ from utils.error import (
 )
 
 config = Config()
-jwt_handler = JWTHandler(config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def login_endpoint(
     schema: UserLogin,
+    unique_id: UUID,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
     response = ResponseToken()
     query = QueryDatabase(db)
     account_record = await jwt_handler.authenticate_user(
-        unique_id=schema.unique_id, pin=schema.pin
+        unique_id=str(unique_id), pin=schema.pin
     )
 
     try:
@@ -40,7 +42,7 @@ async def login_endpoint(
 
         refresh_token = jwt_handler.create_refresh_token(
             data={"sub": account_record.unique_id},
-            refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
+            refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 
         await query.insert(
@@ -65,7 +67,7 @@ async def login_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/login",
+    path="/login/{unique_id}",
     response_model=ResponseToken,
     endpoint=login_endpoint,
     status_code=status.HTTP_200_OK,

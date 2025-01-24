@@ -1,3 +1,4 @@
+from uuid import UUID
 from datetime import timedelta
 from utils.helper import local_time
 from utils.generator import Generator
@@ -7,7 +8,6 @@ from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
-from src.schema.custom_state import RegisterAccountState
 from src.schema.request_format import UserWrongPhoneNumber
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
@@ -25,6 +25,7 @@ router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 async def wrong_phone_number_endpoint(
     schema: UserWrongPhoneNumber,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -35,17 +36,17 @@ async def wrong_phone_number_endpoint(
     current_time = local_time()
     generated_otp = generator.random_number(6)
 
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=str(unique_id))
     registered_phone_number = await query.find(
         table=User, phone_number=schema.phone_number
     )
-    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
+    otp_record = await query.find(table=SendOtp, unique_id=str(unique_id))
 
     try:
         if not account_record:
             raise DataNotFoundError(detail="Account not found.")
 
-        if account_record.register_state == RegisterAccountState.SUCCESS:
+        if account_record.register_state:
             raise EntityAlreadyFilledError(detail="Account already set pin.")
 
         if account_record.phone_number == schema.phone_number:
@@ -75,13 +76,13 @@ async def wrong_phone_number_endpoint(
 
             await query.update(
                 table=User,
-                condition={"unique_id": schema.unique_id},
+                condition={"unique_id": str(unique_id)},
                 data={"phone_number": schema.phone_number, "updated_at": current_time},
             )
 
             await query.update(
                 table=SendOtp,
-                condition={"unique_id": schema.unique_id},
+                condition={"unique_id": str(unique_id)},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
@@ -106,9 +107,9 @@ async def wrong_phone_number_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/phone-number",
+    path="/phone-number/{unique_id}",
     response_model=ResponseDefault,
     endpoint=wrong_phone_number_endpoint,
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_200_OK,
     summary="Wrong registered account phone number.",
 )

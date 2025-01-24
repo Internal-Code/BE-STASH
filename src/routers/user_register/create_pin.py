@@ -2,6 +2,7 @@ from uuid import UUID
 from src.secret import Config
 from datetime import timedelta
 from utils.jwt import JWTHandler
+from utils.helper import local_time
 from utils.query import QueryDatabase
 from services.postgres.models import User
 from utils.whatsapp_api import send_whatsapp
@@ -9,7 +10,6 @@ from src.schema.request_format import UserPin
 from src.schema.response import ResponseToken
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from src.schema.custom_state import RegisterAccountState
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,
@@ -20,7 +20,7 @@ from utils.error import (
 )
 
 config = Config()
-jwt_handler = JWTHandler(config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
@@ -32,6 +32,7 @@ async def create_pin_endpoint(
 ) -> ResponseToken:
     response = ResponseToken()
     query = QueryDatabase(db)
+    current_time = local_time()
     account_record = await query.find(table=User, unique_id=str(unique_id))
     hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
@@ -39,7 +40,7 @@ async def create_pin_endpoint(
         if not account_record:
             raise DataNotFoundError(detail="Account not found.")
 
-        if account_record.register_state == RegisterAccountState.SUCCESS:
+        if account_record.register_state:
             raise EntityAlreadyFilledError(detail="Account already set pin.")
 
         if not account_record.verified_phone_number:
@@ -66,7 +67,12 @@ async def create_pin_endpoint(
         await query.update(
             table=User,
             condition={"unique_id": str(unique_id)},
-            data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
+            data={
+                "pin": hashed_pin,
+                "updated_at": current_time,
+                "created_pin_at": current_time - timedelta(days=30),
+                "register_state": True,
+            },
         )
 
         access_token = jwt_handler.create_access_token(
@@ -76,7 +82,7 @@ async def create_pin_endpoint(
 
         refresh_token = jwt_handler.create_refresh_token(
             data={"sub": str(unique_id)},
-            refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
+            refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 
         response.access_token = access_token

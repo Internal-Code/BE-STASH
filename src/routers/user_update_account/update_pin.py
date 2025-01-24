@@ -1,3 +1,4 @@
+# TODO: Refactor this endpoint
 from typing import Annotated
 from src.secret import Config
 from utils.logger import logging
@@ -21,7 +22,7 @@ from utils.error import (
 )
 
 config = Config()
-jwt_handler = JWTHandler(config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 

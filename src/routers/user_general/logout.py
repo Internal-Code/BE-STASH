@@ -1,6 +1,5 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
-from src.secret import Config
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
@@ -14,7 +13,7 @@ from utils.error import (
     InvalidTokenError,
 )
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 

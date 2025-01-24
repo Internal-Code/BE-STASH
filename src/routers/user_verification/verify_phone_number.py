@@ -6,7 +6,6 @@ from src.schema.request_format import UserOtp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
-from src.schema.custom_state import RegisterAccountState
 from src.schema.response import ResponseDefault, UniqueId
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
@@ -60,7 +59,7 @@ async def verify_phone_number_endpoint(
                 condition={"unique_id": str(unique_id)},
                 data={
                     "verified_phone_number": True,
-                    "otp_state": RegisterAccountState.SUCCESS,
+                    "otp_state": True,
                 },
             )
 

@@ -3,7 +3,6 @@ from typing import Optional
 from utils.helper import local_time
 from sqlmodel import SQLModel, Field, Relationship
 from services.postgres.connection import database_connection
-from src.schema.custom_state import RegisterAccountState
 
 
 class User(SQLModel, table=True):
@@ -11,6 +10,9 @@ class User(SQLModel, table=True):
     id: int = Field(primary_key=True)
     created_at: datetime = Field(default=local_time())
     updated_at: Optional[datetime] = Field(default=None, unique=False, nullable=True)
+    created_pin_at: Optional[datetime] = Field(
+        default=None, unique=False, nullable=True
+    )
     unique_id: Optional[str] = Field(default=None, unique=True)
     full_name: Optional[str] = Field(default=None, unique=False, nullable=True)
     email: Optional[str] = Field(default=None, unique=True, nullable=True)
@@ -18,12 +20,8 @@ class User(SQLModel, table=True):
     pin: Optional[str] = Field(default=None, unique=False, nullable=True)
     verified_email: bool = Field(default=False)
     verified_phone_number: bool = Field(default=False)
-    otp_state: RegisterAccountState = Field(
-        default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True
-    )
-    register_state: RegisterAccountState = Field(
-        default=RegisterAccountState.ON_PROCESS, unique=False, nullable=True
-    )
+    otp_state: bool = Field(default=False, unique=False, nullable=True)
+    register_state: bool = Field(default=False, unique=False, nullable=True)
     money_spend: list["MoneySpend"] = Relationship(
         back_populates="user", cascade_delete=True
     )

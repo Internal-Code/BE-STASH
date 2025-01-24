@@ -21,6 +21,8 @@ class FullNameValidatorMixin:
 class PhoneNumberValidatorMixin:
     @classmethod
     def validate_phone_number(cls, phone_number: str) -> str:
+        if not phone_number:
+            raise InvalidOperationError("Phone number should not be empty")
         if not phone_number.isdigit():
             raise InvalidOperationError("Phone number must contain only digits.")
         if not (10 <= len(phone_number) <= 13):
@@ -33,6 +35,9 @@ class PhoneNumberValidatorMixin:
 class SecurityCodeValidator:
     @classmethod
     def validate_security_code(cls, value: str, type: Literal["otp", "pin"]) -> str:
+        if not value:
+            raise InvalidOperationError(f"{type.upper()} should not be empty.")
+
         if not value.isdigit():
             raise InvalidOperationError(
                 detail=f"{type.upper()} must contain only digits."

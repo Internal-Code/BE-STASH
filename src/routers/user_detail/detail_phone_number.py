@@ -1,12 +1,11 @@
 from typing import Annotated
-from src.secret import Config
 from utils.jwt import JWTHandler
 from fastapi import APIRouter, status, Depends
 from src.schema.response import ResponseDefault
 from utils.error import ServiceError, StashBaseApiError
 
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 

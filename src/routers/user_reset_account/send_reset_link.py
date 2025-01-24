@@ -35,10 +35,9 @@ async def send_reset_link_endpoint(
     current_time = local_time()
 
     account_record = await query.find(table=User, unique_id=str(unique_id))
-    reset_pin_record = await query.find(
-        table=ResetPin, unique_id=account_record.unique_id
+    reset_link = (
+        f"http://localhost:8000/api/v1/user/reset-account/reset-pin/{str(unique_id)}"
     )
-    reset_link = f"http://localhost:8000/api/v1/user/reset-account/reset-pin/{account_record.unique_id}"
 
     templates = Jinja2Templates(directory="templates")
 
@@ -48,6 +47,12 @@ async def send_reset_link_endpoint(
 
         if not account_record.pin:
             raise MandatoryInputError(detail="Should create pin first.")
+
+        reset_pin_record = await query.find(
+            table=ResetPin, unique_id=account_record.unique_id
+        )
+        if not reset_pin_record:
+            raise DataNotFoundError(detail="Reset PIN data not found.")
 
         if current_time < reset_pin_record.save_to_hit_at:
             raise InvalidOperationError(detail="Should wait in 1 minutes.")
@@ -135,7 +140,7 @@ async def send_reset_link_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/send-link/{unique_id}",
     response_model=ResponseDefault,
     endpoint=send_reset_link_endpoint,

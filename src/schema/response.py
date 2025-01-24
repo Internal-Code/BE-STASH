@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import Optional, Any
+from pydantic import BaseModel, field_validator
+from src.schema.validator import UniqueIdValidator
 
 
 class ResponseDefault(BaseModel):
@@ -17,6 +18,11 @@ class ResponseToken(BaseModel):
 class UniqueId(BaseModel):
     unique_id: Optional[str] = None
 
+    @field_validator("unique_id")
+    @classmethod
+    def validate_pin(cls, unique_id: Optional[str]) -> str:
+        return UniqueIdValidator.validate_uuid(unique_id=unique_id)
+
 
 class ServerStatus(BaseModel):
     status: Optional[str] = None
@@ -31,11 +37,11 @@ class IsPhoneNumberVerified(BaseModel):
 
 
 class RegisterState(BaseModel):
-    register_state: Optional[str] = None
+    register_state: bool = False
 
 
 class OTPState(BaseModel):
-    otp_state: Optional[str] = None
+    otp_state: bool = False
 
 
 class UserStatus(
