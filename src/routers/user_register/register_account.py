@@ -31,7 +31,7 @@ async def register_account_endpoint(
 
     try:
         if phone_number_record:
-            raise EntityAlreadyExistError(detail="Phone number already registered.")
+            raise EntityAlreadyExistError(detail="Phone number already taken.")
 
         await query.insert(
             table=User,

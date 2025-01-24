@@ -1,4 +1,3 @@
-# TODO: Refactor this endpoint
 from typing import Annotated
 from utils.jwt import JWTHandler
 from datetime import timedelta
@@ -48,7 +47,7 @@ async def update_phone_number_endpoint(
             )
             if registered_phone_number:
                 raise EntityAlreadyExistError(
-                    detail="Phone number already registered. Please use another phone number."
+                    detail="Phone number already taken. Please use another phone number."
                 )
 
         if schema.phone_number == current_user.phone_number:
@@ -90,6 +89,7 @@ async def update_phone_number_endpoint(
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },
             )
+
             await query.update(
                 table=User,
                 condition={"unique_id": current_user.unique_id},
