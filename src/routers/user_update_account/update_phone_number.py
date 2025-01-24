@@ -51,7 +51,9 @@ async def update_phone_number_endpoint(
                 )
 
         if schema.phone_number == current_user.phone_number:
-            raise EntityForceInputSameDataError(detail="Cannot use same phone number.")
+            raise EntityForceInputSameDataError(
+                detail="Cannot update into same phone number."
+            )
 
         if not current_user.register_state:
             raise UserNotVerifiedError(
