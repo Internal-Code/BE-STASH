@@ -39,7 +39,6 @@ case $1 in
 esac
 
 export ENV_FILE
-sh ./scripts/load_env.sh
 
 # Run the Docker container using the appropriate environment settings
 echo "Starting container with environment variables from $ENV_FILE..."

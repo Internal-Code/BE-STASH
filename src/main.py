@@ -21,24 +21,19 @@ from src.routers.user_update_account import (
     update_pin,
     update_email,
 )
-
-# from src.routers.monthly_spend import create_spend
+from src.routers.monthly_category import list_category
 from src.routers.user_detail import (
     add_email,
     detail_email,
     detail_full_name,
     detail_phone_number,
 )
-# from src.routers.monthly_schema import (
-#     create_category,
-#     create_schema,
-#     list_schema,
-#     list_category,
-#     delete_category,
-#     delete_schema,
-#     update_schema,
-#     update_category,
-# )
+from src.routers.monthly_schema import (
+    create_schema,
+    delete_schema,
+    update_schema,
+    list_schema,
+)
 
 config = Config()
 
@@ -77,14 +72,14 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=config.MIDDLEWARE_SECRET_KEY)
 
 app.include_router(health_check.router)
+app.include_router(create_schema.router)
+app.include_router(delete_schema.router)
+app.include_router(list_schema.router)
+app.include_router(update_schema.router)
+app.include_router(list_category.router)
 # app.include_router(create_category.router)
-# app.include_router(create_schema.router)
 # app.include_router(delete_category.router)
-# app.include_router(delete_schema.router)
-# app.include_router(list_category.router)
-# app.include_router(list_schema.router)
 # app.include_router(update_category.router)
-# app.include_router(update_schema.router)
 # app.include_router(create_spend.router)
 app.include_router(add_email.router)
 app.include_router(detail_email.router)
