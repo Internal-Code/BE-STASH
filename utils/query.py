@@ -18,7 +18,7 @@ class QueryDatabase:
         filter: Literal["and", "or"] = "and",
         order_by: Literal["asc", "desc"] = "asc",
         **kwargs: Any,
-    ) -> Union[list[Row], Row, None]:
+    ) -> Union[list[dict], Row, None]:
         condition = []
 
         if kwargs:

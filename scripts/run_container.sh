@@ -42,4 +42,4 @@ export ENV_FILE
 
 # Run the Docker container using the appropriate environment settings
 echo "Starting container with environment variables from $ENV_FILE..."
-docker-compose --env-file $ENV_FILE up -d
+docker compose --env-file $ENV_FILE up -d

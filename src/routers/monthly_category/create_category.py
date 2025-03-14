@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import Annotated
 from utils.logger import logging
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Path
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
@@ -28,15 +28,23 @@ router = APIRouter(tags=["Monthly Schema"])
 
 async def create_category_endpoint(
     schema: MonthlyCategory,
-    month_id: UUID,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
+    month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
+    year: str = Path(regex="^\d{4}$", description="Year must be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     query = QueryDatabase(db)
-
+    year = int(year)
+    
+    monthly_schema_record = await query.find(
+        table=MonthlySchema,
+        month = month,
+        year = year,
+        deleted_at = None
+    )
+    
     category_record = await query.find(
-
         table=CategorySchema,
         unique_id=current_user.unique_id,
         category=schema.category,
@@ -44,36 +52,21 @@ async def create_category_endpoint(
         deleted_at=None,
     )
     monthly_schema_record = await query.find(
-         table=MonthlySchema, month_id=str(month_id)
+        table=MonthlySchema, month_id=str(month_id)
     )
-    user_token_record = await query.find(
-         table=UserToken, unique_id=current_user.unique_id
-    )
-    blacklist_access_token = await query.find(
-         table=BlacklistToken, access_token=user_token_record.access_token
-    )
-    blacklist_refresh_token = await query.find(
-         table=BlacklistToken, refresh_token=user_token_record.refresh_token
-    )
-
+    
     try:
-        if blacklist_access_token:
-            raise InvalidTokenError(detail="Access token already blacklisted.")
-
-        if blacklist_refresh_token:
-            raise InvalidTokenError(detail="Refresh token already blacklisted.")
-
         if not monthly_schema_record:
+            logging.info("Schema not found.")
             raise DataNotFoundError(detail="Schema not found.")
 
+        month_id = monthly_schema_record.month_id
+        
         if category_record:
             logging.info(f"Category {schema.category} already created.")
-            raise EntityAlreadyExistError(
-                detail=f"Category {schema.category} already created."
-            )
+            raise EntityAlreadyExistError(detail=f"Category {schema.category} already created.")
 
         await query.insert(
-
             table=CategorySchema,
             data={
                 "category": schema.category,
@@ -94,7 +87,7 @@ async def create_category_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/schema/create-category/{month_id}",
+    path="/create/category/{month}/{year}",
     response_model=ResponseDefault,
     endpoint=create_category_endpoint,
     status_code=status.HTTP_201_CREATED,

@@ -13,6 +13,7 @@ from utils.error import (
     StashBaseApiError,
     EntityAlreadyVerifiedError,
     InvalidOperationError,
+    MandatoryInputError,
 )
 
 jwt_handler = JWTHandler()
@@ -30,6 +31,9 @@ async def verify_email_endpoint(
     otp_record = await query.find(table=SendOtp, unique_id=current_user.unique_id)
 
     try:
+        if not current_user.email:
+            raise MandatoryInputError(detail="Should add email first.")
+
         if current_user.verified_email:
             raise EntityAlreadyVerifiedError(detail="Email already verified.")
 

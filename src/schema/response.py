@@ -24,6 +24,15 @@ class UniqueId(BaseModel):
         return UniqueIdValidator.validate_uuid(unique_id=unique_id)
 
 
+class MonthId(BaseModel):
+    month_id: Optional[str] = None
+
+    @field_validator("month_id")
+    @classmethod
+    def validate_month_id(cls, validate_month_id: Optional[str]) -> str:
+        return UniqueIdValidator.validate_uuid(unique_id=validate_month_id)
+
+
 class ServerStatus(BaseModel):
     status: Optional[str] = None
 

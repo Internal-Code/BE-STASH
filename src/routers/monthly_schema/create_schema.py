@@ -6,7 +6,7 @@ from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import MonthlySchema
 from src.schema.request_format import DefaultSchema
-from src.schema.response import ResponseDefault, UniqueId
+from src.schema.response import ResponseDefault, MonthId
 from utils.query import QueryDatabase
 from utils.error import (
     EntityAlreadyExistError,
@@ -50,8 +50,8 @@ async def create_schema_endpoint(
                 "month_id": month_id,
             },
         )
-        response.message = "Created new schema."
-        response.data = UniqueId(unique_id=month_id)
+        response.message = "Sucess created new schema."
+        response.data = MonthId(month_id=month_id)
 
     except StashBaseApiError:
         raise
