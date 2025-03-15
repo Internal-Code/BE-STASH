@@ -1,3 +1,4 @@
+from uuid import uuid4
 from typing import Annotated
 from utils.logger import logging
 from utils.jwt import JWTHandler
@@ -7,11 +8,12 @@ from fastapi import APIRouter, status, Depends, Path
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from src.schema.request_format import DeleteCategorySchema
+from src.schema.request_format import UpdateBudgetSchema
 from services.postgres.models import CategorySchema, MonthlySchema
 from utils.error import (
     ServiceError,
     StashBaseApiError,
+    EntityForceInputSameDataError,
     DataNotFoundError,
 )
 
@@ -19,8 +21,8 @@ jwt_handler = JWTHandler()
 router = APIRouter(tags=["Monthly Category"])
 
 
-async def delete_category_endpoint(
-    schema: DeleteCategorySchema,
+async def update_budget_endpoint(
+    schema: UpdateBudgetSchema,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
@@ -38,9 +40,9 @@ async def delete_category_endpoint(
 
         if not monthly_schema_record:
             logging.info("Monthly schema not found for the given month and year.")
-            raise DataNotFoundError(
-                detail="Monthly schema not found for the given month and year."
-            )
+            raise DataNotFoundError(detail="Monthly schema not found for the given month and year.")
+
+        month_id = monthly_schema_record.month_id
 
         category_record = await query.find(
             table=CategorySchema,
@@ -51,16 +53,24 @@ async def delete_category_endpoint(
 
         if not category_record:
             logging.info(f"Category {schema.category} not found.")
-            raise DataNotFoundError(detail=f"Category {schema.category} not found.")
-
+            raise DataNotFoundError(
+                detail=f"Category {schema.category} not found."
+            )
+            
         category_id = category_record.category_id
+        
+        if category_record.budget == schema.changed_budget_into:
+            raise EntityForceInputSameDataError(detail="Cannot update into same budget.")
 
         await query.update(
             table=CategorySchema,
             condition={"category_id": category_id},
-            data={"deleted_at": current_time},
+            data={
+                "updated_at": current_time,
+                "budget": schema.changed_budget_into
+            },
         )
-        response.message = "Category successfully deleted."
+        response.message = "Budget successfully updated."
 
     except StashBaseApiError:
         raise
@@ -70,11 +80,12 @@ async def delete_category_endpoint(
     return response
 
 
+
 router.add_api_route(
     methods=["PATCH"],
-    path="/category/delete/{month}/{year}",
+    path="/budget/update/{month}/{year}",
     response_model=ResponseDefault,
-    endpoint=delete_category_endpoint,
+    endpoint=update_budget_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Delete spesific category.",
+    summary="Update budget on spesific category.",
 )

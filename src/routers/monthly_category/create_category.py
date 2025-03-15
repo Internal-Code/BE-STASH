@@ -1,77 +1,68 @@
-from uuid import UUID
+from uuid import uuid4
 from typing import Annotated
 from utils.logger import logging
+from utils.jwt import JWTHandler
+from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends, Path
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.jwt import JWTHandler
-from src.schema.request_format import MonthlyCategory
-from utils.query import QueryDatabase
-from services.postgres.models import (
-    CategorySchema,
-    MonthlySchema,
-    UserToken,
-    BlacklistToken,
-)
+from src.schema.request_format import CreateCategorySchema
+from services.postgres.models import CategorySchema, MonthlySchema
 from utils.error import (
     EntityAlreadyExistError,
     ServiceError,
     StashBaseApiError,
     DataNotFoundError,
-    InvalidTokenError,
 )
 
 jwt_handler = JWTHandler()
-router = APIRouter(tags=["Monthly Schema"])
+router = APIRouter(tags=["Monthly Category"])
 
 
 async def create_category_endpoint(
-    schema: MonthlyCategory,
+    schema: CreateCategorySchema,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
-    year: str = Path(regex="^\d{4}$", description="Year must be exactly 4 digits"),
+    year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
     query = QueryDatabase(db)
+    category_id = str(uuid4())
     year = int(year)
-    
-    monthly_schema_record = await query.find(
-        table=MonthlySchema,
-        month = month,
-        year = year,
-        deleted_at = None
-    )
-    
-    category_record = await query.find(
-        table=CategorySchema,
-        unique_id=current_user.unique_id,
-        category=schema.category,
-        category_id=str(month_id),
-        deleted_at=None,
-    )
-    monthly_schema_record = await query.find(
-        table=MonthlySchema, month_id=str(month_id)
-    )
-    
+
     try:
+        monthly_schema_record = await query.find(
+            table=MonthlySchema, month=month, year=year, deleted_at=None
+        )
+
         if not monthly_schema_record:
             logging.info("Schema not found.")
             raise DataNotFoundError(detail="Schema not found.")
 
         month_id = monthly_schema_record.month_id
-        
+
+        category_record = await query.find(
+            table=CategorySchema,
+            unique_id=current_user.unique_id,
+            category=schema.category,
+            deleted_at=None,
+        )
+
         if category_record:
-            logging.info(f"Category {schema.category} already created.")
-            raise EntityAlreadyExistError(detail=f"Category {schema.category} already created.")
+            logging.info(f"Category {schema.category} already exist.")
+            raise EntityAlreadyExistError(
+                detail=f"Category {schema.category} already exist."
+            )
 
         await query.insert(
             table=CategorySchema,
             data={
                 "category": schema.category,
                 "budget": schema.budget,
-                "category_id": str(month_id),
+                "category_id": category_id,
+                "month_id": month_id,
                 "unique_id": current_user.unique_id,
             },
         )
@@ -87,7 +78,7 @@ async def create_category_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/create/category/{month}/{year}",
+    path="/category/create/{month}/{year}",
     response_model=ResponseDefault,
     endpoint=create_category_endpoint,
     status_code=status.HTTP_201_CREATED,

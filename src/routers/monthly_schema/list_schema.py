@@ -28,7 +28,7 @@ async def list_schema_endpoint(
 
     try:
         if entries:
-            response.message = f"Sucess fetched data."
+            response.message = "Sucess fetched data."
             response.data = entries
             return response
 

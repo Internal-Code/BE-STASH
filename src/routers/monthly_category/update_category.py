@@ -1,84 +1,80 @@
-# from typing import Annotated
-# from uuid import UUID
-# from fastapi import APIRouter, status, Depends
-# from services.postgres.connection import get_db
-# from sqlalchemy.ext.asyncio import AsyncSession
-# from src.schema.response import ResponseDefault
-# from utils.jwt import get_current_user
-# from services.postgres.models import CategorySchema
-# from src.schema.request_format import UpdateCategorySchema
-# from utils.query import find_record, update_record
-# from utils.helper import local_time
-# from utils.error import (
-#     EntityAlreadyExistError,
-#     ServiceError,
-#     StashBaseApiError,
-#     DataNotFoundError,
-# )
+from typing import Annotated
+from utils.logger import logging
+from utils.jwt import JWTHandler
+from utils.query import QueryDatabase
+from utils.helper import local_time
+from fastapi import APIRouter, status, Depends, Path
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.schema.response import ResponseDefault
+from src.schema.request_format import UpdateCategorySchema
+from services.postgres.models import CategorySchema, MonthlySchema
+from utils.error import (
+    ServiceError,
+    StashBaseApiError,
+    DataNotFoundError,
+)
 
-# router = APIRouter(tags=["Monthly Schema"])
-
-
-# async def update_category_endpoint(
-#     category_id: UUID,
-#     schema: UpdateCategorySchema,
-#     current_user: Annotated[dict, Depends(get_current_user)],
-#     db: AsyncSession = Depends(get_db),
-# ) -> ResponseDefault:
-#     response = ResponseDefault()
-#     current_time = local_time()
-
-#     category_record = await find_record(
-
-#         table=CategorySchema,
-#         category_id=str(category_id),
-#         category=schema.category,
-#         unique_id=current_user.unique_id,
-#         deleted_at=None,
-#     )
-
-#     updated_cagetory_record = await find_record(
-
-#         table=CategorySchema,
-#         unique_id=current_user.unique_id,
-#         category_id=str(category_id),
-#         deleted_at=None,
-#         category=schema.changed_category_into,
-#     )
-
-#     try:
-#         if not category_record:
-#             raise DataNotFoundError(detail="Data not found.")
-#         if updated_cagetory_record:
-#             raise EntityAlreadyExistError(
-#                 detail=f"Category {schema.changed_category_into} already exist."
-#             )
-
-#         await update_record(
-
-#             table=CategorySchema,
-#             condition={
-#                 "unique_id": current_user.unique_id,
-#                 "category_id": str(category_id),
-#                 "category": schema.category,
-#             },
-#             data={"category": schema.changed_category_into, "updated_at": current_time},
-#         )
-#         response.message = "Category successfully updated."
-
-#     except StashBaseApiError:
-#         raise
-#     except Exception:
-#         raise ServiceError(detail="Internal Server Error.", name="STASH")
-
-#     return response
+jwt_handler = JWTHandler()
+router = APIRouter(tags=["Monthly Category"])
 
 
-# router.add_api_route(
-#     methods=["PATCH"],
-#     path="/schema/update-category/{category_id}",
-#     response_model=ResponseDefault,
-#     endpoint=update_category_endpoint,
-#     status_code=status.HTTP_200_OK,
-#     summary="Update category on spesific schema.",
-# )
+async def update_category_endpoint(
+    schema: UpdateCategorySchema,
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
+    month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
+    year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
+    db: AsyncSession = Depends(get_db),
+) -> ResponseDefault:
+    response = ResponseDefault()
+    query = QueryDatabase(db)
+    year = int(year)
+    current_time = local_time()
+
+    try:
+        monthly_schema_record = await query.find(
+            table=MonthlySchema, month=month, year=year, deleted_at=None
+        )
+
+        if not monthly_schema_record:
+            logging.info("Monthly schema not found for the given month and year.")
+            raise DataNotFoundError(
+                detail="Monthly schema not found for the given month and year."
+            )
+
+        category_record = await query.find(
+            table=CategorySchema,
+            unique_id=current_user.unique_id,
+            category=schema.category,
+            deleted_at=None,
+        )
+
+        if not category_record:
+            logging.info(f"Category {schema.category} not found.")
+            raise DataNotFoundError(detail=f"Category {schema.category} not found.")
+
+        category_id = category_record.category_id
+
+        await query.update(
+            table=CategorySchema,
+            condition={"category_id": category_id},
+            data={"updated_at": current_time, "category": schema.changed_category_into},
+        )
+        response.message = "Category successfully updated."
+
+    except StashBaseApiError:
+        raise
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
+
+    return response
+
+
+router.add_api_route(
+    methods=["PATCH"],
+    path="/category/update/{month}/{year}",
+    response_model=ResponseDefault,
+    endpoint=update_category_endpoint,
+    status_code=status.HTTP_200_OK,
+    summary="Update spesific category.",
+)

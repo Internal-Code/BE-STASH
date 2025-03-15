@@ -99,5 +99,5 @@ class JWTHandler:
 
         except JWTError as e:
             logging.error(f"JWTError: {e}")
-            raise AuthenticationFailed(detail="Token expired, please perform re-login.")
+            raise AuthenticationFailed(detail="Invalid access token.")
         return users

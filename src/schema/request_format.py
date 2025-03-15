@@ -8,17 +8,7 @@ from src.schema.validator import (
     PhoneNumberValidatorMixin,
     SecurityCodeValidator,
     YearValidator,
-    UniqueIdValidator,
 )
-
-
-class MonthId(BaseModel):
-    month_id: Optional[str] = None
-
-    @field_validator("month_id")
-    @classmethod
-    def validate_month_id(cls, validate_month_id: Optional[str]) -> str:
-        return UniqueIdValidator.validate_uuid(unique_id=validate_month_id)
 
 
 class UserPin(BaseModel):
@@ -103,14 +93,28 @@ class UserResetPin(UserPin):
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
-class MonthlyCategory(BaseModel):
-    category: Optional[str] = None
-    budget: int = 100000
+class SchemaCategory(BaseModel):
+    category: str = None
 
 
-class UpdateCategorySchema(BaseModel):
-    category: Optional[str] = None
-    changed_category_into: Optional[str] = None
+class SchemaBudget(BaseModel):
+    budget: int = None
+
+
+class CreateCategorySchema(SchemaCategory, SchemaBudget):
+    pass
+
+
+class UpdateCategorySchema(SchemaCategory):
+    changed_category_into: str = None
+
+
+class UpdateBudgetSchema(SchemaCategory):
+    changed_budget_into: int = Field(default=local_time().month, ge=1)
+
+
+class DeleteCategorySchema(SchemaCategory):
+    pass
 
 
 class DefaultSchema(BaseModel):
@@ -138,24 +142,16 @@ class UpdateCategorySpending(BaseModel):
     changed_amount_into: int
 
 
-class DeleteCategorySchema(BaseModel):
-    month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year, ge=1000, le=9999)
-    category: Optional[str]
+class SpendDescription(BaseModel):
+    description: str
 
 
-class CreateSpend(BaseModel):
-    day: int = Field(default=local_time().day, ge=1, le=31)
-    month: int = Field(default=local_time().month, ge=1, le=12)
-    year: int = Field(default=local_time().year)
-    category: Optional[str]
-    description: Optional[str]
+class SpendAmount(BaseModel):
     amount: int
 
-    @field_validator("year")
-    @classmethod
-    def validate_year(cls, value: int) -> str:
-        return YearValidator.year_must_be_four_digits(value=value)
+
+class CreateSpend(SpendDescription, SchemaCategory, SpendAmount):
+    pass
 
 
 class CreateUser(BaseModel, FullNameValidatorMixin, PhoneNumberValidatorMixin):

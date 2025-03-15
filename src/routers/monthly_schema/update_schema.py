@@ -1,4 +1,3 @@
-from uuid import UUID
 from typing import Annotated
 from utils.jwt import JWTHandler
 from utils.helper import local_time
@@ -14,7 +13,7 @@ from utils.error import (
     StashBaseApiError,
     DataNotFoundError,
     EntityAlreadyExistError,
-    EntityForceInputSameDataError
+    EntityForceInputSameDataError,
 )
 
 jwt_handler = JWTHandler()
@@ -25,7 +24,7 @@ async def update_schema_endpoint(
     schema: DefaultSchema,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
-    year: str = Path(regex="^\d{4}$", description="Year must be exactly 4 digits"),
+    year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     response = ResponseDefault()
@@ -40,7 +39,7 @@ async def update_schema_endpoint(
         year=year,
         deleted_at=None,
     )
-    
+
     existing_schema_record = await query.find(
         table=MonthlySchema,
         unique_id=current_user.unique_id,
@@ -48,7 +47,6 @@ async def update_schema_endpoint(
         month=schema.month,
         year=schema.year,
     )
-    
 
     try:
         if not monthly_schema_record:
@@ -56,7 +54,9 @@ async def update_schema_endpoint(
         if schema.year == year and schema.month == month:
             raise EntityForceInputSameDataError(detail="Cannot update into same data.")
         if existing_schema_record:
-            raise EntityAlreadyExistError(detail=f"Data {schema.month}/{schema.year} already exist.")
+            raise EntityAlreadyExistError(
+                detail=f"Data {schema.month}/{schema.year} already exist."
+            )
 
         await query.update(
             table=MonthlySchema,
@@ -72,7 +72,6 @@ async def update_schema_endpoint(
             },
         )
 
-        
         response.message = "Success updated data."
 
     except StashBaseApiError:

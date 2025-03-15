@@ -21,7 +21,15 @@ from src.routers.user_update_account import (
     update_pin,
     update_email,
 )
-# from src.routers.monthly_category import list_category
+from src.routers.monthly_spend import (
+    create_spend
+)
+from src.routers.monthly_category import (
+    create_category,
+    delete_category,
+    update_category,
+    update_budget,
+)
 from src.routers.user_detail import (
     add_email,
     detail_email,
@@ -33,7 +41,7 @@ from src.routers.monthly_schema import (
     delete_schema,
     update_schema,
     list_schema,
-    detail_schema
+    detail_schema,
 )
 
 config = Config()
@@ -79,10 +87,11 @@ app.include_router(list_schema.router)
 app.include_router(update_schema.router)
 app.include_router(detail_schema.router)
 # app.include_router(list_category.router)
-# app.include_router(create_category.router)
-# app.include_router(delete_category.router)
-# app.include_router(update_category.router)
-# app.include_router(create_spend.router)
+app.include_router(create_category.router)
+app.include_router(delete_category.router)
+app.include_router(update_category.router)
+app.include_router(update_budget.router)
+app.include_router(create_spend.router)
 app.include_router(add_email.router)
 app.include_router(detail_email.router)
 app.include_router(detail_full_name.router)
