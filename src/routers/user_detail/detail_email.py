@@ -1,7 +1,7 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
 from fastapi import APIRouter, status, Depends
-from src.schema.response import ResponseDefault
+from src.schema.response import ResponseDefault, DetailEmailResponse
 from utils.error import ServiceError, StashBaseApiError
 
 jwt_handler = JWTHandler()
@@ -12,12 +12,12 @@ async def detail_email_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
 ) -> ResponseDefault:
     response = ResponseDefault()
+    email_info = DetailEmailResponse()
     try:
+        email_info.email = current_user.email
+        email_info.is_email_verified = current_user.verified_email
         response.message = "Extracted email info."
-        response.data = {
-            "email": current_user.email,
-            "is_verified": current_user.verified_email,
-        }
+        response.data = email_info.model_dump()
     except StashBaseApiError:
         raise
     except Exception:

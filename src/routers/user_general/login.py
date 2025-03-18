@@ -7,7 +7,7 @@ from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseToken
-from src.schema.request_format import UserLogin
+from src.schema.request_format import UserLoginPayload
 from services.postgres.models import UserToken
 from utils.error import (
     ServiceError,
@@ -21,7 +21,7 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def login_endpoint(
-    schema: UserLogin,
+    schema: UserLoginPayload,
     unique_id: UUID,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:

@@ -6,7 +6,7 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from services.postgres.models import User
 from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import UserPin
+from src.schema.request_format import CreatePinPayload
 from src.schema.response import ResponseToken
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
@@ -25,7 +25,7 @@ router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def create_pin_endpoint(
-    schema: UserPin,
+    schema: CreatePinPayload,
     unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),

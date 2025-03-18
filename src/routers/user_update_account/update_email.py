@@ -9,7 +9,7 @@ from services.postgres.models import User
 from fastapi.templating import Jinja2Templates
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.schema.request_format import UserEmail
+from src.schema.request_format import Email
 from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
@@ -26,7 +26,7 @@ router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_email_endpoint(
-    schema: UserEmail,
+    schema: Email,
     background_tasks: BackgroundTasks,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),

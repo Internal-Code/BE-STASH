@@ -2,7 +2,7 @@ from uuid import UUID
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import UserOtp
+from src.schema.request_format import Otp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
@@ -20,7 +20,7 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_phone_number_endpoint(
-    schema: UserOtp,
+    schema: Otp,
     unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),

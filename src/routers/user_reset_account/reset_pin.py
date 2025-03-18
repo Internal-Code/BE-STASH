@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault
-from src.schema.request_format import UserResetPin
+from src.schema.request_format import ResetPinPayload
 from services.postgres.models import User, ResetPin
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
@@ -26,7 +26,7 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
 async def reset_pin_endpoint(
-    schema: UserResetPin,
+    schema: ResetPinPayload,
     unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),

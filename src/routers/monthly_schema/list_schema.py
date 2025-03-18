@@ -19,20 +19,19 @@ async def list_schema_endpoint(
     response = ResponseDefault()
     query = QueryDatabase(db)
 
-    entries = await query.find(
-        table=MonthlySchema,
-        fetch="all",
-        unique_id=current_user.unique_id,
-        deleted_at=None,
-    )
-
     try:
-        if entries:
-            response.message = "Sucess fetched data."
-            response.data = entries
+        entries = await query.find(
+            table=MonthlySchema,
+            fetch="all",
+            unique_id=current_user.unique_id,
+            deleted_at=None,
+        )
+        if not entries:
+            response.message = "User is not created schema."
             return response
 
-        response.message = "User is not created schema."
+        response.message = "Schema successfully fetched."
+        response.data = entries
 
     except StashBaseApiError:
         raise

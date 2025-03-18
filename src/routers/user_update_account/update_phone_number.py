@@ -9,7 +9,7 @@ from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
-from src.schema.request_format import UserPhoneNumber
+from src.schema.request_format import PhoneNumber
 from src.schema.response import ResponseDefault, UniqueId
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
@@ -26,7 +26,7 @@ router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_phone_number_endpoint(
-    schema: UserPhoneNumber,
+    schema: PhoneNumber,
     background_tasks: BackgroundTasks,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),

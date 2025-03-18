@@ -14,7 +14,7 @@ from src.routers.user_send_otp import send_otp_phone_number, send_otp_email
 from src.routers.user_verification import verify_phone_number, verify_email
 from src.routers.user_register.sso.google import sso_authentication, sso_login
 from src.routers.user_reset_account import reset_pin, send_reset_link, forget_user
-from src.routers.user_general import login, logout, get_user, generate_refresh_token
+from src.routers.user_general import login, logout, get_user, refresh_token
 from src.routers.user_update_account import (
     update_full_name,
     update_phone_number,
@@ -22,7 +22,11 @@ from src.routers.user_update_account import (
     update_email,
 )
 from src.routers.monthly_spend import (
-    create_spend
+    create_spend,
+    detail_spend,
+    delete_spend,
+    update_description,
+    update_amount,
 )
 from src.routers.monthly_category import (
     create_category,
@@ -86,18 +90,21 @@ app.include_router(delete_schema.router)
 app.include_router(list_schema.router)
 app.include_router(update_schema.router)
 app.include_router(detail_schema.router)
-# app.include_router(list_category.router)
+app.include_router(delete_spend.router)
 app.include_router(create_category.router)
 app.include_router(delete_category.router)
 app.include_router(update_category.router)
 app.include_router(update_budget.router)
+app.include_router(update_description.router)
+app.include_router(update_amount.router)
 app.include_router(create_spend.router)
+app.include_router(detail_spend.router)
 app.include_router(add_email.router)
 app.include_router(detail_email.router)
 app.include_router(detail_full_name.router)
 app.include_router(detail_phone_number.router)
 app.include_router(get_user.router)
-app.include_router(generate_refresh_token.router)
+app.include_router(refresh_token.router)
 app.include_router(login.router)
 app.include_router(logout.router)
 app.include_router(register_account.router)

@@ -28,23 +28,25 @@ async def delete_schema_endpoint(
     query = QueryDatabase(db)
     year = int(year)
 
-    monthly_schema_record = await query.find(
-        table=MonthlySchema,
-        unique_id=current_user.unique_id,
-        month=month,
-        year=year,
-        deleted_at=None,
-    )
-
     try:
+        monthly_schema_record = await query.find(
+            table=MonthlySchema,
+            unique_id=current_user.unique_id,
+            month=month,
+            year=year,
+            deleted_at=None,
+        )
+
         if not monthly_schema_record:
             raise DataNotFoundError(detail="Data not found.")
+
         await query.update(
             table=MonthlySchema,
             condition={"month": month, "year": year},
             data={"deleted_at": current_time},
         )
-        response.message = "Sucess deleted data."
+
+        response.message = "Schema successfully deleted."
 
     except StashBaseApiError:
         raise

@@ -1,13 +1,13 @@
 from typing import Annotated
+from utils.jwt import JWTHandler
+from utils.helper import local_time
+from utils.query import QueryDatabase
+from services.postgres.models import User
 from fastapi import APIRouter, status, Depends
-from src.schema.request_format import UserEmail
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.query import QueryDatabase
-from services.postgres.models import User
-from utils.helper import local_time
-from utils.jwt import JWTHandler
+from src.schema.request_format import Email
 from utils.error import (
     EntityAlreadyExistError,
     ServiceError,
@@ -20,7 +20,7 @@ jwt_handler = JWTHandler()
 
 
 async def add_email_endpoint(
-    schema: UserEmail,
+    schema: Email,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:

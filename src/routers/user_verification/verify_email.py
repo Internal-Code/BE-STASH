@@ -6,7 +6,7 @@ from services.postgres.models import SendOtp, User
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from src.schema.request_format import UserOtp
+from src.schema.request_format import Otp
 from src.schema.response import ResponseDefault
 from utils.error import (
     ServiceError,
@@ -21,7 +21,7 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_email_endpoint(
-    schema: UserOtp,
+    schema: Otp,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:

@@ -1,7 +1,7 @@
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from services.postgres.models import User
-from src.schema.request_format import UserEmail
+from src.schema.request_format import Email
 from services.postgres.models import ResetPin
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +37,7 @@ async def forget_user_endpoint(
             filter["phone_number"] = validated_phone_number
         elif "@" in identifier:
             try:
-                validated_email = UserEmail(email=identifier)  # Validate email format
+                validated_email = Email(email=identifier)  # Validate email format
                 filter["email"] = validated_email.email
             except ValueError:
                 raise InvalidOperationError("Email should be in a proper format.")

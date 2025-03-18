@@ -7,7 +7,7 @@ from fastapi import APIRouter, status, Depends, Path
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from src.schema.request_format import UpdateCategorySchema
+from src.schema.request_format import UpdateCategoryPayload
 from services.postgres.models import CategorySchema, MonthlySchema
 from utils.error import (
     ServiceError,
@@ -16,11 +16,11 @@ from utils.error import (
 )
 
 jwt_handler = JWTHandler()
-router = APIRouter(tags=["Monthly Category"])
+router = APIRouter(tags=["Monthly Category"], prefix="/category")
 
 
 async def update_category_endpoint(
-    schema: UpdateCategorySchema,
+    schema: UpdateCategoryPayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
@@ -37,10 +37,8 @@ async def update_category_endpoint(
         )
 
         if not monthly_schema_record:
-            logging.info("Monthly schema not found for the given month and year.")
-            raise DataNotFoundError(
-                detail="Monthly schema not found for the given month and year."
-            )
+            logging.info("Monthly schema not found.")
+            raise DataNotFoundError(detail="Monthly schema not found.")
 
         category_record = await query.find(
             table=CategorySchema,
@@ -60,6 +58,7 @@ async def update_category_endpoint(
             condition={"category_id": category_id},
             data={"updated_at": current_time, "category": schema.changed_category_into},
         )
+
         response.message = "Category successfully updated."
 
     except StashBaseApiError:
@@ -72,7 +71,7 @@ async def update_category_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/category/update/{month}/{year}",
+    path="/update-category/{month}/{year}",
     response_model=ResponseDefault,
     endpoint=update_category_endpoint,
     status_code=status.HTTP_200_OK,

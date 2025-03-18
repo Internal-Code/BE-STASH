@@ -5,7 +5,7 @@ from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import MonthlySchema
-from src.schema.request_format import DefaultSchema
+from src.schema.request_format import DefaultSchemaPayload
 from src.schema.response import ResponseDefault
 from utils.query import QueryDatabase
 from utils.error import (
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Monthly Schema"], prefix="/schema")
 
 
 async def create_schema_endpoint(
-    schema: DefaultSchema,
+    schema: DefaultSchemaPayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
@@ -27,19 +27,17 @@ async def create_schema_endpoint(
     month_id = str(uuid4())
     query = QueryDatabase(db)
 
-    monthly_schema_record = await query.find(
-        table=MonthlySchema,
-        unique_id=current_user.unique_id,
-        month=schema.month,
-        year=schema.year,
-        deleted_at=None,
-    )
-
     try:
+        monthly_schema_record = await query.find(
+            table=MonthlySchema,
+            unique_id=current_user.unique_id,
+            month=schema.month,
+            year=schema.year,
+            deleted_at=None,
+        )
+
         if monthly_schema_record:
-            raise EntityAlreadyExistError(
-                detail=f"Schema {schema.month}/{schema.year} already created."
-            )
+            raise EntityAlreadyExistError(detail="Schema already created.")
 
         await query.insert(
             table=MonthlySchema,
@@ -50,6 +48,7 @@ async def create_schema_endpoint(
                 "month_id": month_id,
             },
         )
+
         response.message = "Schema sucessfully created."
 
     except StashBaseApiError:

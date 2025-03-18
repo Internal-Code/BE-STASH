@@ -1,4 +1,3 @@
-from uuid import uuid4
 from typing import Annotated
 from utils.logger import logging
 from utils.jwt import JWTHandler
@@ -8,7 +7,7 @@ from fastapi import APIRouter, status, Depends, Path
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from src.schema.request_format import UpdateBudgetSchema
+from src.schema.request_format import UpdateBudgetPayload
 from services.postgres.models import CategorySchema, MonthlySchema
 from utils.error import (
     ServiceError,
@@ -18,11 +17,11 @@ from utils.error import (
 )
 
 jwt_handler = JWTHandler()
-router = APIRouter(tags=["Monthly Category"])
+router = APIRouter(tags=["Monthly Category"], prefix="/category")
 
 
 async def update_budget_endpoint(
-    schema: UpdateBudgetSchema,
+    schema: UpdateBudgetPayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
@@ -39,10 +38,8 @@ async def update_budget_endpoint(
         )
 
         if not monthly_schema_record:
-            logging.info("Monthly schema not found for the given month and year.")
-            raise DataNotFoundError(detail="Monthly schema not found for the given month and year.")
-
-        month_id = monthly_schema_record.month_id
+            logging.info("Monthly schema not found.")
+            raise DataNotFoundError(detail="Monthly schema not found.")
 
         category_record = await query.find(
             table=CategorySchema,
@@ -53,23 +50,21 @@ async def update_budget_endpoint(
 
         if not category_record:
             logging.info(f"Category {schema.category} not found.")
-            raise DataNotFoundError(
-                detail=f"Category {schema.category} not found."
-            )
-            
+            raise DataNotFoundError(detail="Category not found.")
+
         category_id = category_record.category_id
-        
+
         if category_record.budget == schema.changed_budget_into:
-            raise EntityForceInputSameDataError(detail="Cannot update into same budget.")
+            raise EntityForceInputSameDataError(
+                detail="Cannot update into same budget."
+            )
 
         await query.update(
             table=CategorySchema,
             condition={"category_id": category_id},
-            data={
-                "updated_at": current_time,
-                "budget": schema.changed_budget_into
-            },
+            data={"updated_at": current_time, "budget": schema.changed_budget_into},
         )
+
         response.message = "Budget successfully updated."
 
     except StashBaseApiError:
@@ -80,10 +75,9 @@ async def update_budget_endpoint(
     return response
 
 
-
 router.add_api_route(
     methods=["PATCH"],
-    path="/budget/update/{month}/{year}",
+    path="/update-budget/{month}/{year}",
     response_model=ResponseDefault,
     endpoint=update_budget_endpoint,
     status_code=status.HTTP_200_OK,

@@ -1,4 +1,3 @@
-# TODO: Refactor this endpoint
 from typing import Annotated
 from utils.logger import logging
 from utils.jwt import JWTHandler
@@ -9,7 +8,7 @@ from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from src.schema.request_format import UpdateUserFullName
+from src.schema.request_format import UpdateFullNamePayload
 from utils.error import ServiceError, StashBaseApiError
 
 jwt_handler = JWTHandler()
@@ -17,7 +16,7 @@ router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_full_name_endpoint(
-    schema: UpdateUserFullName,
+    schema: UpdateFullNamePayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:

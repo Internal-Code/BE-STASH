@@ -1,6 +1,7 @@
 from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
+from utils.smtp import send_gmail
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
@@ -9,9 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, ResetPin
 from src.schema.response import ResponseDefault, UniqueId
-from src.schema.request_format import SendVerificationLink
-from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.smtp import send_gmail
+from src.schema.request_format import SendResetLinkPayload
+from fastapi import (
+    APIRouter, 
+    status, 
+    Depends, 
+    BackgroundTasks
+)
 from utils.error import (
     ServiceError,
     StashBaseApiError,
@@ -25,7 +30,7 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
 async def send_reset_link_endpoint(
-    schema: SendVerificationLink,
+    schema: SendResetLinkPayload,
     unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),

@@ -5,19 +5,28 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import CreateUser
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
-from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.error import ServiceError, StashBaseApiError, EntityAlreadyExistError
+from src.schema.request_format import RegisterAccountPayload
+from fastapi import (
+    APIRouter, 
+    status, 
+    Depends, 
+    BackgroundTasks
+)
+from utils.error import (
+    ServiceError, 
+    StashBaseApiError, 
+    EntityAlreadyExistError
+)
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def register_account_endpoint(
-    schema: CreateUser,
+    schema: RegisterAccountPayload,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:

@@ -10,7 +10,7 @@ from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, BlacklistToken, UserToken
 from utils.query import QueryDatabase
-from src.schema.request_format import ChangePin
+from src.schema.request_format import UpdatePinPayload
 from utils.whatsapp_api import send_whatsapp
 from utils.jwt import JWTHandler
 from utils.error import (
@@ -26,7 +26,7 @@ router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_pin_endpoint(
-    schema: ChangePin,
+    schema: UpdatePinPayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),

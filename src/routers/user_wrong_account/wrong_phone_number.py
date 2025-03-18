@@ -8,7 +8,7 @@ from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
-from src.schema.request_format import UserWrongPhoneNumber
+from src.schema.request_format import PhoneNumber
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     EntityForceInputSameDataError,
@@ -24,7 +24,7 @@ router = APIRouter(tags=["User Wrong Account"], prefix="/user/wrong")
 
 
 async def wrong_phone_number_endpoint(
-    schema: UserWrongPhoneNumber,
+    schema: PhoneNumber,
     unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),

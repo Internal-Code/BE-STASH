@@ -1,7 +1,7 @@
 from utils.query import QueryDatabase
 from services.postgres.models import User
 from fastapi import APIRouter, status, Depends
-from src.schema.request_format import UserEmail
+from src.schema.request_format import Email
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from src.schema.response import ResponseDefault, UserStatus
@@ -17,8 +17,7 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def get_user_endpoint(
-    identifier: str,
-    db: AsyncSession = Depends(get_db),
+    identifier: str, db: AsyncSession = Depends(get_db)
 ) -> ResponseDefault:
     response = ResponseDefault()
     query = QueryDatabase(db)
@@ -33,7 +32,7 @@ async def get_user_endpoint(
             filter["phone_number"] = validated_phone_number
         elif "@" in identifier:
             try:
-                validated_email = UserEmail(email=identifier)  # Validate email format
+                validated_email = Email(email=identifier)
                 filter["email"] = validated_email.email
             except ValueError:
                 raise InvalidOperationError("Email should be in a proper format.")

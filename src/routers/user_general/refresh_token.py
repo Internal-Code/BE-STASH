@@ -1,15 +1,15 @@
 from typing import Annotated
 from jose import jwt, JWTError
 from datetime import timedelta
-from fastapi import APIRouter, status, Depends
-from services.postgres.models import BlacklistToken, UserToken
-from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
-from src.schema.response import ResponseToken
-from src.schema.request_format import UserRefreshToken
 from utils.jwt import JWTHandler
 from utils.helper import local_time
 from utils.query import QueryDatabase
+from src.schema.response import ResponseToken
+from fastapi import APIRouter, status, Depends
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.models import BlacklistToken, UserToken
+from src.schema.request_format import RefreshTokenPayload
 from src.secret import Config
 from utils.error import (
     ServiceError,
@@ -23,7 +23,7 @@ router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
 async def generate_refresh_token_endpoint(
-    schema: UserRefreshToken,
+    schema: RefreshTokenPayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
