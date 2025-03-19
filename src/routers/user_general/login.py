@@ -2,13 +2,14 @@ from uuid import UUID
 from src.secret import Config
 from datetime import timedelta
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from utils.query import QueryDatabase
+from src.schema.response import ResponseToken
 from fastapi import APIRouter, status, Depends
+from services.postgres.models import UserToken
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from src.schema.response import ResponseToken
 from src.schema.request_format import UserLoginPayload
-from services.postgres.models import UserToken
 from utils.error import (
     ServiceError,
     StashBaseApiError,
@@ -25,21 +26,26 @@ async def login_endpoint(
     unique_id: UUID,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
+    logging.info("Login endpoint.")
     response = ResponseToken()
     query = QueryDatabase(db)
+    unique_id = str(unique_id)
     account_record = await jwt_handler.authenticate_user(
-        unique_id=str(unique_id), pin=schema.pin
+        unique_id=unique_id, pin=schema.pin
     )
 
     try:
         if not account_record:
+            logging.error("User not found.")
             raise DataNotFoundError(detail="User not found.")
 
+        logging.info("Generating access token.")
         access_token = jwt_handler.create_access_token(
             data={"sub": account_record.unique_id},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
+        logging.info("Generating refresh token.")
         refresh_token = jwt_handler.create_refresh_token(
             data={"sub": account_record.unique_id},
             refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),

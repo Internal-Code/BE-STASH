@@ -1,5 +1,6 @@
 from uuid import uuid4
 from typing import Annotated
+from utils.logger import logging
 from utils.jwt import JWTHandler
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
@@ -23,6 +24,7 @@ async def create_schema_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Create schema endpoint.")
     response = ResponseDefault()
     month_id = str(uuid4())
     query = QueryDatabase(db)
@@ -37,7 +39,8 @@ async def create_schema_endpoint(
         )
 
         if monthly_schema_record:
-            raise EntityAlreadyExistError(detail="Schema already created.")
+            logging.error(f"Schema {schema.month}/{schema.year} already exist.")
+            raise EntityAlreadyExistError(detail="Schema already exist.")
 
         await query.insert(
             table=MonthlySchema,

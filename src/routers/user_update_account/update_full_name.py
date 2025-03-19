@@ -20,11 +20,11 @@ async def update_full_name_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update full name endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     current_time = local_time()
     try:
-        logging.info("Endpoint update full name.")
         await query.update(
             table=User,
             condition={"unique_id": current_user.unique_id},

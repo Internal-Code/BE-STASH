@@ -27,6 +27,7 @@ async def update_budget_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update budget endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     year = int(year)
@@ -38,8 +39,8 @@ async def update_budget_endpoint(
         )
 
         if not monthly_schema_record:
-            logging.info("Monthly schema not found.")
-            raise DataNotFoundError(detail="Monthly schema not found.")
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
 
         category_record = await query.find(
             table=CategorySchema,
@@ -49,14 +50,15 @@ async def update_budget_endpoint(
         )
 
         if not category_record:
-            logging.info(f"Category {schema.category} not found.")
+            logging.error(f"Category {schema.category} not found.")
             raise DataNotFoundError(detail="Category not found.")
 
         category_id = category_record.category_id
 
         if category_record.budget == schema.changed_budget_into:
+            logging.error("Cannot updated into same budget.")
             raise EntityForceInputSameDataError(
-                detail="Cannot update into same budget."
+                detail="Should update into different budget."
             )
 
         await query.update(

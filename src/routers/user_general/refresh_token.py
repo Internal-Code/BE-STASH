@@ -2,6 +2,7 @@ from typing import Annotated
 from jose import jwt, JWTError
 from datetime import timedelta
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from src.schema.response import ResponseToken
@@ -27,27 +28,33 @@ async def generate_refresh_token_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
+    logging.info("Refresh token endpoint.")
     response = ResponseToken()
     query = QueryDatabase(db)
-
     current_time = local_time()
-    user_token_record = await query.find(
-        table=UserToken, unique_id=current_user.unique_id
-    )
-    blacklist_access_token = await query.find(
-        table=BlacklistToken, access_token=user_token_record.access_token
-    )
-    blacklist_refresh_token = await query.find(
-        table=BlacklistToken, refresh_token=user_token_record.refresh_token
-    )
 
     try:
+        user_token_record = await query.find(
+            table=UserToken, unique_id=current_user.unique_id
+        )
+
+        blacklist_access_token = await query.find(
+            table=BlacklistToken, access_token=user_token_record.access_token
+        )
+
         if blacklist_access_token:
+            logging.error("Access token already blacklisted.")
             raise InvalidTokenError(detail="Access token already blacklisted.")
 
+        blacklist_refresh_token = await query.find(
+            table=BlacklistToken, refresh_token=user_token_record.refresh_token
+        )
+
         if blacklist_refresh_token:
+            logging.error("Refresh token already blacklisted.")
             raise InvalidTokenError(detail="Refresh token already blacklisted.")
 
+        logging.info("Decoding refresh token.")
         payload = jwt.decode(
             token=schema.refresh_token,
             key=config.REFRESH_TOKEN_SECRET_KEY,
@@ -57,10 +64,12 @@ async def generate_refresh_token_endpoint(
         unique_id = payload.get("sub")
 
         if not unique_id:
+            logging.error("Invalid refresh token.")
             raise InvalidTokenError(detail="Invalid refresh token.")
 
         access_token_exp = timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED))
 
+        logging.info("Generating new access token.")
         new_access_token = jwt.encode(
             {
                 "sub": unique_id,

@@ -1,6 +1,7 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
 from utils.helper import local_time
+from utils.logger import logging
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends, Path
 from src.schema.response import ResponseDefault
@@ -27,6 +28,7 @@ async def update_schema_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update schema endpoint.")
     response = ResponseDefault()
     current_time = local_time()
     query = QueryDatabase(db)
@@ -41,6 +43,16 @@ async def update_schema_endpoint(
             deleted_at=None,
         )
 
+        if not monthly_schema_record:
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
+
+        if schema.year == year and schema.month == month:
+            logging.error("User force to update into same data.")
+            raise EntityForceInputSameDataError(
+                detail="Should update into different schema."
+            )
+
         existing_schema_record = await query.find(
             table=MonthlySchema,
             unique_id=current_user.unique_id,
@@ -49,15 +61,10 @@ async def update_schema_endpoint(
             year=schema.year,
         )
 
-        if not monthly_schema_record:
-            raise DataNotFoundError(detail="Data not found.")
-
-        if schema.year == year and schema.month == month:
-            raise EntityForceInputSameDataError(detail="Cannot update into same data.")
-
         if existing_schema_record:
+            logging.error(f"Schema {schema.month}/{schema.year} already exist.")
             raise EntityAlreadyExistError(
-                detail=f"Data {schema.month}/{schema.year} already exist."
+                detail=f"Schema {schema.month}/{schema.year} already exist."
             )
 
         await query.update(

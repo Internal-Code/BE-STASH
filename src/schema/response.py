@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Union, Optional
 from pydantic import BaseModel, field_validator, EmailStr
 from src.schema.validator import UniqueIdValidator
 
@@ -6,7 +6,7 @@ from src.schema.validator import UniqueIdValidator
 class ResponseDefault(BaseModel):
     success: bool = True
     message: str = None
-    data: Optional[Any] = None
+    data: Union[dict, list] = None
 
 
 class ResponseToken(BaseModel):
@@ -20,21 +20,25 @@ class UniqueId(BaseModel):
 
     @field_validator("unique_id")
     @classmethod
-    def validate_pin(cls, unique_id: Optional[str]) -> str:
+    def validate_pin(cls, unique_id: str) -> str:
         return UniqueIdValidator.validate_uuid(unique_id=unique_id)
 
 
 class ServerStatus(BaseModel):
     status: str = None
 
+
 class FullName(BaseModel):
     full_name: str = None
 
+
 class Email(BaseModel):
-    email: EmailStr = None
-    
+    email: Optional[EmailStr] = None
+
+
 class PhoneNumber(BaseModel):
     phone_number: str = None
+
 
 class IsEmailVerified(BaseModel):
     is_email_verified: bool = False
@@ -52,7 +56,7 @@ class OTPState(BaseModel):
     otp_state: bool = False
 
 
-class UserStatus(
+class UserInfoResponse(
     IsEmailVerified, IsPhoneNumberVerified, RegisterState, OTPState, UniqueId
 ):
     pass

@@ -1,11 +1,12 @@
+from typing import Annotated
+from utils.jwt import JWTHandler
+from utils.logger import logging
+from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
 from services.postgres.models import MonthlySchema
 from src.schema.response import ResponseDefault
-from utils.jwt import JWTHandler
-from utils.query import QueryDatabase
 from utils.error import ServiceError, StashBaseApiError
 
 jwt_handler = JWTHandler()
@@ -16,6 +17,7 @@ async def list_schema_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("List schema endopoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
 
@@ -27,6 +29,7 @@ async def list_schema_endpoint(
             deleted_at=None,
         )
         if not entries:
+            logging.warning("User is not created schema.")
             response.message = "User is not created schema."
             return response
 

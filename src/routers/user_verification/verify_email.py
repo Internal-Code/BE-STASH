@@ -1,4 +1,5 @@
 from typing import Annotated
+from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.helper import local_time
 from utils.query import QueryDatabase
@@ -25,6 +26,7 @@ async def verify_email_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Verify email endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     current_time = local_time()
@@ -32,27 +34,33 @@ async def verify_email_endpoint(
 
     try:
         if not current_user.email:
+            logging.error("User is not add an email.")
             raise MandatoryInputError(detail="Should add email first.")
 
         if current_user.verified_email:
+            logging.error("User email is not verified.")
             raise EntityAlreadyVerifiedError(detail="Email already verified.")
 
         if current_time > otp_record.blacklisted_at:
+            logging.error("OTP expired.")
             raise InvalidOperationError(detail="OTP already expired.")
 
         if otp_record.otp_number != schema.otp:
+            logging.error("Invalid OTP.")
             raise InvalidOperationError(detail="Invalid OTP code.")
 
         if (
             current_time < otp_record.blacklisted_at
             and otp_record.otp_number == schema.otp
         ):
+            logging.info("Updating verify email state.")
             await query.update(
                 table=User,
                 condition={"unique_id": current_user.unique_id},
                 data={"verified_email": True},
             )
 
+            logging.info("Email verified.")
             response.message = "Email successfully verified."
 
     except StashBaseApiError:

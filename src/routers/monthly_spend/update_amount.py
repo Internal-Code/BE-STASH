@@ -1,21 +1,20 @@
-from uuid import uuid4, UUID
+from uuid import UUID
 from typing import Annotated
 from utils.jwt import JWTHandler
+from utils.logger import logging
+from utils.helper import local_time
 from utils.query import QueryDatabase
-from utils.helper import leap_year
-from fastapi import APIRouter, status, Depends, Path
+from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import MonthlySchema, CategorySchema, MoneySpend
+from services.postgres.models import MoneySpend
 from src.schema.request_format import Amount
-from utils.helper import local_time
 from src.schema.response import ResponseDefault
 from utils.error import (
-    ServiceError, 
-    StashBaseApiError, 
-    DataNotFoundError, 
-    EntityDoesNotMatchedError,
-    EntityForceInputSameDataError
+    ServiceError,
+    StashBaseApiError,
+    DataNotFoundError,
+    EntityForceInputSameDataError,
 )
 
 jwt_handler = JWTHandler()
@@ -28,6 +27,7 @@ async def update_amount_endpoint(
     schema: Amount,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update amount endpoint.")
     response = ResponseDefault()
     spend_id = str(spend_id)
     current_time = local_time()
@@ -35,20 +35,21 @@ async def update_amount_endpoint(
 
     try:
         money_spend_record = await query.find(table=MoneySpend, spend_id=spend_id)
-        
+
         if not money_spend_record:
-            raise DataNotFoundError(detail=f"Data not found.")
-        
+            logging.error("Spend id not found.")
+            raise DataNotFoundError(detail="Data not found.")
+
         if money_spend_record.amount == schema.amount:
-            raise EntityForceInputSameDataError(detail="Cannot update into same data.")
+            logging.error("Cannot update into same amount data.")
+            raise EntityForceInputSameDataError(
+                detail="Should update into different amount."
+            )
 
         await query.update(
             table=MoneySpend,
-            condition={"spend_id":spend_id},
-            data={
-                "updated_at": current_time,
-                "amount": schema.amount
-            },
+            condition={"spend_id": spend_id},
+            data={"updated_at": current_time, "amount": schema.amount},
         )
         response.message = "Daily spend sucessfully updated."
 

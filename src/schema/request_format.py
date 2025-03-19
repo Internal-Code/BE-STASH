@@ -1,6 +1,4 @@
 from enum import StrEnum
-from typing import Optional
-from datetime import datetime
 from utils.helper import local_time
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from src.schema.validator import (
@@ -11,7 +9,6 @@ from src.schema.validator import (
 )
 
 
-# user_detail
 class Email(BaseModel):
     email: EmailStr = None
 
@@ -20,12 +17,10 @@ class RefreshToken(BaseModel):
     refresh_token: str = None
 
 
-
 class RefreshTokenPayload(RefreshToken):
     pass
 
 
-# user_general
 class Pin(BaseModel):
     pin: str = None
 
@@ -38,17 +33,9 @@ class Pin(BaseModel):
 class UserLoginPayload(Pin):
     pass
 
+
 class CreatePinPayload(Pin):
     pass
-
-
-class PhoneNumber(BaseModel):
-    phone_number: str = None
-
-    @field_validator("phone_number")
-    @classmethod
-    def validate_phone_number(cls, value: str) -> str:
-        return PhoneNumberValidatorMixin.validate_phone_number(value)
 
 
 class Otp(BaseModel):
@@ -58,8 +45,6 @@ class Otp(BaseModel):
     @classmethod
     def validate_otp(cls, value: str) -> str:
         return SecurityCodeValidator.validate_security_code(value=value, type="otp")
-
-
 
 
 class UpdateFullNamePayload(BaseModel):
@@ -101,7 +86,6 @@ class ResetPinPayload(Pin):
         return SecurityCodeValidator.validate_security_code(value=value, type="pin")
 
 
-# monthly_category
 class Category(BaseModel):
     category: str = None
 
@@ -138,24 +122,22 @@ class Year(BaseModel):
 class DefaultSchemaPayload(Year, Month):
     pass
 
+
 class Description(BaseModel):
     description: str = None
 
 
 class Amount(BaseModel):
-    amount: int = Field(ge=1000)
+    amount: int = Field(ge=0)
 
 
 class CreateSpendPayload(Description, Category, Amount):
     pass
 
 
-
-
-
 class FullName(BaseModel):
     full_name: str = None
-    
+
     @field_validator("full_name")
     @classmethod
     def validate_fullname(cls, value: str) -> str:
@@ -170,8 +152,10 @@ class PhoneNumber(BaseModel):
     def validate_phone_number(cls, value: str) -> str:
         return PhoneNumberValidatorMixin.validate_phone_number(value)
 
+
 class RegisterAccountPayload(PhoneNumber, FullName):
     pass
+
 
 class TokenData(BaseModel):
     user_uuid: str = None
@@ -189,7 +173,6 @@ class DetailUserPhoneNumber(BaseModel):
 class DetailEmail(BaseModel):
     email: EmailStr | None = None
     verified_email: bool
-
 
 
 class UserForgotPassword(BaseModel):

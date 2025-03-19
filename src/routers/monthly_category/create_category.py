@@ -27,6 +27,7 @@ async def create_category_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Create category endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     category_id = str(uuid4())
@@ -38,8 +39,8 @@ async def create_category_endpoint(
         )
 
         if not monthly_schema_record:
-            logging.info("Schema not found.")
-            raise DataNotFoundError(detail="Data not found.")
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
 
         month_id = monthly_schema_record.month_id
 
@@ -51,7 +52,7 @@ async def create_category_endpoint(
         )
 
         if category_record:
-            logging.info(f"Category {schema.category} already exist.")
+            logging.error(f"Category {schema.category} already exist.")
             raise EntityAlreadyExistError(detail="Category already exist.")
 
         await query.insert(

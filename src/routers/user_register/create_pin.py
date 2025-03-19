@@ -1,6 +1,7 @@
 from uuid import UUID
 from src.secret import Config
 from datetime import timedelta
+from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.helper import local_time
 from utils.query import QueryDatabase
@@ -30,23 +31,29 @@ async def create_pin_endpoint(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
+    logging.info("Create PIN endpoint.")
     response = ResponseToken()
     query = QueryDatabase(db)
+    unique_id = str(unique_id)
     current_time = local_time()
-    account_record = await query.find(table=User, unique_id=str(unique_id))
+    account_record = await query.find(table=User, unique_id=unique_id)
     hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     try:
         if not account_record:
-            raise DataNotFoundError(detail="Account not found.")
+            logging.error("User not found.")
+            raise DataNotFoundError(detail="User not found.")
 
         if account_record.register_state:
-            raise EntityAlreadyFilledError(detail="Account already set pin.")
+            logging.error("User already set PIN.")
+            raise EntityAlreadyFilledError(detail="User already set PIN.")
 
         if not account_record.verified_phone_number:
+            logging.error("User phone number is not validated.")
             raise MandatoryInputError(detail="Should validate phone number first.")
 
         if account_record.verified_phone_number:
+            logging.info("User phone number already verified.")
             background_tasks.add_task(
                 send_whatsapp,
                 phone_number=account_record.phone_number,
@@ -66,7 +73,7 @@ async def create_pin_endpoint(
 
         await query.update(
             table=User,
-            condition={"unique_id": str(unique_id)},
+            condition={"unique_id": unique_id},
             data={
                 "pin": hashed_pin,
                 "updated_at": current_time,
@@ -76,12 +83,12 @@ async def create_pin_endpoint(
         )
 
         access_token = jwt_handler.create_access_token(
-            data={"sub": str(unique_id)},
+            data={"sub": unique_id},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
         refresh_token = jwt_handler.create_refresh_token(
-            data={"sub": str(unique_id)},
+            data={"sub": unique_id},
             refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 

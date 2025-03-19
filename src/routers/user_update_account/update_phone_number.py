@@ -19,6 +19,7 @@ from utils.error import (
     ServiceError,
     StashBaseApiError,
     InvalidOperationError,
+    DataNotFoundError,
 )
 
 jwt_handler = JWTHandler()
@@ -31,42 +32,50 @@ async def update_phone_number_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update phone number endpoint.")
     response = ResponseDefault()
     generator = Generator()
     query = QueryDatabase(db)
-
     current_time = local_time()
     generated_otp = generator.random_number(6)
     otp_record = await query.find(table=SendOtp, unique_id=current_user.unique_id)
 
     try:
-        logging.info("Endpoint update user phone number.")
+        if not otp_record:
+            logging.error("OTP record not found")
+            raise DataNotFoundError("OTP record not found.")
+
+        remaining_time = otp_record.save_to_hit_at.second - current_time.second
+
         if current_user.phone_number != schema.phone_number:
+            logging.info("User input different phone number.")
             registered_phone_number = await query.find(
                 table=User, phone_number=schema.phone_number
             )
             if registered_phone_number:
+                logging.error("Phone number already taken.")
                 raise EntityAlreadyExistError(
                     detail="Phone number already taken. Please use another phone number."
                 )
 
         if schema.phone_number == current_user.phone_number:
+            logging.error("Cannot update into same phone number.")
             raise EntityForceInputSameDataError(
-                detail="Cannot update into same phone number."
+                detail="Should update into different phone number."
             )
 
         if not current_user.register_state:
+            logging.error("User should be validated first.")
             raise UserNotVerifiedError(
                 detail="User should be validated, before changing phone number."
             )
 
         if current_time < otp_record.save_to_hit_at:
-            logging.info("User should wait API cooldown.")
-            raise InvalidOperationError(detail="Should wait in 1 minutes.")
+            logging.info(f"Should wait for API cooldown {remaining_time}s.")
+            raise InvalidOperationError(detail=f"Should wait in {remaining_time}s.")
 
         if current_time > otp_record.save_to_hit_at:
-            logging.info("Matched condition. Sending OTP using whatsapp API.")
-
+            logging.info("Sending OTP into phone number.")
             background_tasks.add_task(
                 send_whatsapp,
                 message_template=(
@@ -103,7 +112,7 @@ async def update_phone_number_endpoint(
                 },
             )
 
-            response.message = "Success update phone number."
+            response.message = "Phone number successfully updated."
             response.data = UniqueId(unique_id=current_user.unique_id)
 
     except StashBaseApiError:

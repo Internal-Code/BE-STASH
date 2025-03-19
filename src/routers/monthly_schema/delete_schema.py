@@ -1,11 +1,12 @@
 from typing import Annotated
-from fastapi import APIRouter, status, Depends, Path
-from src.schema.response import ResponseDefault
+from utils.logger import logging
 from utils.jwt import JWTHandler
-from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
 from utils.helper import local_time
 from utils.query import QueryDatabase
+from fastapi import APIRouter, status, Depends, Path
+from src.schema.response import ResponseDefault
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.connection import get_db
 from services.postgres.models import MonthlySchema
 from utils.error import (
     ServiceError,
@@ -23,6 +24,7 @@ async def delete_schema_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Delete schema endpoint.")
     current_time = local_time()
     response = ResponseDefault()
     query = QueryDatabase(db)
@@ -38,7 +40,8 @@ async def delete_schema_endpoint(
         )
 
         if not monthly_schema_record:
-            raise DataNotFoundError(detail="Data not found.")
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
 
         await query.update(
             table=MonthlySchema,

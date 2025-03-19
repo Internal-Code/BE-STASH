@@ -1,10 +1,10 @@
 from uuid import uuid4
-from datetime import timedelta
 from src.secret import Config
+from datetime import timedelta
 from utils.logger import logging
+from utils.jwt import JWTHandler
 from utils.smtp import send_gmail
 from utils.helper import local_time
-from utils.jwt import JWTHandler
 from utils.query import QueryDatabase
 from utils.generator import Generator
 from src.schema.response import ResponseToken
@@ -29,6 +29,7 @@ async def sso_authentication_endpoint(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
+    logging.info("SSO auth endpoint.")
     response = ResponseToken()
     generator = Generator()
     query = QueryDatabase(db)
@@ -50,9 +51,11 @@ async def sso_authentication_endpoint(
 
     try:
         if not user_info:
+            logging.error("Unable to extract user info.")
             raise ServiceError(detail="Google login failed.", name="Google SSO")
 
         if not account_record:
+            logging.info("New user detected.")
             await query.insert(
                 table=User,
                 data={
@@ -86,7 +89,7 @@ async def sso_authentication_endpoint(
             background_tasks.add_task(
                 send_gmail,
                 email_receiver=user_info.email,
-                email_subject="STASH Account Registration",
+                email_subject="STASH User Registration",
                 email_body=email_body,
             )
 
@@ -110,7 +113,7 @@ async def sso_authentication_endpoint(
                 refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),
             )
 
-            logging.info("Success registered account via google sso.")
+            logging.info("New user successfully registered.")
             response.access_token = access_token
             response.refresh_token = refresh_token
             return response
@@ -125,7 +128,7 @@ async def sso_authentication_endpoint(
                 data={"sub": account_record.unique_id},
                 refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),
             )
-            logging.info("Success login account via google sso.")
+            logging.info("User successfully logged in.")
             response.access_token = access_token
             response.refresh_token = refresh_token
 

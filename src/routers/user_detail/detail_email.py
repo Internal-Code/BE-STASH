@@ -1,5 +1,6 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from fastapi import APIRouter, status, Depends
 from src.schema.response import ResponseDefault, DetailEmailResponse
 from utils.error import ServiceError, StashBaseApiError
@@ -11,12 +12,13 @@ router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 async def detail_email_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
 ) -> ResponseDefault:
+    logging.info("Detail email endpoint.")
     response = ResponseDefault()
     email_info = DetailEmailResponse()
     try:
         email_info.email = current_user.email
         email_info.is_email_verified = current_user.verified_email
-        response.message = "Extracted email info."
+        response.message = "Email successfully fetched."
         response.data = email_info.model_dump()
     except StashBaseApiError:
         raise

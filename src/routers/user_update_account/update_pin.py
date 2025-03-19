@@ -31,6 +31,7 @@ async def update_pin_endpoint(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update PIN endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
 
@@ -55,16 +56,19 @@ async def update_pin_endpoint(
 
     try:
         if not validate_existing_pin:
-            raise EntityDoesNotMatchedError(detail="Invalid existing pin.")
+            logging.error("Invalid PIN.")
+            raise EntityDoesNotMatchedError(detail="Invalid existing PIN.")
 
         if schema.updated_pin != schema.confirmed_new_pin:
+            logging.error("Updated PIN and confirmation PIN should be equal.")
             raise EntityDoesNotMatchedError(
                 detail="Updated PIN and confirmation PIN should be equal."
             )
 
         if duplicated_updated_pin and duplicated_confirmed_pin:
+            logging.error("Should update into different PIN.")
             raise EntityForceInputSameDataError(
-                detail="Cannot changed into existing PIN. Please choose a different PIN."
+                detail="Should update into different PIN."
             )
 
         await query.update(
@@ -83,6 +87,9 @@ async def update_pin_endpoint(
         )
 
         if current_user.verified_email and current_user.verified_phone_number:
+            logging.info(
+                f"Sending updated information into {current_user.email} and {current_time.phone_number}."
+            )
             email_body = templates.TemplateResponse(
                 "update_pin_email_and_phone_number.html",
                 context={
@@ -99,7 +106,7 @@ async def update_pin_endpoint(
             )
             background_tasks.add_task(
                 send_gmail,
-                email_subject="STASH Updated STASH Pin!",
+                email_subject="Updated STASH PIN!",
                 email_receiver=current_user.email,
                 email_body=email_body,
             )
@@ -122,6 +129,7 @@ async def update_pin_endpoint(
                 pin=schema.confirmed_new_pin,
             )
         elif current_user.verified_email:
+            logging.info(f"Sending updated information into {current_user.email}.")
             email_body = templates.TemplateResponse(
                 "update_pin_email.html",
                 context={
@@ -135,7 +143,7 @@ async def update_pin_endpoint(
             logging.info(f"Sending updated account into {current_user.email}.")
             background_tasks.add_task(
                 send_gmail,
-                email_subject="STASH Updated STASH Pin!",
+                email_subject="Updated STASH PIN!",
                 email_receiver=current_user.email,
                 email_body=email_body,
             )
@@ -158,7 +166,7 @@ async def update_pin_endpoint(
                 pin=schema.confirmed_new_pin,
             )
 
-        response.message = "Success update PIN. User should performed re-login."
+        response.message = "PIN successfully updated. User should performed re-login."
 
     except StashBaseApiError:
         raise

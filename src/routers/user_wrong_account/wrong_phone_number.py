@@ -1,5 +1,6 @@
 from uuid import UUID
 from datetime import timedelta
+from utils.logger import logging
 from utils.helper import local_time
 from utils.generator import Generator
 from utils.query import QueryDatabase
@@ -32,37 +33,48 @@ async def wrong_phone_number_endpoint(
     response = ResponseDefault()
     generator = Generator()
     query = QueryDatabase(db)
-
     current_time = local_time()
+    unique_id = str(unique_id)
     generated_otp = generator.random_number(6)
-
-    account_record = await query.find(table=User, unique_id=str(unique_id))
+    current_user = await query.find(table=User, unique_id=unique_id)
     registered_phone_number = await query.find(
         table=User, phone_number=schema.phone_number
     )
-    otp_record = await query.find(table=SendOtp, unique_id=str(unique_id))
+    otp_record = await query.find(table=SendOtp, unique_id=unique_id)
 
     try:
-        if not account_record:
-            raise DataNotFoundError(detail="Account not found.")
+        if not otp_record:
+            logging.error("OTP record not found")
+            raise DataNotFoundError("OTP record not found.")
 
-        if account_record.register_state:
-            raise EntityAlreadyFilledError(detail="Account already set pin.")
+        remaining_time = otp_record.save_to_hit_at.second - current_time.second
 
-        if account_record.phone_number == schema.phone_number:
+        if not current_user:
+            logging.error("User not found.")
+            raise DataNotFoundError(detail="User not found.")
+
+        if current_user.register_state:
+            logging.error("User already set PIN.")
+            raise EntityAlreadyFilledError(detail="User already set PIN.")
+
+        if current_user.phone_number == schema.phone_number:
+            logging.error("Cannot changed into same phone number.")
             raise EntityForceInputSameDataError(
-                detail="Cannot changed into same phone number."
+                detail="Should update into different phone number."
             )
 
         if registered_phone_number:
+            logging.error("Phone number already taken.")
             raise EntityAlreadyExistError(
                 detail="Phone number already taken. Please use another phone number."
             )
 
         if current_time < otp_record.save_to_hit_at:
-            raise InvalidOperationError(detail="Should wait in 1 minutes.")
+            logging.info(f"Should wait for API cooldown {remaining_time}s.")
+            raise InvalidOperationError(detail=f"Should wait in {remaining_time}s.")
 
         if current_time > otp_record.save_to_hit_at:
+            logging.info(f"Sending OTP information into {current_user.phone_number}")
             background_tasks.add_task(
                 send_whatsapp,
                 message_template=(
@@ -76,13 +88,13 @@ async def wrong_phone_number_endpoint(
 
             await query.update(
                 table=User,
-                condition={"unique_id": str(unique_id)},
+                condition={"unique_id": unique_id},
                 data={"phone_number": schema.phone_number, "updated_at": current_time},
             )
 
             await query.update(
                 table=SendOtp,
-                condition={"unique_id": str(unique_id)},
+                condition={"unique_id": unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
@@ -95,8 +107,8 @@ async def wrong_phone_number_endpoint(
             )
 
             response.success = True
-            response.message = "Sending OTP into updated phone number."
-            response.data = UniqueId(unique_id=account_record.unique_id)
+            response.message = "OTP sent into phone number."
+            response.data = UniqueId(unique_id=current_user.unique_id)
 
     except StashBaseApiError:
         raise
@@ -111,5 +123,5 @@ router.add_api_route(
     response_model=ResponseDefault,
     endpoint=wrong_phone_number_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Wrong registered account phone number.",
+    summary="Wrong registered user phone number.",
 )

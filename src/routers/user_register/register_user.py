@@ -10,17 +10,8 @@ from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
 from src.schema.request_format import RegisterAccountPayload
-from fastapi import (
-    APIRouter, 
-    status, 
-    Depends, 
-    BackgroundTasks
-)
-from utils.error import (
-    ServiceError, 
-    StashBaseApiError, 
-    EntityAlreadyExistError
-)
+from fastapi import APIRouter, status, Depends, BackgroundTasks
+from utils.error import ServiceError, StashBaseApiError, EntityAlreadyExistError
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
@@ -30,16 +21,20 @@ async def register_account_endpoint(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Register account endpdoint.")
     generator = Generator()
     query = QueryDatabase(db)
     unique_id = str(uuid4())
     generated_otp = generator.random_number(6)
     response = ResponseDefault()
 
-    phone_number_record = await query.find(table=User, phone_number=schema.phone_number)
-
     try:
+        phone_number_record = await query.find(
+            table=User, phone_number=schema.phone_number
+        )
+
         if phone_number_record:
+            logging.error("Phone number already taken.")
             raise EntityAlreadyExistError(detail="Phone number already taken.")
 
         await query.insert(

@@ -1,6 +1,7 @@
 from uuid import uuid4
 from typing import Annotated
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from utils.helper import leap_year
 from utils.query import QueryDatabase
 from src.schema.response import ResponseDefault
@@ -28,6 +29,7 @@ async def create_spend_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Create spend endpoint.")
     response = ResponseDefault()
     spend_id = str(uuid4())
     year = int(year)
@@ -43,38 +45,42 @@ async def create_spend_endpoint(
         )
 
         if not monthly_schema_record:
-            raise DataNotFoundError(detail=f"Schema {month}/{year} is not created.")
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
 
         month_id = monthly_schema_record.month_id
 
-        category_schema_record = await query.find(
+        category_record = await query.find(
             table=CategorySchema,
             unique_id=current_user.unique_id,
             month_id=month_id,
             category=schema.category,
         )
 
-        if not category_schema_record:
-            raise DataNotFoundError(
-                detail=f"Category {schema.category} is not created."
-            )
+        if not category_record:
+            logging.error(f"Category {schema.category} not found.")
+            raise DataNotFoundError(detail="Category not found.")
 
-        category_id = category_schema_record.category_id
+        category_id = category_record.category_id
 
         is_leap_year = leap_year(year=year)
         fixed_day = [4, 6, 9, 11]
 
         if month == 2:
+            logging.warning("Validating process on month February.")
             if is_leap_year and day > 29:
+                logging.error(f"Invalid day {day} in February of a leap year.")
                 raise EntityDoesNotMatchedError(
                     detail="Day should be 29 or less in February of a leap year."
                 )
             if not is_leap_year and day > 28:
+                logging.error(f"Invalid day {day} in February of a non-leap year.")
                 raise EntityDoesNotMatchedError(
                     detail="Day should be 28 or less in February of a non-leap year."
                 )
 
         if month in fixed_day and day > 30:
+            logging.error(f"Invalid day {day} for month {month}.")
             raise EntityDoesNotMatchedError(
                 detail="Day should be 30 or less for this month."
             )

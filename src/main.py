@@ -8,7 +8,7 @@ from services.postgres.connection import database_connection
 from starlette.middleware.sessions import SessionMiddleware
 from utils.exception_handler import register_exception_handlers
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
-from src.routers.user_register import register_account, create_pin
+from src.routers.user_register import register_user, create_pin
 from src.routers.user_wrong_account import wrong_email, wrong_phone_number
 from src.routers.user_send_otp import send_otp_phone_number, send_otp_email
 from src.routers.user_verification import verify_phone_number, verify_email
@@ -107,7 +107,7 @@ app.include_router(get_user.router)
 app.include_router(refresh_token.router)
 app.include_router(login.router)
 app.include_router(logout.router)
-app.include_router(register_account.router)
+app.include_router(register_user.router)
 app.include_router(sso_authentication.router)
 app.include_router(sso_login.router)
 app.include_router(create_pin.router)

@@ -1,10 +1,11 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from utils.query import QueryDatabase
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import MonthlySchema, MoneySpend
 from src.schema.response import ResponseDefault
+from services.postgres.models import MonthlySchema, MoneySpend
 from fastapi import APIRouter, status, Depends, Path
 from utils.error import ServiceError, StashBaseApiError
 
@@ -19,6 +20,7 @@ async def detail_spend_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Detail spend endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     year = int(year)
@@ -31,9 +33,9 @@ async def detail_spend_endpoint(
             year=year,
             deleted_at=None,
         )
-        
 
         if not monthly_schema_entry:
+            logging.error(f"Schema {month}/{year} not found.")
             response.message = "Schema not found."
             return response
 
@@ -47,13 +49,13 @@ async def detail_spend_endpoint(
             day=day,
             deleted_at=None,
         )
-        
 
         if not money_spend_entry:
-            response.message = "User is not created soend."
+            logging.error("Money spend data is empty.")
+            response.message = "Data not found."
             return response
 
-        response.message = "Sucess fetched detail money spend."
+        response.message = "Money spend successfully fetched."
         response.data = money_spend_entry
 
     except StashBaseApiError:

@@ -31,19 +31,18 @@ async def update_email_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update email endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     generator = Generator()
     current_time = local_time()
-
     generated_otp = generator.random_number(6)
-
     templates = Jinja2Templates(directory="templates")
 
     try:
         if not current_user.email:
-            logging.info("User is not input email yet.")
-            raise MandatoryInputError(detail="User should add email first.")
+            logging.error("User is not add an email.")
+            raise MandatoryInputError(detail="Should add email first.")
 
         if current_user.email != schema.email:
             registered_email = await query.find(table=User, email=schema.email)
@@ -53,10 +52,14 @@ async def update_email_endpoint(
                 )
 
         if not current_user.verified_email:
-            raise MandatoryInputError(detail="User email should be verified first.")
+            logging.error("User email is not verified.")
+            raise MandatoryInputError(detail="Email should be verified first.")
 
         if current_user.email == schema.email:
-            raise EntityForceInputSameDataError(detail="Cannot use same email.")
+            logging.error("Cannot update into same email.")
+            raise EntityForceInputSameDataError(
+                detail="Should update into different email."
+            )
 
         email_body = templates.TemplateResponse(
             "otp_email.html",

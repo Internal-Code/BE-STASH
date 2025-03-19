@@ -6,7 +6,7 @@ router = APIRouter(tags=["Root"])
 
 
 async def health_check_endpoint() -> ServerStatus:
-    logging.info("Endpoint health check.")
+    logging.info("Health check endpoint.")
     response = ServerStatus()
     response.status = "Server running!"
     return response

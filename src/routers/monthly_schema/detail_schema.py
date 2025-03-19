@@ -1,5 +1,6 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from utils.query import QueryDatabase
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +19,7 @@ async def detail_schema_endpoint(
     year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Detail schema endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     year = int(year)
@@ -32,6 +34,7 @@ async def detail_schema_endpoint(
         )
 
         if not monthly_schema_entry:
+            logging.error(f"Schema {month}/{year} not found.")
             response.message = "Schema not found."
             return response
 
@@ -46,6 +49,7 @@ async def detail_schema_endpoint(
         )
 
         if not category_schema_entry:
+            logging.warning("User is not created category.")
             response.message = "User is not created category."
             return response
 
