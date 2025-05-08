@@ -23,7 +23,7 @@ async def update_category_endpoint(
     schema: UpdateCategoryPayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
-    year: str = Path(regex="^\d{4}$", description="Year should be exactly 4 digits"),
+    year: str = Path(regex=r"^\d{4}$", description="Year should be exactly 4 digits"),
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
     logging.info("Update category endpoint.")
