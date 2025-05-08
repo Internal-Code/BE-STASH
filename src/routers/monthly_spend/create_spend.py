@@ -1,135 +1,118 @@
+from uuid import uuid4
 from typing import Annotated
+from utils.jwt import JWTHandler
 from utils.logger import logging
-from fastapi import APIRouter, status, Depends
+from utils.helper import leap_year
+from utils.query import QueryDatabase
 from src.schema.response import ResponseDefault
-from utils.request_format import CreateSpend
-from utils.jwt.general import get_current_user
-from services.postgres.connection import database_connection
-from services.postgres.models import money_spends, money_spend_schemas
-from utils.database.general import filter_month_year_category, local_time
-from utils.custom_error import (
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, status, Depends, Path
+from src.schema.request_format import CreateSpendPayload
+from services.postgres.models import MonthlySchema, CategorySchema, MoneySpend
+from utils.error import (
     ServiceError,
-    DatabaseError,
-    FinanceTrackerApiError,
+    StashBaseApiError,
+    DataNotFoundError,
+    EntityDoesNotMatchedError,
 )
 
-router = APIRouter(tags=["Monthly Spend"])
+jwt_handler = JWTHandler()
+router = APIRouter(tags=["Monthly Spend"], prefix="/spend")
 
 
-async def create_spend(
-    schema: CreateSpend, current_user: Annotated[dict, Depends(get_current_user)]
+async def create_spend_endpoint(
+    schema: CreateSpendPayload,
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
+    day: int = Path(ge=1, le=31, description="Day should be between 1 and 31"),
+    month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
+    year: str = Path(regex=r"^\d{4}$", description="Year should be exactly 4 digits"),
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
-    """
-    Create a money spend data with all the information:
-
-    - **spend_day**: This refers to the specific calendar date (e.g., 1, 2 ... 31) when the schema was created or applies to.
-    - **spend_month**: This refers to the specific calendar month (e.g., January, February) when the schema was created or applies to.
-    - **spend_year**: This represents the calendar year (e.g., 2023, 2024) associated with the schema.
-    - **category**: This identifies the type of expense or area the schema pertains to. Examples of categories could be "Rent," "Groceries," "Transportation," or any other relevant groupings you define.
-    - **description**: A description or note about the spending.
-    - **amount**: The amount of money spent.
-    """
-
+    logging.info("Create spend endpoint.")
     response = ResponseDefault()
-
-    is_available = await filter_month_year_category(
-        user_uuid=current_user.user_uuid,
-        month=schema.spend_month,
-        year=schema.spend_year,
-        category=schema.category,
-    )
+    spend_id = str(uuid4())
+    year = int(year)
+    query = QueryDatabase(db)
 
     try:
-        logging.info("Endpoint create spend money.")
-        async with database_connection().connect() as session:
-            try:
-                if is_available is False:
-                    try:
-                        logging.info(
-                            f"Inserting data into table {money_spends.name} and {money_spend_schemas.name}"
-                        )
+        monthly_schema_record = await query.find(
+            table=MonthlySchema,
+            unique_id=current_user.unique_id,
+            month=month,
+            year=year,
+            deleted_at=None,
+        )
 
-                        create_spend = money_spends.insert().values(
-                            created_at=local_time(),
-                            updated_at=None,
-                            user_uuid=current_user.user_uuid,
-                            spend_day=schema.spend_day,
-                            spend_month=schema.spend_month,
-                            spend_year=schema.spend_year,
-                            category=schema.category,
-                            description=schema.description,
-                            amount=schema.amount,
-                        )
-                        create_category = money_spend_schemas.insert().values(
-                            created_at=local_time(),
-                            updated_at=None,
-                            user_uuid=current_user.user_uuid,
-                            month=schema.spend_month,
-                            year=schema.spend_year,
-                            category=schema.category,
-                            budget=0,
-                        )
-                        await session.execute(create_spend)
-                        await session.execute(create_category)
-                        await session.commit()
-                        logging.info("Created new spend money and schema.")
-                        response.message = "Created new spend money and schema data."
-                        response.success = True
-                    except Exception as E:
-                        logging.error(
-                            f"Error during creating new spend money and schema: {E}."
-                        )
-                        await session.rollback()
-                        raise DatabaseError(detail=f"Database error: {E}.")
-                else:
-                    try:
-                        logging.info(
-                            f"Only inserting data into table {money_spends.name}"
-                        )
-                        create_spend = money_spends.insert().values(
-                            created_at=local_time(),
-                            updated_at=None,
-                            user_uuid=current_user.user_uuid,
-                            spend_day=schema.spend_day,
-                            spend_month=schema.spend_month,
-                            spend_year=schema.spend_year,
-                            category=schema.category,
-                            description=schema.description,
-                            amount=schema.amount,
-                        )
-                        await session.execute(create_spend)
-                        await session.commit()
-                        logging.info("Created new spend money.")
-                        response.message = "Created new spend money."
-                        response.success = True
-                    except Exception as E:
-                        logging.error(f"Error during creating new spend money: {E}.")
-                        await session.rollback()
-                        raise DatabaseError(detail=f"Database error: {E}.")
-            except Exception as E:
-                logging.error(
-                    f"Error during creating spend money or with adding money schema: {E}."
-                )
-                await session.rollback()
-                raise DatabaseError(
-                    detail=f"Database error during creating spend money or with adding money schema: {E}."
-                )
-            finally:
-                await session.close()
-    except FinanceTrackerApiError as FTE:
-        raise FTE
+        if not monthly_schema_record:
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
 
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+        month_id = monthly_schema_record.month_id
+
+        category_record = await query.find(
+            table=CategorySchema,
+            unique_id=current_user.unique_id,
+            month_id=month_id,
+            category=schema.category,
+        )
+
+        if not category_record:
+            logging.error(f"Category {schema.category} not found.")
+            raise DataNotFoundError(detail="Category not found.")
+
+        category_id = category_record.category_id
+
+        is_leap_year = leap_year(year=year)
+        fixed_day = [4, 6, 9, 11]
+
+        if month == 2:
+            logging.warning("Validating process on month February.")
+            if is_leap_year and day > 29:
+                logging.error(f"Invalid day {day} in February of a leap year.")
+                raise EntityDoesNotMatchedError(
+                    detail="Day should be 29 or less in February of a leap year."
+                )
+            if not is_leap_year and day > 28:
+                logging.error(f"Invalid day {day} in February of a non-leap year.")
+                raise EntityDoesNotMatchedError(
+                    detail="Day should be 28 or less in February of a non-leap year."
+                )
+
+        if month in fixed_day and day > 30:
+            logging.error(f"Invalid day {day} for month {month}.")
+            raise EntityDoesNotMatchedError(
+                detail="Day should be 30 or less for this month."
+            )
+
+        await query.insert(
+            table=MoneySpend,
+            data={
+                "unique_id": current_user.unique_id,
+                "spend_id": spend_id,
+                "category_id": category_id,
+                "month_id": month_id,
+                "day": day,
+                "category": schema.category,
+                "amount": schema.amount,
+                "description": schema.description,
+            },
+        )
+        response.message = "Daily spend sucessfully created."
+
+    except StashBaseApiError:
+        raise
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
 
     return response
 
 
 router.add_api_route(
     methods=["POST"],
-    path="/monthly-spend/create",
+    path="/create/{day}/{month}/{year}",
     response_model=ResponseDefault,
-    endpoint=create_spend,
+    endpoint=create_spend_endpoint,
     status_code=status.HTTP_201_CREATED,
-    summary="Create daily spend record.",
+    summary="Create daily money spend.",
 )
