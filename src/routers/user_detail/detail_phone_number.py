@@ -1,22 +1,25 @@
 from typing import Annotated
-from src.secret import Config
 from utils.jwt import JWTHandler
+from utils.logger import logging
 from fastapi import APIRouter, status, Depends
-from src.schema.response import ResponseDefault
+from src.schema.response import ResponseDefault, PhoneNumber
 from utils.error import ServiceError, StashBaseApiError
 
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
 
 
 async def detail_phone_number_endpoint(
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
 ) -> ResponseDefault:
+    logging.info("Detail phone number endpoint.")
     response = ResponseDefault()
+    phone_number_info = PhoneNumber()
     try:
-        response.message = "Extracted phone number info."
-        response.data = current_user.phone_number
+        phone_number_info.phone_number = current_user.phone_number
+        response.message = "Phone number successfully fetched."
+        response.data = phone_number_info.model_dump()
     except StashBaseApiError:
         raise
     except Exception:

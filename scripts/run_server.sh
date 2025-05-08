@@ -60,9 +60,11 @@ case "$1" in
     ;;
 esac
 
-# Load the environment variables using the external script
-export ENV_FILE
-sh ./scripts/load_env.sh
+set -a
+eval $(sed 's/^/export /' "$ENV_FILE")
+set +a
+
+
 
 # Checking OS Environment
 echo "Checking OS Environment"

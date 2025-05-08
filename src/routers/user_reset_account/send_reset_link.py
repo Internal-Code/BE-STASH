@@ -1,5 +1,8 @@
+from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
+from utils.logger import logging
+from utils.smtp import send_gmail
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
@@ -8,9 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, ResetPin
 from src.schema.response import ResponseDefault, UniqueId
-from src.schema.request_format import SendVerificationLink
+from src.schema.request_format import SendResetLinkPayload
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.smtp import send_gmail
 from utils.error import (
     ServiceError,
     StashBaseApiError,
@@ -24,40 +26,57 @@ router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
 async def send_reset_link_endpoint(
-    schema: SendVerificationLink,
+    schema: SendResetLinkPayload,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Send reset link endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     current_time = local_time()
-
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
-    reset_pin_record = await query.find(
-        table=ResetPin, unique_id=account_record.unique_id
+    unique_id = str(unique_id)
+    reset_link = (
+        f"http://localhost:8000/api/v1/user/reset-account/reset-pin/{unique_id}"
     )
-    reset_link = f"http://localhost:8000/api/v1/user/reset-account/reset-pin/{account_record.unique_id}"
 
     templates = Jinja2Templates(directory="templates")
 
     try:
+        account_record = await query.find(table=User, unique_id=unique_id)
+
         if not account_record:
-            raise DataNotFoundError(detail="Account not found.")
+            logging.error("User not found.")
+            raise DataNotFoundError(detail="User not found.")
 
         if not account_record.pin:
+            logging.error("User is not created pin.")
             raise MandatoryInputError(detail="Should create pin first.")
 
+        reset_pin_record = await query.find(
+            table=ResetPin, unique_id=account_record.unique_id
+        )
+        if not reset_pin_record:
+            logging.error("Reset pin not found.")
+            raise DataNotFoundError(detail="Reset pin data not found.")
+
+        remaining_time = reset_pin_record.save_to_hit_at.second - current_time.second
+
         if current_time < reset_pin_record.save_to_hit_at:
-            raise InvalidOperationError(detail="Should wait in 1 minutes.")
+            logging.info(f"Should wait for API cooldown {remaining_time}s.")
+            raise InvalidOperationError(detail=f"Should wait in {remaining_time}s.")
 
         if schema.method == schema.method.EMAIL:
             if not account_record.email:
+                logging.error("User is not add an email.")
                 raise MandatoryInputError(detail="Should add email first.")
 
             if not account_record.verified_email:
+                logging.error("User email is not verified.")
                 raise InvalidOperationError(detail="Email not verified.")
 
             if current_time > reset_pin_record.save_to_hit_at:
+                logging.info("Sending reset pin into email.")
                 email_body = templates.TemplateResponse(
                     "send_reset_link.html",
                     context={
@@ -89,12 +108,15 @@ async def send_reset_link_endpoint(
                 response.data = UniqueId(unique_id=account_record.unique_id)
         else:
             if not account_record.phone_number:
+                logging.error("User is not add phone number.")
                 raise MandatoryInputError(detail="Should add phone number first.")
 
             if not account_record.verified_phone_number:
+                logging.error("User phone number is not verified.")
                 raise InvalidOperationError(detail="Phone number not verified.")
 
             if current_time > reset_pin_record.save_to_hit_at:
+                logging.info("Sending reset pin into phone number.")
                 background_tasks.add_task(
                     send_whatsapp,
                     phone_number=account_record.phone_number,
@@ -133,8 +155,8 @@ async def send_reset_link_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
-    path="/send-link",
+    methods=["PATCH"],
+    path="/send-link/{unique_id}",
     response_model=ResponseDefault,
     endpoint=send_reset_link_endpoint,
     status_code=status.HTTP_200_OK,

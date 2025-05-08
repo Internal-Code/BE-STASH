@@ -61,7 +61,6 @@ fi
 
 # Load environment variables
 export ENV_FILE
-sh ./scripts/load_env.sh
 
 # Checking OS Environment
 echo "Checking OS Environment"

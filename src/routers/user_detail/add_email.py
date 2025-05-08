@@ -1,55 +1,48 @@
 from typing import Annotated
+from utils.jwt import JWTHandler
+from utils.logger import logging
+from utils.helper import local_time
+from utils.query import QueryDatabase
+from services.postgres.models import User
+from src.schema.request_format import Email
 from fastapi import APIRouter, status, Depends
-from src.schema.request_format import UserEmail
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.query import QueryDatabase
-from services.postgres.models import User
-from src.secret import Config
-from utils.helper import local_time
-from utils.jwt import JWTHandler
 from utils.error import (
-    EntityAlreadyVerifiedError,
     EntityAlreadyExistError,
-    EntityForceInputSameDataError,
     ServiceError,
     StashBaseApiError,
 )
 
 
 router = APIRouter(tags=["User Detail"], prefix="/user/detail")
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 
 
 async def add_email_endpoint(
-    schema: UserEmail,
+    schema: Email,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Add email endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
-
     current_time = local_time()
-    registered_email = await query.find(table=User, email=schema.email)
-    user_record = await query.find(table=User, unique_id=current_user.unique_id)
 
     try:
-        if registered_email:
-            raise EntityAlreadyExistError(
-                detail="Email already taken. Please use another email."
-            )
+        if schema.email != current_user.email:
+            logging.warning("Using different email.")
+            registered_email = await query.find(table=User, email=schema.email)
+            if registered_email:
+                logging.error("Email already exist.")
+                raise EntityAlreadyExistError(
+                    detail="Email already taken. Please use another email."
+                )
 
-        if user_record.verified_email:
-            raise EntityAlreadyVerifiedError(
-                detail="User already have an verified email."
-            )
-
-        if user_record.email:
-            raise EntityAlreadyExistError(detail="User already have an email.")
-
-        if user_record.email == schema.email:
-            raise EntityForceInputSameDataError(detail="Cannot update into same email.")
+        if current_user.email:
+            logging.error("Email already registered by user.")
+            raise EntityAlreadyExistError(detail="User already registered email.")
 
         await query.update(
             table=User,
@@ -57,7 +50,7 @@ async def add_email_endpoint(
             data={"email": schema.email, "updated_at": current_time},
         )
 
-        response.message = "Success add new email."
+        response.message = "New email successfully added."
 
     except StashBaseApiError:
         raise

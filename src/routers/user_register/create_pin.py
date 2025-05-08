@@ -1,14 +1,16 @@
+from uuid import UUID
 from src.secret import Config
 from datetime import timedelta
+from utils.logger import logging
 from utils.jwt import JWTHandler
+from utils.helper import local_time
 from utils.query import QueryDatabase
 from services.postgres.models import User
 from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import UserPin
+from src.schema.request_format import CreatePinPayload
 from src.schema.response import ResponseToken
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
-from src.schema.custom_state import RegisterAccountState
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,
@@ -19,31 +21,39 @@ from utils.error import (
 )
 
 config = Config()
-jwt_handler = JWTHandler(config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def create_pin_endpoint(
-    schema: UserPin,
+    schema: CreatePinPayload,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseToken:
+    logging.info("Create PIN endpoint.")
     response = ResponseToken()
     query = QueryDatabase(db)
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    unique_id = str(unique_id)
+    current_time = local_time()
+    account_record = await query.find(table=User, unique_id=unique_id)
     hashed_pin = jwt_handler.get_password_hash(password=schema.pin)
 
     try:
         if not account_record:
-            raise DataNotFoundError(detail="Account not found.")
+            logging.error("User not found.")
+            raise DataNotFoundError(detail="User not found.")
 
-        if account_record.register_state == RegisterAccountState.SUCCESS:
-            raise EntityAlreadyFilledError(detail="Account already set pin.")
+        if account_record.register_state:
+            logging.error("User already set PIN.")
+            raise EntityAlreadyFilledError(detail="User already set PIN.")
 
         if not account_record.verified_phone_number:
+            logging.error("User phone number is not validated.")
             raise MandatoryInputError(detail="Should validate phone number first.")
 
         if account_record.verified_phone_number:
+            logging.info("User phone number already verified.")
             background_tasks.add_task(
                 send_whatsapp,
                 phone_number=account_record.phone_number,
@@ -63,18 +73,23 @@ async def create_pin_endpoint(
 
         await query.update(
             table=User,
-            condition={"unique_id": schema.unique_id},
-            data={"pin": hashed_pin, "register_state": RegisterAccountState.SUCCESS},
+            condition={"unique_id": unique_id},
+            data={
+                "pin": hashed_pin,
+                "updated_at": current_time,
+                "created_pin_at": current_time - timedelta(days=30),
+                "register_state": True,
+            },
         )
 
         access_token = jwt_handler.create_access_token(
-            data={"sub": schema.unique_id},
+            data={"sub": unique_id},
             access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
         )
 
         refresh_token = jwt_handler.create_refresh_token(
-            data={"sub": schema.unique_id},
-            refresh_token_expires=timedelta(minutes=int(config.REFRESH_TOKEN_EXPIRED)),
+            data={"sub": unique_id},
+            refresh_token_expires=timedelta(days=int(config.REFRESH_TOKEN_EXPIRED)),
         )
 
         response.access_token = access_token
@@ -89,7 +104,7 @@ async def create_pin_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/create-pin",
+    path="/create-pin/{unique_id}",
     response_model=ResponseToken,
     endpoint=create_pin_endpoint,
     status_code=status.HTTP_201_CREATED,

@@ -1,11 +1,12 @@
+from uuid import UUID
+from utils.logger import logging
 from utils.helper import local_time
 from utils.query import QueryDatabase
+from src.schema.request_format import Otp
 from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import UserOtp
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import SendOtp, User
-from src.schema.custom_state import RegisterAccountState
 from src.schema.response import ResponseDefault, UniqueId
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
@@ -20,48 +21,55 @@ router = APIRouter(tags=["User Verification"], prefix="/user/verification")
 
 
 async def verify_phone_number_endpoint(
-    schema: UserOtp,
+    schema: Otp,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Verify phone number endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
-
-    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    unique_id = str(unique_id)
+    otp_record = await query.find(table=SendOtp, unique_id=unique_id)
+    account_record = await query.find(table=User, unique_id=unique_id)
     current_time = local_time()
 
     try:
-        if not otp_record:
-            raise DataNotFoundError(detail="OTP data not found.")
-
         if not otp_record.otp_number:
+            logging.error("OTP data not found.")
             raise DataNotFoundError(
                 detail="OTP code not found. Please request a new OTP code."
             )
 
         if account_record.verified_phone_number:
+            logging.error("User phone number already verified.")
             raise EntityAlreadyVerifiedError(detail="Phone number already verified.")
 
         if current_time > otp_record.blacklisted_at:
+            logging.error("OTP expired.")
             raise InvalidOperationError(detail="OTP already expired.")
 
         if otp_record.otp_number != schema.otp:
+            logging.error("Invalid OTP.")
             raise InvalidOperationError(detail="Invalid OTP code.")
 
         if (
             current_time < otp_record.blacklisted_at
             and otp_record.otp_number == schema.otp
         ):
+            logging.info("Updating verify phone number state.")
             await query.update(
                 table=User,
-                condition={"unique_id": schema.unique_id},
+                condition={"unique_id": unique_id},
                 data={
                     "verified_phone_number": True,
-                    "otp_state": RegisterAccountState.SUCCESS,
+                    "otp_state": True,
                 },
             )
 
+            logging.info(
+                f"Send updated user information to {current_time.phone_number}"
+            )
             background_tasks.add_task(
                 send_whatsapp,
                 message_template=(
@@ -75,9 +83,10 @@ async def verify_phone_number_endpoint(
                 full_name=account_record.full_name,
                 phone_number=account_record.phone_number,
             )
+            logging.info("Phone number verified.")
 
             response.message = "Phone number successfully verified."
-            response.data = UniqueId(unique_id=schema.unique_id)
+            response.data = UniqueId(unique_id=unique_id)
 
     except StashBaseApiError:
         raise
@@ -89,7 +98,7 @@ async def verify_phone_number_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/phone-number",
+    path="/phone-number/{unique_id}",
     endpoint=verify_phone_number_endpoint,
     response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,

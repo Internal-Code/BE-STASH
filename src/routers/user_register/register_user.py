@@ -5,33 +5,37 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
-from src.schema.request_format import CreateUser
-from fastapi import APIRouter, status, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
 from services.postgres.models import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
+from src.schema.request_format import RegisterAccountPayload
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import ServiceError, StashBaseApiError, EntityAlreadyExistError
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def register_account_endpoint(
-    schema: CreateUser,
+    schema: RegisterAccountPayload,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Register account endpdoint.")
     generator = Generator()
     query = QueryDatabase(db)
     unique_id = str(uuid4())
     generated_otp = generator.random_number(6)
     response = ResponseDefault()
 
-    phone_number_record = await query.find(table=User, phone_number=schema.phone_number)
-
     try:
+        phone_number_record = await query.find(
+            table=User, phone_number=schema.phone_number
+        )
+
         if phone_number_record:
-            raise EntityAlreadyExistError(detail="Phone number already registered.")
+            logging.error("Phone number already taken.")
+            raise EntityAlreadyExistError(detail="Phone number already taken.")
 
         await query.insert(
             table=User,

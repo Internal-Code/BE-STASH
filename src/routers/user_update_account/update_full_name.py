@@ -1,34 +1,30 @@
 from typing import Annotated
 from utils.logger import logging
+from utils.jwt import JWTHandler
+from utils.helper import local_time
+from utils.query import QueryDatabase
+from services.postgres.models import User
 from fastapi import APIRouter, status, Depends
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
-from utils.jwt import JWTHandler
-from src.secret import Config
-from src.schema.request_format import UpdateUserFullName
-from utils.helper import local_time
-from utils.query import QueryDatabase
-from services.postgres.models import User
-from utils.error import (
-    ServiceError,
-    StashBaseApiError,
-)
+from src.schema.request_format import UpdateFullNamePayload
+from utils.error import ServiceError, StashBaseApiError
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_full_name_endpoint(
-    schema: UpdateUserFullName,
+    schema: UpdateFullNamePayload,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update full name endpoint.")
     response = ResponseDefault()
-    query = QueryDatabase()
+    query = QueryDatabase(db)
     current_time = local_time()
     try:
-        logging.info("Endpoint update full name.")
         await query.update(
             table=User,
             condition={"unique_id": current_user.unique_id},

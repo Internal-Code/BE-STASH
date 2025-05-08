@@ -1,3 +1,4 @@
+from uuid import UUID
 from datetime import timedelta
 from src.secret import Config
 from utils.logger import logging
@@ -7,16 +8,15 @@ from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.schema.request_format import UserUniqueId
 from services.postgres.models import SendOtp, User
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from src.schema.response import ResponseDefault, UniqueId
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
     MandatoryInputError,
     InvalidOperationError,
+    DataNotFoundError,
 )
 
 config = Config()
@@ -24,34 +24,42 @@ router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
 async def send_otp_phone_number_endpoint(
-    schema: UserUniqueId,
+    unique_id: UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Send OTP phone number endpoint.")
     response = ResponseDefault()
     generator = Generator()
     query = QueryDatabase(db)
     current_time = local_time()
+    unique_id = str(unique_id)
     generated_otp = generator.random_number(6)
-    otp_record = await query.find(table=SendOtp, unique_id=schema.unique_id)
-    account_record = await query.find(table=User, unique_id=schema.unique_id)
+    account_record = await query.find(table=User, unique_id=unique_id)
 
     try:
+        otp_record = await query.find(table=SendOtp, unique_id=unique_id)
+
+        if not otp_record:
+            logging.error("OTP record not found")
+            raise DataNotFoundError("OTP record not found.")
+
+        remaining_time = otp_record.save_to_hit_at.second - current_time.second
+
         if not account_record:
             logging.info("OTP data initialization not found.")
             raise DataNotFoundError(detail="Data not found.")
 
         if not account_record.phone_number:
-            logging.info("User should filled phone number yet.")
+            logging.info("User is not add phone number.")
             raise MandatoryInputError(detail="User should fill phone number first.")
 
         if current_time < otp_record.save_to_hit_at:
-            logging.info("User should wait API cooldown.")
-            raise InvalidOperationError(detail="Should wait in 1 minutes.")
+            logging.info(f"Should wait for API cooldown {remaining_time}s.")
+            raise InvalidOperationError(detail=f"Should wait in {remaining_time}s.")
 
         if current_time > otp_record.save_to_hit_at:
-            logging.info("Matched condition. Sending OTP using whatsapp API.")
-
+            logging.info("Sending send otp into phone number.")
             background_tasks.add_task(
                 send_whatsapp,
                 message_template=(
@@ -64,7 +72,7 @@ async def send_otp_phone_number_endpoint(
             )
             await query.update(
                 table=SendOtp,
-                condition={"unique_id": schema.unique_id},
+                condition={"unique_id": unique_id},
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
@@ -77,7 +85,7 @@ async def send_otp_phone_number_endpoint(
             )
 
             response.message = f"OTP sent to {account_record.phone_number}."
-            response.data = UniqueId(unique_id=schema.unique_id)
+            response.data = UniqueId(unique_id=unique_id)
     except StashBaseApiError:
         raise
     except Exception:
@@ -87,7 +95,7 @@ async def send_otp_phone_number_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="/phone-number",
+    path="/phone-number/{unique_id}",
     endpoint=send_otp_phone_number_endpoint,
     response_model=ResponseDefault,
     status_code=status.HTTP_200_OK,

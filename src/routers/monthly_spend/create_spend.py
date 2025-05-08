@@ -1,128 +1,118 @@
-# from typing import Annotated
-# from utils.jwt import get_current_user
-# from fastapi import APIRouter, status, Depends
-# from services.postgres.connection import get_db
-# from sqlalchemy.ext.asyncio import AsyncSession
-# from src.schema.response import ResponseDefault
-# from services.postgres.models import MonthlySchema, CategorySchema
-# from src.schema.request_format import CreateSpend
-# from utils.query import find_record
-# from utils.error import ServiceError, StashBaseApiError, DataNotFoundError
+from uuid import uuid4
+from typing import Annotated
+from utils.jwt import JWTHandler
+from utils.logger import logging
+from utils.helper import leap_year
+from utils.query import QueryDatabase
+from src.schema.response import ResponseDefault
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, status, Depends, Path
+from src.schema.request_format import CreateSpendPayload
+from services.postgres.models import MonthlySchema, CategorySchema, MoneySpend
+from utils.error import (
+    ServiceError,
+    StashBaseApiError,
+    DataNotFoundError,
+    EntityDoesNotMatchedError,
+)
 
-# router = APIRouter(tags=["Monthly Spend"], prefix="/spend")
-
-
-# async def create_spend(
-#     schema: CreateSpend,
-#     current_user: Annotated[dict, Depends(get_current_user)],
-#     db: AsyncSession = Depends(get_db),
-# ) -> ResponseDefault:
-#     response = ResponseDefault()
-#     schema_record = await find_record(
-#          table=MonthlySchema, month=schema.month, year=schema.year
-#     )
-#     print(schema_record.month_id)
-#     # is_available = await filter_month_year_category(
-#     #     user_uuid=current_user.user_uuid,
-#     #     month=schema.spend_month,
-#     #     year=schema.spend_year,
-#     #     category=schema.category,
-#     # )
-
-#     try:
-#         if not schema_record:
-#             raise DataNotFoundError("Monthly data not found.")
-#         category_record = await find_record(
-#              table=CategorySchema, category_id=schema_record.month_id
-#         )
-#         print(category_record)
-#         pass
-#         # logging.info("Endpoint create spend money.")
-#         # async with database_connection().connect() as session:
-#         #     try:
-#         #         if is_available is False:
-#         #             try:
-#         #                 logging.info(
-#         #                     f"Inserting data into table {money_spends.name} and {money_spend_schemas.name}"
-#         #                 )
-
-#         #                 create_spend = money_spends.insert().values(
-#         #                     created_at=local_time(),
-#         #                     updated_at=None,
-#         #                     user_uuid=current_user.user_uuid,
-#         #                     spend_day=schema.spend_day,
-#         #                     spend_month=schema.spend_month,
-#         #                     spend_year=schema.spend_year,
-#         #                     category=schema.category,
-#         #                     description=schema.description,
-#         #                     amount=schema.amount,
-#         #                 )
-#         #                 create_category = money_spend_schemas.insert().values(
-#         #                     created_at=local_time(),
-#         #                     updated_at=None,
-#         #                     user_uuid=current_user.user_uuid,
-#         #                     month=schema.spend_month,
-#         #                     year=schema.spend_year,
-#         #                     category=schema.category,
-#         #                     budget=0,
-#         #                 )
-#         #                 await session.execute(create_spend)
-#         #                 await session.execute(create_category)
-#         #                 await session.commit()
-#         #                 logging.info("Created new spend money and schema.")
-#         #                 response.message = "Created new spend money and schema data."
-#         #                 response.success = True
-#         #             except Exception as E:
-#         #                 logging.error(f"Error during creating new spend money and schema: {E}.")
-#         #                 await session.rollback()
-#         #                 raise DatabaseQueryError(detail=f"Database error: {E}.")
-#         #         else:
-#         #             try:
-#         #                 logging.info(f"Only inserting data into table {money_spends.name}")
-#         #                 create_spend = money_spends.insert().values(
-#         #                     created_at=local_time(),
-#         #                     updated_at=None,
-#         #                     user_uuid=current_user.user_uuid,
-#         #                     spend_day=schema.spend_day,
-#         #                     spend_month=schema.spend_month,
-#         #                     spend_year=schema.spend_year,
-#         #                     category=schema.category,
-#         #                     description=schema.description,
-#         #                     amount=schema.amount,
-#         #                 )
-#         #                 await session.execute(create_spend)
-#         #                 await session.commit()
-#         #                 logging.info("Created new spend money.")
-#         #                 response.message = "Created new spend money."
-#         #                 response.success = True
-#         #             except Exception as E:
-#         #                 logging.error(f"Error during creating new spend money: {E}.")
-#         #                 await session.rollback()
-#         #                 raise DatabaseQueryError(detail=f"Database error: {E}.")
-#         #     except Exception as E:
-#         #         logging.error(
-#         #             f"Error during creating spend money or with adding money schema: {E}."
-#         #         )
-#         #         await session.rollback()
-#         #         raise DatabaseQueryError(
-#         #             detail=f"Database error during creating spend money or with adding money schema: {E}."
-#         #         )
-#         #     finally:
-#         #         await session.close()
-#     except StashBaseApiError:
-#         raise
-
-#     except Exception:
-#         raise ServiceError(detail="Internal Server Error.", name="STASH")
-
-#     return response
+jwt_handler = JWTHandler()
+router = APIRouter(tags=["Monthly Spend"], prefix="/spend")
 
 
-# router.add_api_route(
-#     methods=["POST"],
-#     path="/create",
-#     response_model=ResponseDefault,
-#     endpoint=create_spend,
-#     status_code=status.HTTP_201_CREATED,
-#     summary="Create daily spend record.",
-# )
+async def create_spend_endpoint(
+    schema: CreateSpendPayload,
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
+    day: int = Path(ge=1, le=31, description="Day should be between 1 and 31"),
+    month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
+    year: str = Path(regex=r"^\d{4}$", description="Year should be exactly 4 digits"),
+    db: AsyncSession = Depends(get_db),
+) -> ResponseDefault:
+    logging.info("Create spend endpoint.")
+    response = ResponseDefault()
+    spend_id = str(uuid4())
+    year = int(year)
+    query = QueryDatabase(db)
+
+    try:
+        monthly_schema_record = await query.find(
+            table=MonthlySchema,
+            unique_id=current_user.unique_id,
+            month=month,
+            year=year,
+            deleted_at=None,
+        )
+
+        if not monthly_schema_record:
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
+
+        month_id = monthly_schema_record.month_id
+
+        category_record = await query.find(
+            table=CategorySchema,
+            unique_id=current_user.unique_id,
+            month_id=month_id,
+            category=schema.category,
+        )
+
+        if not category_record:
+            logging.error(f"Category {schema.category} not found.")
+            raise DataNotFoundError(detail="Category not found.")
+
+        category_id = category_record.category_id
+
+        is_leap_year = leap_year(year=year)
+        fixed_day = [4, 6, 9, 11]
+
+        if month == 2:
+            logging.warning("Validating process on month February.")
+            if is_leap_year and day > 29:
+                logging.error(f"Invalid day {day} in February of a leap year.")
+                raise EntityDoesNotMatchedError(
+                    detail="Day should be 29 or less in February of a leap year."
+                )
+            if not is_leap_year and day > 28:
+                logging.error(f"Invalid day {day} in February of a non-leap year.")
+                raise EntityDoesNotMatchedError(
+                    detail="Day should be 28 or less in February of a non-leap year."
+                )
+
+        if month in fixed_day and day > 30:
+            logging.error(f"Invalid day {day} for month {month}.")
+            raise EntityDoesNotMatchedError(
+                detail="Day should be 30 or less for this month."
+            )
+
+        await query.insert(
+            table=MoneySpend,
+            data={
+                "unique_id": current_user.unique_id,
+                "spend_id": spend_id,
+                "category_id": category_id,
+                "month_id": month_id,
+                "day": day,
+                "category": schema.category,
+                "amount": schema.amount,
+                "description": schema.description,
+            },
+        )
+        response.message = "Daily spend sucessfully created."
+
+    except StashBaseApiError:
+        raise
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
+
+    return response
+
+
+router.add_api_route(
+    methods=["POST"],
+    path="/create/{day}/{month}/{year}",
+    response_model=ResponseDefault,
+    endpoint=create_spend_endpoint,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create daily money spend.",
+)

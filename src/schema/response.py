@@ -1,25 +1,43 @@
-from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Union, Optional
+from pydantic import BaseModel, field_validator, EmailStr
+from src.schema.validator import UniqueIdValidator
 
 
 class ResponseDefault(BaseModel):
     success: bool = True
-    message: Optional[str] = None
-    data: Optional[Any] = None
+    message: str = None
+    data: Union[dict, list] = None
 
 
 class ResponseToken(BaseModel):
-    access_token: Optional[str] = None
-    refresh_token: Optional[str] = None
-    token_type: Optional[str] = "Bearer"
+    access_token: str = None
+    refresh_token: str = None
+    token_type: str = "Bearer"
 
 
 class UniqueId(BaseModel):
-    unique_id: Optional[str] = None
+    unique_id: str = None
+
+    @field_validator("unique_id")
+    @classmethod
+    def validate_pin(cls, unique_id: str) -> str:
+        return UniqueIdValidator.validate_uuid(unique_id=unique_id)
 
 
 class ServerStatus(BaseModel):
-    status: Optional[str] = None
+    status: str = None
+
+
+class FullName(BaseModel):
+    full_name: str = None
+
+
+class Email(BaseModel):
+    email: Optional[EmailStr] = None
+
+
+class PhoneNumber(BaseModel):
+    phone_number: str = None
 
 
 class IsEmailVerified(BaseModel):
@@ -31,14 +49,18 @@ class IsPhoneNumberVerified(BaseModel):
 
 
 class RegisterState(BaseModel):
-    register_state: Optional[str] = None
+    register_state: bool = False
 
 
 class OTPState(BaseModel):
-    otp_state: Optional[str] = None
+    otp_state: bool = False
 
 
-class UserStatus(
+class UserInfoResponse(
     IsEmailVerified, IsPhoneNumberVerified, RegisterState, OTPState, UniqueId
 ):
+    pass
+
+
+class DetailEmailResponse(Email, IsEmailVerified):
     pass

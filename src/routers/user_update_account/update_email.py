@@ -1,15 +1,17 @@
 from typing import Annotated
-from utils.logger import logging
-from utils.helper import local_time
 from utils.jwt import JWTHandler
-from src.secret import Config
+from utils.logger import logging
+from utils.smtp import send_gmail
+from utils.helper import local_time
+from utils.query import QueryDatabase
+from utils.generator import Generator
 from services.postgres.models import User
-from fastapi import APIRouter, status, Depends
+from fastapi.templating import Jinja2Templates
 from services.postgres.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.schema.request_format import UserEmail
+from src.schema.request_format import Email
 from src.schema.response import ResponseDefault
-from utils.query import QueryDatabase
+from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     EntityForceInputSameDataError,
     EntityAlreadyExistError,
@@ -19,36 +21,61 @@ from utils.error import (
 )
 
 
-jwt_handler = JWTHandler(Config)
+jwt_handler = JWTHandler()
 router = APIRouter(tags=["User Update Account"], prefix="/user/update")
 
 
 async def update_email_endpoint(
-    schema: UserEmail,
+    schema: Email,
+    background_tasks: BackgroundTasks,
     current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
     db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
+    logging.info("Update email endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
+    generator = Generator()
     current_time = local_time()
-    registered_email = await query.find(table=User, email=schema.email)
+    generated_otp = generator.random_number(6)
+    templates = Jinja2Templates(directory="templates")
 
     try:
-        pass
         if not current_user.email:
-            logging.info("User is not input email yet.")
-            raise MandatoryInputError(detail="User should add email first.")
+            logging.error("User is not add an email.")
+            raise MandatoryInputError(detail="Should add email first.")
+
+        if current_user.email != schema.email:
+            registered_email = await query.find(table=User, email=schema.email)
+            if registered_email:
+                raise EntityAlreadyExistError(
+                    detail="Email already taken. Please use another email."
+                )
 
         if not current_user.verified_email:
-            raise MandatoryInputError(detail="User email should be verified first.")
+            logging.error("User email is not verified.")
+            raise MandatoryInputError(detail="Email should be verified first.")
 
         if current_user.email == schema.email:
-            raise EntityForceInputSameDataError(detail="Cannot use same email.")
-
-        if registered_email:
-            raise EntityAlreadyExistError(
-                detail="Email already taken. Please use another email."
+            logging.error("Cannot update into same email.")
+            raise EntityForceInputSameDataError(
+                detail="Should update into different email."
             )
+
+        email_body = templates.TemplateResponse(
+            "otp_email.html",
+            context={
+                "request": {},
+                "full_name": current_user.full_name,
+                "otp": generated_otp,
+            },
+        ).body.decode("utf-8")
+
+        background_tasks.add_task(
+            send_gmail,
+            email_subject="OTP Email Verification.",
+            email_receiver=current_user.email,
+            email_body=email_body,
+        )
 
         await query.update(
             table=User,
@@ -56,6 +83,7 @@ async def update_email_endpoint(
             data={
                 "updated_at": current_time,
                 "email": schema.email,
+                "otp_state": False,
                 "verified_email": False,
             },
         )

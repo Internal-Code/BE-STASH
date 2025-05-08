@@ -1,7 +1,9 @@
 from utils.logger import logging
+from utils.helper import local_time
 from utils.query import QueryDatabase
 from services.postgres.models import User
 from src.schema.request_format import Email
+from services.postgres.models import ResetPin
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgres.connection import get_db
@@ -14,17 +16,21 @@ from utils.error import (
     InvalidOperationError,
 )
 
-router = APIRouter(tags=["User General"], prefix="/user/general")
+router = APIRouter(tags=["User Reset Account"], prefix="/user/reset-account")
 
 
-async def get_user_endpoint(
-    identifier: str, db: AsyncSession = Depends(get_db)
+async def forget_user_endpoint(
+    identifier: str,
+    db: AsyncSession = Depends(get_db),
 ) -> ResponseDefault:
-    logging.info("Get user endpoint.")
+    logging.info("Forget user endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
     user_info_response = UserInfoResponse()
+    current_time = local_time()
+
     filter = {}
+
     try:
         if identifier.isdigit():
             logging.info("Phone number detected.")
@@ -50,6 +56,18 @@ async def get_user_endpoint(
             logging.error("User not found.")
             raise DataNotFoundError(detail="User not found.")
 
+        await query.insert(
+            table=ResetPin,
+            data={
+                "unique_id": account_record.unique_id,
+                "created_at": current_time,
+                "phone_number": account_record.phone_number,
+                "email": account_record.email,
+                "save_to_hit_at": current_time,
+                "blacklisted_at": current_time,
+            },
+        )
+
         user_info_response.unique_id = account_record.unique_id
         user_info_response.register_state = account_record.register_state
         user_info_response.otp_state = account_record.otp_state
@@ -70,10 +88,10 @@ async def get_user_endpoint(
 
 
 router.add_api_route(
-    methods=["GET"],
-    path="/get-user/{identifier}",
+    methods=["POST"],
+    path="/forget-user/{identifier}",
     response_model=ResponseDefault,
-    endpoint=get_user_endpoint,
+    endpoint=forget_user_endpoint,
     status_code=status.HTTP_200_OK,
     summary="Get unique id user.",
 )
