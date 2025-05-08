@@ -13,7 +13,7 @@
 #     Should sucessfully register new user.
 #     """
 
-#     full_name = await check_fullname(value=faker.name())
+#     full_name = check_fullname(value=faker.name())
 #     data = {"full_name": full_name, "phone_number": str(await random_number(10))}
 
 #     async with httpx.AsyncClient() as client:

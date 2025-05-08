@@ -1,0 +1,21 @@
+from utils.logger import logging
+from fastapi import APIRouter, status, Request
+from utils.sso.google import google_oauth_configuration
+
+router = APIRouter(tags=["SSO"], prefix="/user/register")
+
+
+async def sso_login_endpoint(request: Request):
+    logging.info("SSO login endpoint.")
+    oauth = await google_oauth_configuration()
+    url = request.url_for("google_sso_auth")
+    return await oauth.google.authorize_redirect(request, url)
+
+
+router.add_api_route(
+    methods=["GET"],
+    path="/google/login",
+    endpoint=sso_login_endpoint,
+    status_code=status.HTTP_200_OK,
+    summary="Login using google sso.",
+)

@@ -1,155 +1,95 @@
-import httpx
-from pytz import timezone
-from sqlalchemy.sql import select
-from fastapi import APIRouter, status
-from datetime import timedelta, datetime
-from utils.logger import logging
+from uuid import UUID
+from datetime import timedelta
 from src.secret import Config
-from services.postgres.models import send_otps
-from utils.jwt.general import get_user
-from utils.validator import check_uuid
-from utils.generator import random_number
-from utils.database.general import local_time
-from services.postgres.connection import database_connection
-from utils.request_format import SendOTPPayload
-from src.schema.response import ResponseDefault, UniqueID
-from utils.custom_error import (
+from utils.logger import logging
+from utils.helper import local_time
+from utils.query import QueryDatabase
+from utils.generator import Generator
+from utils.whatsapp_api import send_whatsapp
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from services.postgres.models import SendOtp, User
+from fastapi import APIRouter, status, Depends, BackgroundTasks
+from src.schema.response import ResponseDefault, UniqueId
+from utils.error import (
     ServiceError,
-    FinanceTrackerApiError,
-    EntityAlreadyVerifiedError,
+    StashBaseApiError,
     MandatoryInputError,
-    EntityDoesNotExistError,
     InvalidOperationError,
+    DataNotFoundError,
 )
 
 config = Config()
 router = APIRouter(tags=["User Send OTP"], prefix="/user/send-otp")
 
 
-async def send_otp_phone_number_endpoint(unique_id: str) -> ResponseDefault:
+async def send_otp_phone_number_endpoint(
+    unique_id: UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+) -> ResponseDefault:
+    logging.info("Send OTP phone number endpoint.")
     response = ResponseDefault()
-    await check_uuid(unique_id=unique_id)
-
-    now_utc = datetime.now(timezone("UTC"))
-    account = await get_user(unique_id=unique_id)
-    generated_otp = str(await random_number(6))
+    generator = Generator()
+    query = QueryDatabase(db)
+    current_time = local_time()
+    unique_id = str(unique_id)
+    generated_otp = generator.random_number(6)
+    account_record = await query.find(table=User, unique_id=unique_id)
 
     try:
-        async with database_connection().connect() as session:
-            try:
-                query = (
-                    select(send_otps)
-                    .where(send_otps.c.user_uuid == unique_id)
-                    .order_by(send_otps.c.created_at.desc())
-                    .with_for_update()
-                )
+        otp_record = await query.find(table=SendOtp, unique_id=unique_id)
 
-                result = await session.execute(query)
+        if not otp_record:
+            logging.error("OTP record not found")
+            raise DataNotFoundError("OTP record not found.")
 
-                latest_record = result.fetchone()
+        remaining_time = otp_record.save_to_hit_at.second - current_time.second
 
-                if not latest_record:
-                    logging.info("OTP data initialization not found.")
-                    raise EntityDoesNotExistError(detail="Data not found.")
+        if not account_record:
+            logging.info("OTP data initialization not found.")
+            raise DataNotFoundError(detail="Data not found.")
 
-                jakarta_timezone = timezone("Asia/Jakarta")
-                times_later_jakarta = latest_record.hit_tomorrow_at.astimezone(
-                    jakarta_timezone
-                )
-                formatted_time = times_later_jakarta.strftime("%Y-%m-%d %H:%M:%S")
+        if not account_record.phone_number:
+            logging.info("User is not add phone number.")
+            raise MandatoryInputError(detail="User should fill phone number first.")
 
-                if not account.phone_number:
-                    logging.info("User should filled phone number yet.")
-                    raise MandatoryInputError(
-                        detail="User should fill phone number first."
-                    )
+        if current_time < otp_record.save_to_hit_at:
+            logging.info(f"Should wait for API cooldown {remaining_time}s.")
+            raise InvalidOperationError(detail=f"Should wait in {remaining_time}s.")
 
-                if latest_record.current_api_hit % 4 == 0:
-                    logging.info("User should only hit API again tomorrow.")
-                    raise InvalidOperationError(
-                        detail=f"Maximum API hit reached. You can try again after {formatted_time}."
-                    )
+        if current_time > otp_record.save_to_hit_at:
+            logging.info("Sending send otp into phone number.")
+            background_tasks.add_task(
+                send_whatsapp,
+                message_template=(
+                    "Your verification code is *{generated_otp}*. "
+                    "Please enter this code to complete your verification. "
+                    "Kindly note that this code will *expire in 3 minutes*."
+                ),
+                phone_number=account_record.phone_number,
+                generated_otp=generated_otp,
+            )
+            await query.update(
+                table=SendOtp,
+                condition={"unique_id": unique_id},
+                data={
+                    "updated_at": current_time,
+                    "otp_number": generated_otp,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
+                    "save_to_hit_at": current_time + timedelta(minutes=1),
+                    "blacklisted_at": current_time + timedelta(minutes=3),
+                },
+            )
 
-                if now_utc < latest_record.save_to_hit_at:
-                    logging.info("User should wait API cooldown.")
-                    raise InvalidOperationError(
-                        detail="Should wait in 1 minutes.",
-                    )
-
-                if not account:
-                    logging.info("Data otp found.")
-                    raise EntityDoesNotExistError(detail="Data not found.")
-
-                if account.verified_phone_number:
-                    logging.info("User phone number already verified.")
-                    raise EntityAlreadyVerifiedError(
-                        detail="User phone number already verified."
-                    )
-
-                if (
-                    now_utc > latest_record.save_to_hit_at
-                    and latest_record.current_api_hit % 4 != 0
-                    or now_utc > latest_record.hit_tomorrow_at
-                    and latest_record.current_api_hit % 4 == 0
-                ):
-                    logging.info("Matched condition. Sending OTP using whatsapp API.")
-                    current_api_hit = (
-                        latest_record.current_api_hit + 1
-                        if latest_record.current_api_hit
-                        else 1
-                    )
-                    valid_per_day = (
-                        send_otps.update()
-                        .where(send_otps.c.user_uuid == unique_id)
-                        .values(
-                            updated_at=local_time(),
-                            otp_number=generated_otp,
-                            current_api_hit=current_api_hit,
-                            saved_by_system=False,
-                            save_to_hit_at=local_time() + timedelta(minutes=1),
-                            blacklisted_at=local_time() + timedelta(minutes=3),
-                            hit_tomorrow_at=local_time() + timedelta(days=1),
-                        )
-                    )
-
-                    payload = SendOTPPayload(
-                        phoneNumber=account.phone_number,
-                        message=f"""Your verification code is *{generated_otp}*. Please enter this code to complete your verification. Kindly note that this code will expire in 3 minutes.""",
-                    )
-
-                    async with httpx.AsyncClient() as client:
-                        whatsapp_response = await client.post(
-                            config.WHATSAPP_API_MESSAGE, json=dict(payload)
-                        )
-
-                    if whatsapp_response.status_code != 200:
-                        raise ServiceError(
-                            detail="Failed to send OTP via WhatsApp.",
-                            name="Whatsapp API",
-                        )
-
-                    await session.execute(valid_per_day)
-                    response.success = True
-                    response.message = "OTP data sent to phone number."
-                    response.data = UniqueID(unique_id=unique_id)
-
-            except FinanceTrackerApiError as FTE:
-                raise FTE
-
-            except Exception as E:
-                logging.error(f"Error during send otp email: {E}")
-                raise ServiceError(
-                    detail=f"Service error during send otp to phone number: {E}.",
-                    name="Whatsapp API",
-                )
-            finally:
-                await session.commit()
-                await session.close()
-    except FinanceTrackerApiError as FTE:
-        raise FTE
-
-    except Exception as E:
-        raise ServiceError(detail=f"Service error: {E}.", name="Finance Tracker")
+            response.message = f"OTP sent to {account_record.phone_number}."
+            response.data = UniqueId(unique_id=unique_id)
+    except StashBaseApiError:
+        raise
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
     return response
 
 

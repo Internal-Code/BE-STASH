@@ -1,0 +1,86 @@
+from uuid import uuid4
+from typing import Annotated
+from utils.logger import logging
+from utils.jwt import JWTHandler
+from utils.query import QueryDatabase
+from fastapi import APIRouter, status, Depends, Path
+from services.postgres.connection import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.schema.response import ResponseDefault
+from src.schema.request_format import CreateCategoryPayload
+from services.postgres.models import CategorySchema, MonthlySchema
+from utils.error import (
+    EntityAlreadyExistError,
+    ServiceError,
+    StashBaseApiError,
+    DataNotFoundError,
+)
+
+jwt_handler = JWTHandler()
+router = APIRouter(tags=["Monthly Category"], prefix="/category")
+
+
+async def create_category_endpoint(
+    schema: CreateCategoryPayload,
+    current_user: Annotated[dict, Depends(jwt_handler.get_current_user)],
+    month: int = Path(ge=1, le=12, description="Month should be between 1 and 12"),
+    year: str = Path(regex=r"^\d{4}$", description="Year should be exactly 4 digits"),
+    db: AsyncSession = Depends(get_db),
+) -> ResponseDefault:
+    logging.info("Create category endpoint.")
+    response = ResponseDefault()
+    query = QueryDatabase(db)
+    category_id = str(uuid4())
+    year = int(year)
+
+    try:
+        monthly_schema_record = await query.find(
+            table=MonthlySchema, month=month, year=year, deleted_at=None
+        )
+
+        if not monthly_schema_record:
+            logging.error(f"Schema {month}/{year} not found.")
+            raise DataNotFoundError(detail="Schema not found.")
+
+        month_id = monthly_schema_record.month_id
+
+        category_record = await query.find(
+            table=CategorySchema,
+            unique_id=current_user.unique_id,
+            category=schema.category,
+            deleted_at=None,
+        )
+
+        if category_record:
+            logging.error(f"Category {schema.category} already exist.")
+            raise EntityAlreadyExistError(detail="Category already exist.")
+
+        await query.insert(
+            table=CategorySchema,
+            data={
+                "category": schema.category,
+                "budget": schema.budget,
+                "category_id": category_id,
+                "month_id": month_id,
+                "unique_id": current_user.unique_id,
+            },
+        )
+
+        response.message = "New category successfully created."
+
+    except StashBaseApiError:
+        raise
+    except Exception:
+        raise ServiceError(detail="Internal Server Error.", name="STASH")
+
+    return response
+
+
+router.add_api_route(
+    methods=["POST"],
+    path="/create/{month}/{year}",
+    response_model=ResponseDefault,
+    endpoint=create_category_endpoint,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create category for each month.",
+)
