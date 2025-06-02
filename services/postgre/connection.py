@@ -1,15 +1,20 @@
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 from src.secret import POSTGRE_URL
-from sqlalchemy.ext.asyncio import create_async_engine
 
-def database_connection():
-    return create_async_engine(url=POSTGRE_URL)
+engine = create_async_engine(POSTGRE_URL)
+
+async_session = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
 
 async def get_db():
-    async with database_connection().connect() as session:
+    async with async_session() as session:
         try:
             yield session
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()

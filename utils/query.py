@@ -37,10 +37,13 @@ class QueryDatabase:
 
             if fetch == "all":
                 rows = result.fetchall()
-                return [dict(row._mapping) for row in rows] if rows else None
+                return (
+                    [dict(record) for entry in rows for record in entry]
+                    if rows
+                    else None
+                )
             else:
-                entry = result.fetchone()
-                return entry
+                return result.fetchone()
         except Exception as e:
             logging.error(f"Failed to find record in table {table.__name__}: {e}")
             await self._session.rollback()

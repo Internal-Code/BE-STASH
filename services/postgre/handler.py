@@ -1,5 +1,4 @@
 import os
-import asyncio
 from services.postgre.connection import get_db
 from services.postgre.model import Country
 from utils.query import QueryDatabase
@@ -12,6 +11,7 @@ JSON_FILE = os.path.join(BASE_PROJECT_DIR, "json/countries.json")
 
 data = load_json(filepath=JSON_FILE)
 
+
 async def migrate_country():
     async for session in get_db():
         db = QueryDatabase(session=session)
@@ -23,5 +23,5 @@ async def migrate_country():
                 for entry in data:
                     await db.insert(Country, entry)
         except Exception as e:
-            logging.error(f'Failed to insert record: {e}')
+            logging.error(f"Failed to insert record: {e}")
             raise Exception(e)

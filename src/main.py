@@ -4,7 +4,7 @@ from src.secret import MIDDLEWARE_SECRET_KEY
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from services.postgre.model import database_migration
-from services.postgre.connection import database_connection
+from services.postgre.connection import engine
 from services.postgre.handler import migrate_country
 from starlette.middleware.sessions import SessionMiddleware
 from utils.exception_handler import register_exception_handlers
@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
         await migrate_country()
         yield
     finally:
-        await database_connection().dispose()
+        await engine.dispose()
 
 
 app = FastAPI(

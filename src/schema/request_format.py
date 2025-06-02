@@ -19,23 +19,28 @@ class RegisterAccountPayload(PhoneNumber):
     last_name: str
     country_id: int
     email: Optional[EmailStr]
-    
+
     @field_validator("first_name")
     @classmethod
     def validate_first_name(cls, first_name: str) -> str:
         return validator.name(name=first_name, field="first_name")
-    
+
     @field_validator("last_name")
     @classmethod
     def validate_last_name(cls, last_name: str) -> str:
         return validator.name(name=last_name, field="last_name")
-    
+
     @field_validator("email", mode="before")
     @classmethod
     def allow_empty_email(cls, email: str) -> str:
         if email == "":
             return None
         return email
+
+
+class SendOTPPayload(BaseModel):
+    phoneNumber: str
+    message: str
 
 
 # class Email(BaseModel):
@@ -211,11 +216,6 @@ class RegisterAccountPayload(PhoneNumber):
 
 # class SendResetLinkPayload(BaseModel):
 #     method: SendMethod
-
-
-# class SendOTPPayload(BaseModel):
-#     phoneNumber: str = None
-#     message: str = None
 
 
 # class ChangeUserPhoneNumber(BaseModel):
