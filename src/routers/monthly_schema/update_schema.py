@@ -6,9 +6,9 @@ from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends, Path
 from src.schema.response import ResponseDefault
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from src.schema.request_format import DefaultSchemaPayload
-from services.postgres.models import MonthlySchema
+from services.postgre.model import MonthlySchema
 from utils.error import (
     ServiceError,
     StashBaseApiError,

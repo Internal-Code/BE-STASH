@@ -6,8 +6,8 @@ from utils.query import QueryDatabase
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
-from services.postgres.models import User, SendOtp
+from services.postgre.connection import get_db
+from services.postgre.model import User, SendOtp
 from src.schema.response import ResponseDefault, UniqueId
 from src.schema.request_format import RegisterAccountPayload
 from fastapi import APIRouter, status, Depends, BackgroundTasks

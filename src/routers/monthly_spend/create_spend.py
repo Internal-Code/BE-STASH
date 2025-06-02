@@ -5,11 +5,11 @@ from utils.logger import logging
 from utils.helper import leap_year
 from utils.query import QueryDatabase
 from src.schema.response import ResponseDefault
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, status, Depends, Path
 from src.schema.request_format import CreateSpendPayload
-from services.postgres.models import MonthlySchema, CategorySchema, MoneySpend
+from services.postgre.model import MonthlySchema, CategorySchema, MoneySpend
 from utils.error import (
     ServiceError,
     StashBaseApiError,

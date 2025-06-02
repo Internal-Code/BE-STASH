@@ -5,12 +5,12 @@ from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.helper import local_time
 from utils.query import QueryDatabase
-from services.postgres.models import User
+from services.postgre.model import User
 from utils.whatsapp_api import send_whatsapp
 from src.schema.request_format import CreatePinPayload
 from src.schema.response import ResponseToken
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,

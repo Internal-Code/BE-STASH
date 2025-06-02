@@ -1,12 +1,12 @@
 from utils.logger import logging
 from utils.helper import local_time
 from utils.query import QueryDatabase
-from services.postgres.models import User
+from services.postgre.model import User
 from src.schema.request_format import Email
-from services.postgres.models import ResetPin
+from services.postgre.model import ResetPin
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from src.schema.response import ResponseDefault, UserInfoResponse
 from src.schema.validator import PhoneNumberValidatorMixin
 from utils.error import (

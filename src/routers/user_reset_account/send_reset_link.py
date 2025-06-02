@@ -8,8 +8,8 @@ from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
-from services.postgres.models import User, ResetPin
+from services.postgre.connection import get_db
+from services.postgre.model import User, ResetPin
 from src.schema.response import ResponseDefault, UniqueId
 from src.schema.request_format import SendResetLinkPayload
 from fastapi import APIRouter, status, Depends, BackgroundTasks

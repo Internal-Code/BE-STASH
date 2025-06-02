@@ -1,103 +1,110 @@
 #!/bin/sh
 
 show_help() {
-  echo "Usage: sh $0 [ --development | --staging ] [--unit_test | --api_test | --e2e | --help ]"
+  echo "Usage: sh scripts/run_test.sh [ --env <environment> ] | [ --test <test_type> ] | [ --help ]"
   echo ""
-  echo "Environment Options:"
-  echo "  --development    Set the environment to development."
-  echo "  --staging        Set the environment to staging."
-  echo ""
-  echo "Test Options:"
-  echo "  --unit_test      Run unit tests located in tests/unit_test."
-  echo "  --api_test       Run API tests located in tests/api_test."
-  echo "  --e2e            Run end-to-end tests located in tests/e2e."
-  echo ""
-  echo "--help             Show this help message."
+  echo "--env       Set project environment: dev | test"
+  echo "--test      Set test type: api | unit | e2e"
+  echo "--help, -h  Show this help message."
+  exit 1
 }
 
-# Parse arguments
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+TEST_TYPE=""
+TEST_DIR=""
+ENV=""
+ENV_FILE=""
+
+COVERAGE_DIR="$PROJECT_DIR/coverage"
+mkdir -p "$COVERAGE_DIR"
+
 while [ $# -gt 0 ]; do
   case "$1" in
-    --development)
-      ENV_FILE="env/.env.development"
+  --env)
+    shift
+    ENV="$1"
+    case "$ENV" in
+    dev)
+      ENV_FILE="$PROJECT_DIR/env/.env.development"
       ;;
-    --staging)
-      ENV_FILE="env/.env.staging"
-      ;;
-    --unit_test)
-      TEST_DIR="tests/unit_test"
-      ;;
-    --api_test)
-      TEST_DIR="tests/api_test"
-      ;;
-    --e2e)
-      TEST_DIR="tests/e2e"
-      ;;
-    --help)
-      show_help
-      exit 0
+    test)
+      ENV_FILE="$PROJECT_DIR/env/.env.test"
       ;;
     *)
-      echo "Invalid option: $1"
+      echo "Error: Invalid environment '$ENV'"
       show_help
-      exit 1
       ;;
+    esac
+    ;;
+  --test)
+    shift
+    TEST_TYPE="$1"
+    case "$TEST_TYPE" in
+    api)
+      TEST_DIR="$PROJECT_DIR/tests/api"
+      ;;
+    unit)
+      TEST_DIR="$PROJECT_DIR/tests/unit"
+      ;;
+    e2e)
+      TEST_DIR="$PROJECT_DIR/tests/e2e"
+      ;;
+    *)
+      echo "Error: Invalid test type '$TEST_TYPE'"
+      show_help
+      ;;
+    esac
+    ;;
+  --help | -h)
+    show_help
+    ;;
+  *)
+    echo "Error: Unknown argument '$1'"
+    show_help
+    ;;
   esac
   shift
 done
 
-# Validate inputs
+
 if [ -z "$ENV_FILE" ]; then
-  echo "Error: No environment specified. Please provide one of --development, or --staging."
+  echo "Error: --env is required"
   show_help
+fi
+
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Environment file not found: $ENV_FILE"
   exit 1
 fi
 
 if [ -z "$TEST_DIR" ]; then
-  echo "Error: No test type specified. Please provide one of --unit_test, --api_test, or --e2e."
+  echo "Error: --test is required"
   show_help
+fi
+
+export ENV_TYPE="$ENV"
+export ENV_FILE="$ENV_FILE"
+export $(grep -v '^#' "$ENV_FILE" | xargs)
+
+echo "Checking OS Environment"
+if uname | grep -qiE "linux|darwin"; then
+  echo "Unix-based OS detected"
+  . "$PROJECT_DIR/.venv/bin/activate"
+else
+  echo "Unsupported OS. Please turn-on server manually."
   exit 1
 fi
 
-# Load environment variables
-export ENV_FILE
-
-# Checking OS Environment
-echo "Checking OS Environment"
-if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
-  echo "WSL detected"
-  . .venv/bin/activate
-else
-  case "$OSTYPE" in
-    linux*)
-      echo "Linux based OS detected"
-      source .venv/bin/activate
-      ;;
-    darwin*)
-      echo "macOS detected"
-      source .venv/bin/activate
-      ;;
-    cygwin* | msys* | mingw*)
-      echo "Windows based OS detected"
-      source .venv/Scripts/activate
-      ;;
-    *)
-      echo "Unsupported OS."
-      exit 1
-      ;;
-  esac
-fi
-
-# Run the tests
-echo "Running tests in $TEST_DIR on $ENV_FILE environment"
-if ! coverage run -m  --source=$TEST_DIR pytest $TEST_DIR --verbose; then
+echo "Running tests in $TEST_DIR on $ENV environment"
+if ! coverage run --data-file="$COVERAGE_DIR/.coverage" --source="$TEST_DIR" -m pytest "$TEST_DIR" --verbose; then
   echo "Tests failed!"
   exit 1
 fi
 
-# Generate the coverage report
 echo "Generating coverage report"
-coverage report -m --skip-empty
-coverage html
+coverage report -m --skip-empty --data-file="$COVERAGE_DIR/.coverage"
+coverage html -d "$COVERAGE_DIR" --data-file="$COVERAGE_DIR/.coverage"
 
-echo "Test finished"
+echo "HTML coverage report generated at $COVERAGE_DIR/index.html"

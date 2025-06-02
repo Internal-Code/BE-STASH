@@ -1,23 +1,22 @@
 services:
-  stash_postgre_sql:
-    container_name: stash_postgre_sql
-    image: postgres:${POSTGRES_VERSION}
+  postgre_sql:
+    container_name: postgre_sql
+    image: postgres:${POSTGRE_VERSION}
     restart: always
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRE_USER}
+      - POSTGRES_PASSWORD=${POSTGRE_PASSWORD}
+      - POSTGRES_DB=${POSTGRE_DATABASE}
     ports:
       - 5432:5432
     volumes:
-      - stash_postgre_sql:/var/lib/postgresql/data
+      - postgre_sql:/var/lib/postgresql/data
     networks:
-      stash_network:
-        ipv4_address: 172.18.0.2
+      stash_net:
+        ipv4_address: 172.18.0.10
 
-
-  stash_pg_admin:
-    container_name: stash_pg_admin
+  pgadmin:
+    container_name: pgadmin
     image: dpage/pgadmin4:${PGADMIN_VERSION}
     restart: always
     environment:
@@ -26,35 +25,36 @@ services:
     ports:
       - 5050:80
     networks:
-      stash_network:
-        ipv4_address: 172.18.0.3
+      stash_net:
+        ipv4_address: 172.18.0.11
     volumes:
-      - stash_pg_admin:/var/lib/pgadmin
+      - pgadmin:/var/lib/pgadmin
     depends_on:
-      - stash_postgre_sql
+      - postgre_sql
 
-  stash_whatsapp_api:
-    container_name: stash_whatsapp_api
+  whatsapp_api:
+    container_name: whatsapp_api
     image: taufikdev88/simplewhatsappapi:${WHATSAPP_API_VERSION}
     restart: always
     environment:
       - SESSION_SECRET=${WHATSAPP_API_SECRET_SESSION}
       - DB_CONNECTION_STRING=${WHATSAPP_API_CONNECTION}
     volumes:
-      - stash_whatsapp_api:/app/data
+      - whatsapp_api:/app/data
     ports:
       - 80:80
     networks:
-      stash_network:
-        ipv4_address: 172.18.0.4
+      stash_net:
+        ipv4_address: 172.18.0.12
 
 volumes:
-  stash_postgre_sql:
-  stash_pg_admin:
-  stash_whatsapp_api:
+  postgre_sql:
+  pgadmin:
+  whatsapp_api:
+
 
 networks:
-  stash_network:
+  stash_net:
     driver: bridge
     ipam:
       config:

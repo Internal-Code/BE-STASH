@@ -7,9 +7,9 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from src.schema.response import ResponseToken
 from fastapi import APIRouter, status, Depends
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import BlacklistToken, UserToken
+from services.postgre.model import BlacklistToken, UserToken
 from src.schema.request_format import RefreshTokenPayload
 from src.secret import Config
 from utils.error import (

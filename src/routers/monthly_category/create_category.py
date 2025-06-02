@@ -4,11 +4,11 @@ from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends, Path
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.response import ResponseDefault
 from src.schema.request_format import CreateCategoryPayload
-from services.postgres.models import CategorySchema, MonthlySchema
+from services.postgre.model import CategorySchema, MonthlySchema
 from utils.error import (
     EntityAlreadyExistError,
     ServiceError,

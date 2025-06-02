@@ -6,9 +6,9 @@ from utils.logger import logging
 from utils.query import QueryDatabase
 from src.schema.response import ResponseToken
 from fastapi import APIRouter, status, Depends
-from services.postgres.models import UserToken
+from services.postgre.model import UserToken
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from src.schema.request_format import UserLoginPayload
 from utils.error import (
     ServiceError,

@@ -5,9 +5,9 @@ from utils.smtp import send_gmail
 from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.generator import Generator
-from services.postgres.models import User
+from services.postgre.model import User
 from fastapi.templating import Jinja2Templates
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.request_format import Email
 from src.schema.response import ResponseDefault
