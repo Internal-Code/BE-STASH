@@ -2,25 +2,25 @@ from enum import StrEnum, auto
 
 
 class Environment(StrEnum):
-    TEST = auto()
-    DEV = auto()
-    STAGING = auto()
-    PRODUCTION = auto()
+    test = auto()
+    dev = auto()
+    staging = auto()
+    production = auto()
 
 
 class DeviceInfo(StrEnum):
-    ANDROID = auto()
-    IOS = auto()
-    OTHER = auto()
+    android = auto()
+    ios = auto()
+    other = auto()
 
 
 class Channel(StrEnum):
-    WHATSAPP = auto()
-    EMAIL = auto()
+    whatsapp = auto()
+    email = auto()
 
 
 class PaymentType(StrEnum):
-    CASH = auto()
-    CREDIT_CARD = auto()
-    BANK_TRANSFER = auto()
-    E_WALLET = auto()
+    cash = auto()
+    credit_card = auto()
+    bank_transfer = auto()
+    e_wallet = auto()
