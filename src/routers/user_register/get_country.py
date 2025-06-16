@@ -7,7 +7,7 @@ from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends
 from errors.custom_error import ServiceError, BaseError
 
-router = APIRouter(tags=["User Management"], prefix="/user/management")
+router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def get_country_endpoint(db: AsyncSession = Depends(get_db)) -> ResponseDefault:

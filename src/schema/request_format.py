@@ -5,16 +5,19 @@ from src.schema.validator import Validator
 validator = Validator()
 
 
-class RegisterAccountPayload(BaseModel):
-    first_name: str
-    last_name: str
-    country_id: int
+class PhoneNumber(BaseModel):
     phone_number: str
-    email: Optional[EmailStr]
 
     @field_validator("phone_number")
     def validate_phone_number(cls, phone_number: str) -> str:
         return validator.phone_number(phone_number)
+
+
+class RegisterAccountPayload(PhoneNumber):
+    first_name: str
+    last_name: str
+    country_id: int
+    email: Optional[EmailStr]
 
     @field_validator("first_name")
     def validate_first_name(cls, first_name: str) -> str:
@@ -23,13 +26,6 @@ class RegisterAccountPayload(BaseModel):
     @field_validator("last_name")
     def validate_last_name(cls, last_name: str) -> str:
         return validator.name(name=last_name, field="last_name")
-
-    # @field_validator("email", mode="before")
-    # @classmethod
-    # def allow_empty_email(cls, email: str) -> str:
-    #     if email == "":
-    #         return None
-    #     return email
 
 
 class SendOTPPayload(BaseModel):

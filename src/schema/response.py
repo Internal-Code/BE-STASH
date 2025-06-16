@@ -2,6 +2,10 @@ from typing import Union
 from pydantic import BaseModel
 
 
+class ResponseUser(BaseModel):
+    user_id: int = None
+
+
 class ResponseDefault(BaseModel):
     success: bool = True
     message: str = None

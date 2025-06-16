@@ -35,7 +35,8 @@ def pydantic_payload_handler():
 
 
 def base_error_handler(_: Request, exception: BaseError):
-    logging.error(f"Base error handler: {exception}")
+    logging.error(f"Error message: {exception.message}")
+    logging.error(f"Error detail: {exception.errors}")
     return JSONResponse(
         status_code=exception.status_code,
         content={"message": exception.message, "errors": exception.errors},

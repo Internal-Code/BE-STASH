@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.routers import health_check
 from src.secret import MIDDLEWARE_SECRET_KEY
-from src.routers.user_management import register_user, get_country
+from src.routers.user_register import register_user, get_country
 from services.postgre.migrations import database_migration
 from services.postgre.event_handler import migrate_country
 from errors.registter_error import custom_error_handler
