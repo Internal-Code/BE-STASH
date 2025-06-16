@@ -1,20 +1,15 @@
 from utils.logger import logging
 from utils.query import QueryDatabase
-from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgre.connection import get_db
-from services.postgre.model import Country, User, RegisterState, SendOtp
-from services.postgre.attribute import Channel
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
+from services.postgre.connection import get_db
+from services.postgre.attribute_type import Channel
 from src.schema.response import ResponseDefault
 from src.schema.request_format import RegisterAccountPayload
 from fastapi import APIRouter, status, Depends, BackgroundTasks
-from utils.error import (
-    ServiceError,
-    StashBaseApiError,
-    DataNotFoundError,
-    EntityAlreadyExistError,
-)
+from services.postgre.models import Countries, Users, RegisterStates, SendOtps
+from sqlalchemy.ext.asyncio import AsyncSession
+from errors.custom_error import BaseError
 
 router = APIRouter(tags=["User Management"], prefix="/user/management")
 
@@ -29,26 +24,37 @@ async def register_user_endpoint(
     generator = Generator()
     response = ResponseDefault()
     otp_code = generator.random_number(6)
+    errors = {}
 
     try:
-        existing_phone_number = await query.find(User, phone_number=schema.phone_number)
+        existing_phone_number = await query.find(
+            Users, phone_number=schema.phone_number
+        )
         if existing_phone_number:
-            raise EntityAlreadyExistError("Phone number already taken.", name="STASH")
+            errors["phone_number"] = "Phone number already taken."
 
-        existing_email = await query.find(User, email=schema.email)
+        existing_email = await query.find(Users, email=schema.email)
         if existing_email:
-            raise EntityAlreadyExistError("Email already taken.", name="STASH")
+            errors["email"] = "Email already taken."
 
-        country_record = await query.find(Country, fetch="all")
+        country_record = await query.find(Countries, fetch="all")
 
         if not country_record:
-            raise DataNotFoundError("Country data not found.")
+            errors["country_id"] = "Country data not found."
 
         id_record = {entry["id"]: entry["dial_code"] for entry in country_record}
-        if schema.country_id not in id_record:
-            raise DataNotFoundError("Country id not found in database.")
 
-        user = User(
+        if schema.country_id not in id_record:
+            errors["country_id"] = "Country id not found in database."
+
+        if errors:
+            raise BaseError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                message="Entry already exists.",
+                errors=errors,
+            )
+
+        user = Users(
             country_id=schema.country_id,
             first_name=schema.first_name,
             last_name=schema.last_name,
@@ -59,13 +65,13 @@ async def register_user_endpoint(
         await db.commit()
         await db.refresh(user)
 
-        register_state = RegisterState(user_id=user.id)
+        register_state = RegisterStates(user_id=user.id)
         db.add(register_state)
         await db.commit()
         await db.refresh(register_state)
 
-        send_otp = SendOtp(
-            register_id=register_state.id, otp_code=otp_code, channel=Channel.WHATSAPP
+        send_otp = SendOtps(
+            register_id=register_state.id, otp_code=otp_code, channel=Channel.whatsapp
         )
         db.add(send_otp)
         await db.commit()
@@ -84,11 +90,16 @@ async def register_user_endpoint(
 
         response.message = f"Sending WhatsApp OTP to {full_phone}."
 
-    except StashBaseApiError:
+    except BaseError:
         raise
+
     except Exception as e:
         logging.exception(f"Unexpected error occurred: {e}.")
-        raise ServiceError(detail="Internal Server Error.", name="STASH")
+        raise BaseError(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message="Internal Server Error.",
+            errors={"error": str(e)},
+        )
 
     return response
 

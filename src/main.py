@@ -1,15 +1,15 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.routers import health_check
 from src.secret import MIDDLEWARE_SECRET_KEY
-from contextlib import asynccontextmanager
-from fastapi.middleware.cors import CORSMiddleware
-from services.postgre.model import database_migration
-from services.postgre.connection import engine
-from services.postgre.handler import migrate_country
-from starlette.middleware.sessions import SessionMiddleware
-from utils.exception_handler import register_exception_handlers
-from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
 from src.routers.user_management import register_user, get_country
+from services.postgre.migrations import database_migration
+from services.postgre.event_handler import migrate_country
+from utils.generator import Generator
+from errors.registter_error import custom_error_handler
+from contextlib import asynccontextmanager
+from starlette.middleware.sessions import SessionMiddleware
 # from src.routers.user_register import register_user, create_pin
 # from src.routers.user_wrong_account import wrong_email, wrong_phone_number
 # from src.routers.user_send_otp import send_otp_phone_number, send_otp_email
@@ -50,15 +50,15 @@ from src.routers.user_management import register_user, get_country
 #     detail_schema,
 # )
 
+generator = Generator()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        await database_migration()
-        await migrate_country()
-        yield
-    finally:
-        await engine.dispose()
+    generator.model_wrapper()
+    await database_migration()
+    await migrate_country()
+    yield
 
 
 app = FastAPI(
@@ -69,7 +69,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-register_exception_handlers(app=app)
+custom_error_handler(app)
 
 app.openapi_scheme = {
     "type": "oauth2",
