@@ -34,6 +34,10 @@ class Generator:
     def model_wrapper(self):
         MODELS_PATH = "services/postgre/models"
         INIT_PATH = os.path.join(MODELS_PATH, "__init__.py")
+        if not os.path.isfile(INIT_PATH):
+            logging.info(f"Creating new {INIT_PATH} file.")
+            with open(INIT_PATH, "w"):
+                pass
 
         import_libs = []
         model_classes = []

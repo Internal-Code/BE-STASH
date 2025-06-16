@@ -29,4 +29,7 @@ dependencies = [
 ]
 
 [tool.ruff]
-exclude = ["services/postgre/models"]
+exclude = [
+    "services/postgre/models",
+    "src/main.py"
+]

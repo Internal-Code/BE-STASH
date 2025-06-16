@@ -1,3 +1,6 @@
+from utils.generator import Generator
+Generator().model_wrapper()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.models import OAuthFlowPassword, OAuthFlows
@@ -6,10 +9,10 @@ from src.secret import MIDDLEWARE_SECRET_KEY
 from src.routers.user_management import register_user, get_country
 from services.postgre.migrations import database_migration
 from services.postgre.event_handler import migrate_country
-from utils.generator import Generator
 from errors.registter_error import custom_error_handler
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
+
 # from src.routers.user_register import register_user, create_pin
 # from src.routers.user_wrong_account import wrong_email, wrong_phone_number
 # from src.routers.user_send_otp import send_otp_phone_number, send_otp_email
@@ -50,12 +53,11 @@ from starlette.middleware.sessions import SessionMiddleware
 #     detail_schema,
 # )
 
-generator = Generator()
+# generator = Generator()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    generator.model_wrapper()
     await database_migration()
     await migrate_country()
     yield
