@@ -33,10 +33,20 @@ src\                        # Root folder.
 ├──secret.py                # Stored of all secret on .env
 pyproject.toml              # Stored of all library based on project requirement.
 ```
-# Database Architectures
-```
-https://dbdiagram.io/d/STASH-Database-Architecture-68ce608d960f6d821a030750
-```
+# Database Architecture
+
+The database schema for this project is designed and maintained using **dbdiagram.io**.
+You can explore the full diagram here:
+
+[![View Database Architecture](https://img.shields.io/badge/DBDiagram-View%20Schema-blue?style=for-the-badge&logo=databricks)](https://dbdiagram.io/d/STASH-Database-Architecture-68ce608d960f6d821a030750)
+
+This diagram provides a clear overview of the relationships between entities, including:
+- **User authentication & authorization** tables (users, roles, tokens, OTPs, etc.)
+- **Budgeting & transaction** tables (monthly budgets, categories, transactions, etc.)
+- Supporting tables such as countries and login histories.
+
+The schema is continuously updated as the project evolves to reflect new features and requirements.
+
 
 # Project Setup Instructions
 This project is developed with Python v3.12.3. To get started, you'll need to install Docker and Poetry.
