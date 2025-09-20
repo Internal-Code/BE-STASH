@@ -4,7 +4,7 @@ from sqlmodel import SQLModel
 from sqlalchemy import select, insert, update, delete, and_, or_
 from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.error import DatabaseQueryError, DataNotFoundError
+from errors.custom_error import QueryError, NotFoundError
 
 
 class QueryDatabase:
@@ -37,14 +37,17 @@ class QueryDatabase:
 
             if fetch == "all":
                 rows = result.fetchall()
-                return [dict(row._mapping) for row in rows] if rows else None
+                return (
+                    [dict(record) for entry in rows for record in entry]
+                    if rows
+                    else None
+                )
             else:
-                entry = result.fetchone()
-                return entry
+                return result.fetchone()
         except Exception as e:
             logging.error(f"Failed to find record in table {table.__name__}: {e}")
             await self._session.rollback()
-            raise DatabaseQueryError(detail="Database query error.")
+            raise QueryError(detail="Database query error.")
 
     async def insert(self, table: type[SQLModel], data: dict) -> None:
         for column in data.keys():
@@ -61,7 +64,7 @@ class QueryDatabase:
         except Exception as e:
             logging.error(f"Failed to insert record in table {table.__name__}: {e}")
             await self._session.rollback()
-            raise DatabaseQueryError(detail="Database query error.")
+            raise QueryError(detail="Database query error.")
 
     async def update(self, table: type[SQLModel], condition: dict, data: dict) -> None:
         record = await self.find(table=table, **condition)
@@ -74,7 +77,7 @@ class QueryDatabase:
                 raise ValueError("Data must be a non-empty dictionary.")
 
             if not record:
-                raise DataNotFoundError("Data not found.")
+                raise NotFoundError("Data not found.")
 
             for column in data.keys():
                 if not hasattr(table, column):
@@ -104,13 +107,13 @@ class QueryDatabase:
 
         except ValueError:
             raise
-        except DataNotFoundError:
+        except NotFoundError:
             raise
         except Exception as e:
             logging.error(
                 f"Failed to update record in table {table.__name__} with conditions {condition}: {e}"
             )
-            raise DatabaseQueryError(detail="Database query error.")
+            raise QueryError(detail="Database query error.")
 
     async def delete(self, table: type[SQLModel]) -> None:
         try:
@@ -123,4 +126,4 @@ class QueryDatabase:
                 f"Failed to delete all records in table {table.__name__}: {e}"
             )
             await self._session.rollback()
-            raise DatabaseQueryError(detail="Database query error.")
+            raise QueryError(detail="Database query error.")

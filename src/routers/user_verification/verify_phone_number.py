@@ -5,8 +5,8 @@ from utils.query import QueryDatabase
 from src.schema.request_format import Otp
 from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
-from services.postgres.models import SendOtp, User
+from services.postgre.connection import get_db
+from services.postgre.model import SendOtp, User
 from src.schema.response import ResponseDefault, UniqueId
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (

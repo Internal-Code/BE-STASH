@@ -1,45 +1,59 @@
 #!/bin/sh
 
-# Function to show the help message
 show_help() {
-  echo "Usage: sh $0 [ --development | --staging | --production | --help ]"
-  echo ""
-  echo "--development   Use .env.development file for environment variables."
-  echo "--staging       Use .env.staging file for environment variables."
-  echo "--production    Use .env.production file for environment variables."
-  echo "--help          Show this help message."
+    echo "Usage: sh scripts/run_container.sh [ --env <environment> ] | [ --help ]"
+    echo ""
+    echo "--env       Set project environment: dev | test"
+    echo "--help, -h  Show this help message."
+    exit 1
 }
 
-# Parse the command-line arguments
-case $1 in
-    --development)
-        echo "Using development environment configuration"
-        ENV_FILE="./env/.env.development"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+ENV=""
+ENV_FILE=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --env)
         shift
+        ENV="$1"
+        case "$ENV" in
+        dev)
+            ENV_FILE="$PROJECT_DIR/env/.env.development"
+            ;;
+        test)
+            ENV_FILE="$PROJECT_DIR/env/.env.test"
+            ;;
+        *)
+            echo "Error: Invalid environment '$ENV'"
+            show_help
+            ;;
+        esac
         ;;
-    --staging)
-        echo "Using staging environment configuration"
-        ENV_FILE="./env/.env.staging"
-        shift
-        ;;
-    --production)
-        echo "Using production environment configuration"
-        ENV_FILE="./env/.env.production"
-        shift
-        ;;
-    --help)
+    --help | -h)
         show_help
-        exit 0
         ;;
     *)
-        echo "Unknown parameter: $1"
+        echo "Error: Unknown argument '$1'"
         show_help
-        exit 1
         ;;
-esac
+    esac
+    shift
+done
 
-export ENV_FILE
+if [ -z "$ENV_FILE" ]; then
+    echo "Error: --env is required"
+    show_help
+fi
 
-# Run the Docker container using the appropriate environment settings
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Environment file not found: $ENV_FILE"
+  exit 1
+fi
+
+echo "Using env file: $ENV_FILE"
 echo "Starting container with environment variables from $ENV_FILE..."
-docker compose --env-file $ENV_FILE up -d
+
+docker compose --env-file "$ENV_FILE" up -d

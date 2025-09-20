@@ -6,9 +6,9 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import SendOtp, User
+from services.postgre.model import SendOtp, User
 from fastapi import APIRouter, status, Depends, BackgroundTasks
 from src.schema.response import ResponseDefault, UniqueId
 from utils.error import (

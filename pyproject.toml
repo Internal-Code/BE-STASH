@@ -6,25 +6,30 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "asyncpg>=0.30.0",
-    "authlib>=1.5.2",
+    "authlib>=1.6.0",
     "bcrypt>=4.3.0",
-    "coverage>=7.8.0",
-    "faker>=37.1.0",
+    "coverage>=7.8.2",
+    "faker>=37.3.0",
     "fastapi>=0.115.12",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
     "jinja2>=3.1.6",
     "passlib>=1.7.4",
     "pre-commit>=4.2.0",
-    "pydantic[email]>=2.11.4",
-    "pytest-asyncio>=0.26.0",
+    "pydantic[email]>=2.11.5",
+    "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.1.1",
     "python-dotenv>=1.1.0",
-    "python-jose>=3.4.0",
+    "python-jose>=3.5.0",
     "python-multipart>=0.0.20",
     "pytz>=2025.2",
-    "ruff>=0.11.8",
-    "sqlalchemy>=2.0.40",
+    "sqlalchemy>=2.0.41",
     "sqlmodel>=0.0.24",
     "uvicorn>=0.34.2",
+]
+
+[tool.ruff]
+exclude = [
+    "services/postgre/models",
+    "src/main.py"
 ]

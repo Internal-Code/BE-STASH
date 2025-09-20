@@ -3,9 +3,9 @@ from utils.jwt import JWTHandler
 from utils.logger import logging
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import MonthlySchema
+from services.postgre.model import MonthlySchema
 from src.schema.response import ResponseDefault
 from utils.error import ServiceError, StashBaseApiError
 

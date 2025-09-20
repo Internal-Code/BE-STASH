@@ -3,10 +3,10 @@ from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.helper import local_time
 from utils.query import QueryDatabase
-from services.postgres.models import SendOtp, User
+from services.postgre.model import SendOtp, User
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from src.schema.request_format import Otp
 from src.schema.response import ResponseDefault
 from utils.error import (

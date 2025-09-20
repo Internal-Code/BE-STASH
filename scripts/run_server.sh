@@ -1,97 +1,73 @@
 #!/bin/sh
 
-# Default value
-HOST="127.0.0.1"
-
-# Checking for existing processes on port 8000
-echo "Checking for existing processes on port 8000"
-PIDS=$(lsof -ti :8000)
-if [ -n "$PIDS" ]; then
-  echo "Killing existing processes on port 8000"
-  kill -9 $PIDS
-fi
-
-# Show usage information
 show_help() {
-  echo "Usage: sh $0 [ --development | --staging | --production | --help ]"
-  echo ""
-  echo "--development    Run the server on localhost and load the .env.development file"
-  echo "--staging        Run the server on the staging IP and load the .env.staging file"
-  echo "--production     Run the server on the production IP address and load the .env.production file"
-  echo "--help           Show this help message"
+    echo "Usage: sh scripts/run_server.sh [ --env <environment> ] | [ --help ]"
+    echo ""
+    echo "--env       Set project environment: dev | test"
+    echo "--help, -h  Show this help message."
+    exit 1
 }
 
-# Check command-line arguments
-if [ "$1" = "--help" ]; then
-  show_help
-  exit 0
-fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Parse arguments
-case "$1" in
-  --development)
-    echo "Using development environment configuration"
-    ENV_FILE="env/.env.development"
-    ;;
-  --staging)
-    echo "Using staging environment configuration"
-    ENV_FILE="env/.env.staging"
-    CURRENT_IP=$(hostname -I | awk '{print $1}')
-    if [ -z "$CURRENT_IP" ]; then
-      echo "Unable to detect current IP address! Using default host"
-    else
-      HOST="$CURRENT_IP"
-    fi
-    ;;
-  --production)
-    echo "Using production environment configuration"
-    CURRENT_IP=$(hostname -I | awk '{print $1}')
-    if [ -z "$CURRENT_IP" ]; then
-      echo "Unable to detect current IP address! Using default host"
-    else
-      HOST="$CURRENT_IP"
-    fi
-    ENV_FILE="env/.env.production"
-    ;;
-  *)
-    echo "Invalid option: $1"
-    show_help
-    exit 1
-    ;;
-esac
+ENV=""
+ENV_FILE=""
+RELOAD_FLAG=""
 
-set -a
-eval $(sed 's/^/export /' "$ENV_FILE")
-set +a
-
-
-
-# Checking OS Environment
-echo "Checking OS Environment"
-if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
-  echo "WSL detected"
-  . .venv/bin/activate
-else
-  case "$OSTYPE" in
-    linux*)
-      echo "Linux based OS detected"
-      source .venv/bin/activate
-      ;;
-    darwin*)
-      echo "macOS detected"
-      source .venv/bin/activate
-      ;;
-    cygwin* | msys* | mingw*)
-      echo "Windows based OS detected"
-      source .venv/Scripts/activate
-      ;;
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --env)
+        shift
+        ENV="$1"
+        case "$ENV" in
+        dev)
+            ENV_FILE="$PROJECT_DIR/env/.env.development"
+            RELOAD_FLAG="--reload"
+            ;;
+        test)
+            ENV_FILE="$PROJECT_DIR/env/.env.test"
+            RELOAD_FLAG="--reload"
+            ;;
+        *)
+            echo "Error: Invalid environment '$ENV'"
+            show_help
+            ;;
+        esac
+        ;;
+    --help | -h)
+        show_help
+        ;;
     *)
-      echo "Unsupported OS."
-      exit 1
-      ;;
-  esac
+        echo "Error: Unknown argument '$1'"
+        show_help
+        ;;
+    esac
+    shift
+done
+
+if [ -z "$ENV_FILE" ]; then
+    echo "Error: --env is required"
+    show_help
 fi
 
-# Start the server
-echo "Running uvicorn server in debug mode"
-uvicorn src.main:app --host "$HOST" --port 8000 --reload --reload-dir=src
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Environment file not found: $ENV_FILE"
+    exit 1
+fi
+
+export ENV_TYPE="$ENV"
+export ENV_FILE="$ENV_FILE"
+export $(grep -v '^#' "$ENV_FILE" | xargs)
+
+echo "Checking OS Environment"
+if uname | grep -qiE "linux|darwin"; then
+    echo "Unix-based OS detected"
+    . "$PROJECT_DIR/.venv/bin/activate"
+else
+    echo "Unsupported OS. Please turn-on server manually."
+    exit 1
+fi
+
+echo "Running uvicorn server with environment variables from $ENV_FILE..."
+uvicorn src.main:app $RELOAD_FLAG

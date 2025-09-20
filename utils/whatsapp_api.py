@@ -1,10 +1,8 @@
 import httpx
-from src.secret import Config
+from src.secret import WHATSAPP_API_MESSAGE
 from utils.logger import logging
 from src.schema.request_format import SendOTPPayload
-from utils.error import ServiceError
-
-config = Config()
+from errors.custom_error import ServiceError
 
 
 async def send_whatsapp(phone_number: str, message_template: str, **kwargs) -> None:
@@ -18,13 +16,13 @@ async def send_whatsapp(phone_number: str, message_template: str, **kwargs) -> N
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                config.WHATSAPP_API_MESSAGE, json=dict(payload)
-            )
+            response = await client.post(WHATSAPP_API_MESSAGE, json=dict(payload))
         if response.status_code != 200:
             raise ServiceError(
-                detail="Failed to send WhatsApp message.", name="WhatsApp API"
+                "Failed to send WhatsApp message.", {"WhatsApp API": "pass error here"}
             )
     except Exception:
-        raise ServiceError(detail="WhatsApp API error.", name="WhatsApp API")
+        raise ServiceError(
+            "Failed to send WhatsApp message.", {"WhatsApp API": "pass error here"}
+        )
     return None

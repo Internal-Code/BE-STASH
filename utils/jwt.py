@@ -10,9 +10,9 @@ from typing import Annotated, Optional
 from passlib.context import CryptContext
 from utils.query import QueryDatabase
 from fastapi.security import OAuth2PasswordBearer
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from src.schema.validator import SecurityCodeValidator
-from services.postgres.models import User, BlacklistToken
+from services.postgre.model import User, BlacklistToken
 from utils.error import AuthenticationFailed, DataNotFoundError
 
 

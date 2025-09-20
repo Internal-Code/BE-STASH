@@ -5,9 +5,9 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from src.schema.response import ResponseDefault
-from services.postgres.models import BlacklistToken, UserToken
+from services.postgre.model import BlacklistToken, UserToken
 from utils.error import (
     ServiceError,
     StashBaseApiError,

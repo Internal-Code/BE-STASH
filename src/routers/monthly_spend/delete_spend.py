@@ -6,9 +6,9 @@ from utils.helper import local_time
 from utils.query import QueryDatabase
 from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends
-from services.postgres.connection import get_db
+from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.postgres.models import MoneySpend
+from services.postgre.model import MoneySpend
 from utils.error import ServiceError, StashBaseApiError, DataNotFoundError
 
 jwt_handler = JWTHandler()
