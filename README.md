@@ -33,9 +33,13 @@ src\                        # Root folder.
 ├──secret.py                # Stored of all secret on .env
 pyproject.toml              # Stored of all library based on project requirement.
 ```
-# Project Setup Instructions
+# Database Architectures
+```
+https://dbdiagram.io/d/STASH-Database-Architecture-68ce608d960f6d821a030750
+```
 
-This project is developed with Python v3.10.12. To get started, you'll need to install Docker and Poetry.
+# Project Setup Instructions
+This project is developed with Python v3.12.3. To get started, you'll need to install Docker and Poetry.
 
 ## Prerequisites
 
