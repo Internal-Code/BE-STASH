@@ -1,9 +1,10 @@
 #!/bin/sh
 
 show_help() {
-    echo "Usage: sh scripts/run_server.sh [ --env <environment> ] | [ --help ]"
+    echo "Usage: sh scripts/run_server.sh [ --env <environment> ] [ --port <port> ] | [ --help ]"
     echo ""
-    echo "--env       Set project environment: dev | test"
+    echo "--env       Set environment: dev | stg | prod | test"
+    echo "--port      Set port (default: 8000)"
     echo "--help, -h  Show this help message."
     exit 1
 }
@@ -14,6 +15,8 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 ENV=""
 ENV_FILE=""
 RELOAD_FLAG=""
+IP_HOST=""
+PORT=8000
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -24,16 +27,36 @@ while [ $# -gt 0 ]; do
         dev)
             ENV_FILE="$PROJECT_DIR/env/.env.development"
             RELOAD_FLAG="--reload"
+            IP_HOST="127.0.0.1"
+            ;;
+        stg)
+            ENV_FILE="$PROJECT_DIR/env/.env.staging"
+            RELOAD_FLAG=""
+            IP_HOST="127.0.0.1"
+            ;;
+        prod)
+            ENV_FILE="$PROJECT_DIR/env/.env.production"
+            RELOAD_FLAG=""
+            IP_HOST="127.0.0.1"
             ;;
         test)
-            ENV_FILE="$PROJECT_DIR/env/.env.test"
+            ENV_FILE="$PROJECT_DIR/env/.env.testing"
             RELOAD_FLAG="--reload"
+            IP_HOST="127.0.0.1"
             ;;
         *)
             echo "Error: Invalid environment '$ENV'"
             show_help
             ;;
         esac
+        ;;
+    --port)
+        shift
+        if ! echo "$1" | grep -Eq '^[0-9]+$'; then
+            echo "Error: --port requires an integer value"
+            show_help
+        fi
+        PORT="$1"
         ;;
     --help | -h)
         show_help
@@ -69,5 +92,5 @@ else
     exit 1
 fi
 
-echo "Running uvicorn server with environment variables from $ENV_FILE..."
-uvicorn src.main:app $RELOAD_FLAG
+echo "Running uvicorn server on $IP_HOST:$PORT with environment variables from $ENV_FILE..."
+uvicorn src.main:app $RELOAD_FLAG --host "$IP_HOST" --port "$PORT"

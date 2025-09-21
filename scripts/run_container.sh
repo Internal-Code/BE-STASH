@@ -3,7 +3,7 @@
 show_help() {
     echo "Usage: sh scripts/run_container.sh [ --env <environment> ] | [ --help ]"
     echo ""
-    echo "--env       Set project environment: dev | test"
+    echo "--env       Set environment: dev | stg | prod | test"
     echo "--help, -h  Show this help message."
     exit 1
 }
@@ -23,8 +23,14 @@ while [ $# -gt 0 ]; do
         dev)
             ENV_FILE="$PROJECT_DIR/env/.env.development"
             ;;
+        stg)
+            ENV_FILE="$PROJECT_DIR/env/.env.staging"
+            ;;
+        prod)
+            ENV_FILE="$PROJECT_DIR/env/.env.production"
+            ;;
         test)
-            ENV_FILE="$PROJECT_DIR/env/.env.test"
+            ENV_FILE="$PROJECT_DIR/env/.env.testing"
             ;;
         *)
             echo "Error: Invalid environment '$ENV'"
@@ -49,11 +55,19 @@ if [ -z "$ENV_FILE" ]; then
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
-  echo "Environment file not found: $ENV_FILE"
-  exit 1
+    echo "Environment file not found: $ENV_FILE"
+    exit 1
 fi
 
+echo "Starting docker containers with environment: $ENV"
 echo "Using env file: $ENV_FILE"
-echo "Starting container with environment variables from $ENV_FILE..."
 
-docker compose --env-file "$ENV_FILE" up -d
+# Try `docker compose` first, fallback to `docker-compose`
+if docker compose version >/dev/null 2>&1; then
+    docker compose --env-file "$ENV_FILE" up -d
+elif docker-compose version >/dev/null 2>&1; then
+    docker-compose --env-file "$ENV_FILE" up -d
+else
+    echo "Error: Neither 'docker compose' nor 'docker-compose' is available."
+    exit 1
+fi
