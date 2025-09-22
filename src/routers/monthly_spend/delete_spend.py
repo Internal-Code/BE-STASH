@@ -2,7 +2,7 @@ from uuid import UUID
 from typing import Annotated
 from utils.jwt import JWTHandler
 from utils.logger import logging
-from utils.time_utils import local_time
+from utils.time import local_time
 from utils.query import QueryDatabase
 from src.schema.response import ResponseDefault
 from fastapi import APIRouter, status, Depends

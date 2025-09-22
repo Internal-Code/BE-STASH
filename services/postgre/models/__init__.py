@@ -15,13 +15,13 @@ from services.postgre.models.roles import Roles
 
 __all__ = [
     "Users",
+    "UserRegistrationStates",
     "UserTokens",
     "UserLoginHistories",
     "Countries",
     "BlacklistedTokens",
     "PinResets",
     "MonthlyBudgetCategories",
-    "UserRegistrationStates",
     "MonthlyBudgets",
     "Transactions",
     "TransactionDetails",

@@ -1,6 +1,6 @@
 from typing import Optional, ClassVar, Any
 from datetime import datetime
-from utils.time_utils import local_time
+from utils.time import local_time
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import BigInteger, DateTime, String, ForeignKey, Numeric
 

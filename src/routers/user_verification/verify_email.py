@@ -1,7 +1,7 @@
 from typing import Annotated
 from utils.logger import logging
 from utils.jwt import JWTHandler
-from utils.time_utils import local_time
+from utils.time import local_time
 from utils.query import QueryDatabase
 from services.postgre.model import SendOtp, User
 from fastapi import APIRouter, status, Depends

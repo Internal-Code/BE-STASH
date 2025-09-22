@@ -1,6 +1,6 @@
 from uuid import UUID
 from utils.logger import logging
-from utils.time_utils import local_time
+from utils.time import local_time
 from utils.query import QueryDatabase
 from src.schema.request_format import Otp
 from utils.whatsapp_api import send_whatsapp

@@ -1,4 +1,4 @@
-from utils.time_utils import local_time
+from utils.time import local_time
 from typing import Optional, ClassVar, Any
 from datetime import datetime, timedelta
 from sqlmodel import SQLModel, Field, Relationship, Column
@@ -9,7 +9,7 @@ from services.postgre.attribute_type import SendOtpChannelEnum
 class OtpRequests(SQLModel, table=True):
     __tablename__: ClassVar[Any] = "otp_requests"
 
-    id: int = Field(sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
+    id: Optional[int] = Field(default=None, sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
     created_at: datetime = Field(default_factory=local_time, sa_column=Column(DateTime, nullable=False))
     updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
     used_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))

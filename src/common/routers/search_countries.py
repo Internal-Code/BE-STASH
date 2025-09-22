@@ -33,6 +33,7 @@ async def search_countries_endpoint(
         c = aliased(Countries)
         c_select = SelectData(
             entry=[
+                cast(ColumnElement[Any], c.id).label("id"),
                 cast(ColumnElement[Any], c.name).label("name"),
                 cast(ColumnElement[Any], c.dial_code).label("dial_code"),
             ]
@@ -63,8 +64,8 @@ async def search_countries_endpoint(
 
     except BaseError:
         raise
-    except Exception as exc:
-        logging.error(f"Unhandled exception: {exc}\n{traceback.format_exc()}")
+    except Exception as e:
+        logging.error(f"Unhandled exception: {e}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal Server Error",

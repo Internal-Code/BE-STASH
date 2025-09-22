@@ -3,7 +3,7 @@ from datetime import timedelta
 from utils.jwt import JWTHandler
 from utils.logger import logging
 from utils.smtp import send_gmail
-from utils.time_utils import local_time
+from utils.time import local_time
 from utils.generator import Generator
 from utils.query import QueryDatabase
 from services.postgre.model import SendOtp

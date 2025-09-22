@@ -5,7 +5,7 @@ from factory.base import Factory
 from typing import Any
 from factory.declarations import Sequence, LazyFunction
 from services.postgre.models import Countries
-from utils.time_utils import local_time
+from utils.time import local_time
 
 faker = Faker()
 

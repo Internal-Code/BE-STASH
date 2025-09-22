@@ -239,11 +239,10 @@ class DatabaseQuery:
                 await self.session.execute(query)
             elif isinstance(data, list) and all(isinstance(d, SQLModel) for d in data):
                 self.session.add_all(data)
-
             else:
                 raise ValueError("Unsupported data type for insert")
-
             await self.session.commit()
+            logging.info(f"Inserted record into table {table.__name__}.")
         except Exception as e:
             logging.error(f"Failed to insert record in table {table.__name__}: {e}")
             await self.session.rollback()

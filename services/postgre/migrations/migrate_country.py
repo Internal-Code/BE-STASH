@@ -3,7 +3,6 @@ import os
 import json
 import asyncio
 from pathlib import Path
-from typing import cast, List, Any
 
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 from utils.logger import logging
@@ -25,7 +24,6 @@ async def main():
 
     with open(FILE_PATH, "r", encoding="utf-8") as f:
         countries = json.load(f)
-        countries = cast(List[dict[str, Any]], FORMATTER.to_int(countries, "dial_code"))
 
     async with async_session() as session:
         try:

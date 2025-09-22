@@ -1,12 +1,21 @@
 #!/bin/sh
 
 show_help() {
-    echo "Usage: sh scripts/run_container.sh [ --env <environment> ] | [ --help ]"
-    echo ""
-    echo "--env       Set environment: dev | stg | prod"
-    echo "--help, -h  Show this help message."
+    log "Usage: sh scripts/run_container.sh [ --env <environment> ] | [ --help ]"
+    log ""
+    log "--env       Set environment: dev | stg | prod"
+    log "--help, -h  Show this help message."
     exit 1
 }
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO $1"
+}
+
+log_error() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR $1" >&2
+}
+
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -30,7 +39,7 @@ while [ $# -gt 0 ]; do
             ENV_FILE="$PROJECT_DIR/env/.env.production"
             ;;
         *)
-            echo "Error: Invalid environment '$ENV'"
+            log "Error: Invalid environment '$ENV'"
             show_help
             ;;
         esac
@@ -39,7 +48,7 @@ while [ $# -gt 0 ]; do
         show_help
         ;;
     *)
-        echo "Error: Unknown argument '$1'"
+        log "Error: Unknown argument '$1'"
         show_help
         ;;
     esac
@@ -47,24 +56,23 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$ENV_FILE" ]; then
-    echo "Error: --env is required"
+    log_error "Error: --env is required"
     show_help
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
-    echo "Environment file not found: $ENV_FILE"
+    log_error "Environment file not found: $ENV_FILE"
     exit 1
 fi
 
-echo "Starting docker containers with environment: $ENV"
-echo "Using env file: $ENV_FILE"
+log "Starting docker containers with environment: $ENV"
+log "Using env file: $ENV_FILE"
 
-# Try `docker compose` first, fallback to `docker-compose`
 if docker compose version >/dev/null 2>&1; then
     docker compose --env-file "$ENV_FILE" up -d
 elif docker-compose version >/dev/null 2>&1; then
     docker-compose --env-file "$ENV_FILE" up -d
 else
-    echo "Error: Neither 'docker compose' nor 'docker-compose' is available."
+    log_error "Error: Neither 'docker compose' nor 'docker-compose' is available."
     exit 1
 fi

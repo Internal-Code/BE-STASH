@@ -2,7 +2,7 @@ from typing import Optional, ClassVar, Any, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import BigInteger, DateTime, Integer, ForeignKey
-from utils.time_utils import local_time
+from utils.time import local_time
 
 
 class MonthlyBudgets(SQLModel, table=True):

@@ -1,6 +1,10 @@
 #!/bin/bash
 
-echo "Configuring virtual environment location and installing dependencies..."
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO $1"
+}
+
+log "Configuring virtual environment location and installing dependencies..."
 uv sync
 
-echo "Setup complete."
+log "Setup complete."

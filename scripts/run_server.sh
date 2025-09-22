@@ -1,12 +1,20 @@
 #!/bin/sh
 
 show_help() {
-    echo "Usage: sh scripts/run_server.sh [ --env <environment> ] [ --port <port> ] | [ --help ]"
-    echo ""
-    echo "--env       Set environment: dev | stg | prod"
-    echo "--port      Set port (default: 8000)"
-    echo "--help, -h  Show this help message."
+    log "Usage: sh scripts/run_server.sh [ --env <environment> ] [ --port <port> ] | [ --help ]"
+    log ""
+    log "--env       Set environment: dev | stg | prod"
+    log "--port      Set port (default: 8000)"
+    log "--help, -h  Show this help message."
     exit 1
+}
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO $1"
+}
+
+log_error() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR $1" >&2
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -40,15 +48,15 @@ while [ $# -gt 0 ]; do
             IP_HOST="127.0.0.1"
             ;;
         *)
-            echo "Error: Invalid environment '$ENV'"
+            log "Error: Invalid environment '$ENV'"
             show_help
             ;;
         esac
         ;;
     --port)
         shift
-        if ! echo "$1" | grep -Eq '^[0-9]+$'; then
-            echo "Error: --port requires an integer value"
+        if ! log "$1" | grep -Eq '^[0-9]+$'; then
+            log "Error: --port requires an integer value"
             show_help
         fi
         PORT="$1"
@@ -57,7 +65,7 @@ while [ $# -gt 0 ]; do
         show_help
         ;;
     *)
-        echo "Error: Unknown argument '$1'"
+        log "Error: Unknown argument '$1'"
         show_help
         ;;
     esac
@@ -65,12 +73,12 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$ENV_FILE" ]; then
-    echo "Error: --env is required"
+    log "Error: --env is required"
     show_help
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
-    echo "Environment file not found: $ENV_FILE"
+    log_error "Environment file not found: $ENV_FILE"
     exit 1
 fi
 
@@ -78,14 +86,14 @@ export ENV_TYPE="$ENV"
 export ENV_FILE="$ENV_FILE"
 export $(grep -v '^#' "$ENV_FILE" | xargs)
 
-echo "Checking OS Environment"
+log "Checking OS Environment"
 if uname | grep -qiE "linux|darwin"; then
-    echo "Unix-based OS detected"
+    log "Unix-based OS detected"
     . "$PROJECT_DIR/.venv/bin/activate"
 else
-    echo "Unsupported OS. Please turn-on server manually."
+    log_error "Unsupported OS. Please turn-on server manually."
     exit 1
 fi
 
-echo "Running uvicorn server on $IP_HOST:$PORT with environment variables from $ENV_FILE..."
+log "Running uvicorn server on $IP_HOST:$PORT with environment variables from $ENV_FILE..."
 uvicorn src.main:app $RELOAD_FLAG --host "$IP_HOST" --port "$PORT"

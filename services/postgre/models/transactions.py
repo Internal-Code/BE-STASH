@@ -2,7 +2,7 @@ from typing import Optional, ClassVar, Any, List
 from datetime import datetime, date
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import BigInteger, DateTime, Date, String, ForeignKey, Enum
-from utils.time_utils import local_time
+from utils.time import local_time
 from services.postgre.attribute_type import TransactionPaymentMethodEnum
 
 

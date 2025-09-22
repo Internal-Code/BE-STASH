@@ -2,7 +2,7 @@ from typing import ClassVar, Any, Optional
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import BigInteger, DateTime, String, Integer, ForeignKey
-from utils.time_utils import local_time
+from utils.time import local_time
 
 
 class TransactionDetails(SQLModel, table=True):

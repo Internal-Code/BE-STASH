@@ -2,7 +2,7 @@ from typing import Annotated
 from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.query import QueryDatabase
-from utils.time_utils import local_time
+from utils.time import local_time
 from fastapi import APIRouter, status, Depends, Path
 from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession

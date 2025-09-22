@@ -3,7 +3,7 @@ from fastapi import Depends
 from datetime import timedelta
 from jose import JWTError, jwt
 from src.secret import Config
-from utils.time_utils import local_time
+from utils.time import local_time
 from utils.logger import logging
 from sqlalchemy.engine.row import Row
 from typing import Annotated, Optional

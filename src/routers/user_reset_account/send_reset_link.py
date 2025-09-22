@@ -3,7 +3,7 @@ from datetime import timedelta
 from src.secret import Config
 from utils.logger import logging
 from utils.smtp import send_gmail
-from utils.time_utils import local_time
+from utils.time import local_time
 from utils.query import QueryDatabase
 from utils.whatsapp_api import send_whatsapp
 from fastapi.templating import Jinja2Templates

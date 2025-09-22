@@ -5,10 +5,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 from utils.logger import logging
 from services.postgre.connection import drop_database, migrate_database, engine
+from services.postgre import models
 
 
 async def main():
     try:
+        _ = models
         await drop_database()
         await migrate_database()
     except Exception as e:

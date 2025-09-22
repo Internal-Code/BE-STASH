@@ -1,8 +1,15 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, Field
 from src.schema.validator import Validator
 
 validator = Validator()
+
+
+class RegisterUserPayload(BaseModel):
+    name: str
+    phone_number: str
+    country_id: int = Field(ge=1)
+    email: Optional[EmailStr] = Field(default=None)
 
 
 class PhoneNumber(BaseModel):

@@ -2,12 +2,17 @@
 set -eu
 
 show_help() {
-    echo "Usage: sh scripts/run_migration.sh [ --env <environment> ] | [ --help ]"
-    echo ""
-    echo "--env       Set environment: dev | stg | prod"
-    echo "--help, -h  Show this help message."
+    log "Usage: sh scripts/run_migration.sh [ --env <environment> ] | [ --help ]"
+    log ""
+    log "--env       Set environment: dev | stg | prod"
+    log "--help, -h  Show this help message."
     exit 1
 }
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO $1"
+}
+
 
 ENV=""
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -30,7 +35,7 @@ while [ $# -gt 0 ]; do
                     ENV_FILE="$PROJECT_DIR/env/.env.production"
                     ;;
                 *)
-                    echo "Error: Invalid environment '$ENV'"
+                    log "Error: Invalid environment '$ENV'"
                     show_help
                     ;;
             esac
@@ -39,7 +44,7 @@ while [ $# -gt 0 ]; do
             show_help
             ;;
         *)
-            echo "Error: Unknown argument '$1'"
+            log "Error: Unknown argument '$1'"
             show_help
             ;;
     esac
@@ -47,14 +52,14 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$ENV" ]; then
-    echo "Error: --env is required"
+    log "Error: --env is required"
     show_help
 fi
 
-echo "Running all migrations for environment '$ENV'..."
+log "Running all migrations for environment '$ENV'..."
 
 # Run each migration script. If one fails, the script exits immediately.
 sh "$PROJECT_DIR/scripts/run_migrate_table.sh" --env "$ENV"
 sh "$PROJECT_DIR/scripts/run_migrate_country.sh" --env "$ENV"
 
-echo "All migrations completed successfully for environment '$ENV'."
+log "All migrations completed successfully for environment '$ENV'."

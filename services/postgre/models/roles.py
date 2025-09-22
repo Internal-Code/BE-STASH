@@ -1,4 +1,4 @@
-from utils.time_utils import local_time
+from utils.time import local_time
 from typing import ClassVar, Any, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Column, Relationship
