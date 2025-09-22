@@ -1,6 +1,6 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.logger import logging
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends, Path

@@ -4,7 +4,7 @@ from datetime import timedelta
 from utils.logger import logging
 from utils.jwt import JWTHandler
 from utils.smtp import send_gmail
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.query import QueryDatabase
 from utils.generator import Generator
 from src.schema.response import ResponseToken

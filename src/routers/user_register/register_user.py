@@ -4,7 +4,7 @@ from utils.whatsapp_api import send_whatsapp
 from services.postgre.connection import get_db
 from services.postgre.attribute_type import Channel
 from services.postgre.models import Countries, Users, RegisterStates, SendOtps
-from services.postgre.schema import Filters
+from services.postgre.query_schema import Filters
 from services.postgre.query import DatabaseQuery
 from src.schema.response import ResponseDefault, ResponseUser
 from src.schema.request_format import RegisterAccountPayload

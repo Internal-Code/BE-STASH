@@ -1,5 +1,5 @@
 from utils.logger import logging
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.query import QueryDatabase
 from services.postgre.model import User
 from src.schema.request_format import Email

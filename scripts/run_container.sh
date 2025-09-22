@@ -3,7 +3,7 @@
 show_help() {
     echo "Usage: sh scripts/run_container.sh [ --env <environment> ] | [ --help ]"
     echo ""
-    echo "--env       Set environment: dev | stg | prod | test"
+    echo "--env       Set environment: dev | stg | prod"
     echo "--help, -h  Show this help message."
     exit 1
 }
@@ -28,9 +28,6 @@ while [ $# -gt 0 ]; do
             ;;
         prod)
             ENV_FILE="$PROJECT_DIR/env/.env.production"
-            ;;
-        test)
-            ENV_FILE="$PROJECT_DIR/env/.env.testing"
             ;;
         *)
             echo "Error: Invalid environment '$ENV'"

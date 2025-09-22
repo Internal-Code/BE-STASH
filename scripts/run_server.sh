@@ -3,7 +3,7 @@
 show_help() {
     echo "Usage: sh scripts/run_server.sh [ --env <environment> ] [ --port <port> ] | [ --help ]"
     echo ""
-    echo "--env       Set environment: dev | stg | prod | test"
+    echo "--env       Set environment: dev | stg | prod"
     echo "--port      Set port (default: 8000)"
     echo "--help, -h  Show this help message."
     exit 1
@@ -37,11 +37,6 @@ while [ $# -gt 0 ]; do
         prod)
             ENV_FILE="$PROJECT_DIR/env/.env.production"
             RELOAD_FLAG=""
-            IP_HOST="127.0.0.1"
-            ;;
-        test)
-            ENV_FILE="$PROJECT_DIR/env/.env.testing"
-            RELOAD_FLAG="--reload"
             IP_HOST="127.0.0.1"
             ;;
         *)

@@ -1,7 +1,7 @@
 from typing import Annotated
 from src.secret import Config
 from utils.logger import logging
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.smtp import send_gmail
 from fastapi.templating import Jinja2Templates
 from fastapi import APIRouter, status, Depends, BackgroundTasks

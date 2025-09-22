@@ -3,7 +3,7 @@ from utils.jwt import JWTHandler
 from datetime import timedelta
 from utils.logger import logging
 from utils.query import QueryDatabase
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.generator import Generator
 from utils.whatsapp_api import send_whatsapp
 from sqlalchemy.ext.asyncio import AsyncSession

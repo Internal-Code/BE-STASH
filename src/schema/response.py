@@ -1,18 +1,33 @@
-from typing import Union
-from pydantic import BaseModel
+from typing import Any, List, Dict, Union
+from pydantic import BaseModel, Field
 
 
-class ResponseUser(BaseModel):
-    user_id: int = None
+class BaseResponse(BaseModel):
+    """
+    Base response model for API responses.
+    """
+
+    message: str = Field(
+        default="Success",
+        description="Human-readable message describing the result of the request",
+    )
+    data: Union[Dict[str, Any], List[Any]] = Field(
+        default_factory=list,
+        description="Response payload containing the data returned by the API",
+    )
 
 
-class ResponseDefault(BaseModel):
-    success: bool = True
-    message: str = None
-    data: Union[dict, list] = None
+class TokenResponse(BaseModel):
+    """
+    Response model for authentication tokens.
+    """
 
-
-class ResponseToken(BaseModel):
-    access_token: str = None
-    refresh_token: str = None
-    token_type: str = "Bearer"
+    access_token: str = Field(
+        ..., description="JWT access token used for authenticated requests"
+    )
+    refresh_token: str = Field(
+        ..., description="JWT refresh token used to obtain new access tokens"
+    )
+    token_type: str = Field(
+        default="Bearer", description="Type of the token, typically 'Bearer'"
+    )

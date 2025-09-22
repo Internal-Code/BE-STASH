@@ -1,25 +1,24 @@
 from enum import StrEnum, auto
 
 
-class Environment(StrEnum):
-    test = auto()
-    dev = auto()
-    staging = auto()
-    production = auto()
+class RoleNameEnum(StrEnum):
+    admin = auto()
+    user = auto()
 
 
-class DeviceInfo(StrEnum):
+class UserDeviceInfoEnum(StrEnum):
     android = auto()
     ios = auto()
+    browser = auto()
     other = auto()
 
 
-class Channel(StrEnum):
+class SendOtpChannelEnum(StrEnum):
     whatsapp = auto()
     email = auto()
 
 
-class PaymentType(StrEnum):
+class TransactionPaymentMethodEnum(StrEnum):
     cash = auto()
     credit_card = auto()
     bank_transfer = auto()

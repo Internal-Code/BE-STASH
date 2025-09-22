@@ -1,49 +1,38 @@
-from utils.helper import local_time
-from typing import List, Optional
+from utils.time_utils import local_time
+from typing import List, Optional, ClassVar, Any
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import ForeignKey
-from services.postgre.attribute_type import DeviceInfo
-from sqlalchemy.dialects.postgresql import (
-    ENUM,
-    BIGINT,
-    VARCHAR,
-    TIMESTAMP,
+from services.postgre.attribute_type import UserDeviceInfoEnum
+from sqlalchemy import (
+    Enum,
+    BigInteger,
+    DateTime,
+    String,
     CHAR,
-    BOOLEAN,
+    Boolean,
 )
 
 
 class Users(SQLModel, table=True):
-    __tablename__ = "users"
+    __tablename__: ClassVar[Any] = "users"
 
-    id: int = Field(sa_column=Column(BIGINT, primary_key=True, autoincrement=True))
-    created_at: datetime = Field(default=local_time(), sa_column=Column(TIMESTAMP))
-    updated_at: Optional[datetime] = Field(
-        default=None, sa_column=Column(TIMESTAMP, nullable=True)
-    )
-    country_id: int = Field(sa_column=Column(BIGINT, ForeignKey("countries.id")))
-    last_login_at: Optional[datetime] = Field(
-        default=None, sa_column=Column(TIMESTAMP, nullable=True)
-    )
-    first_name: str = Field(sa_column=Column(VARCHAR(255)))
-    last_name: str = Field(sa_column=Column(VARCHAR(255)))
-    email: Optional[str] = Field(
-        default=None, sa_column=Column(VARCHAR(255), nullable=True)
-    )
-    phone_number: Optional[str] = Field(
-        default=None, sa_column=Column(VARCHAR(20), nullable=True)
-    )
+    id: int = Field(sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
+    created_at: datetime = Field(default_factory=local_time, sa_column=Column(DateTime))
+    updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    country_id: int = Field(sa_column=Column(BigInteger, ForeignKey("countries.id")))
+    name: str = Field(sa_column=Column(String(255)))
+    email: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True, unique=True))
+    phone_number: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True))
     pin: Optional[str] = Field(default=None, sa_column=Column(CHAR(6), nullable=True))
-    device_info: DeviceInfo = Field(
-        default=DeviceInfo.android, sa_column=Column(ENUM(DeviceInfo))
-    )
-    is_account_activated: bool = Field(default=False, sa_column=Column(BOOLEAN))
+    device_info: UserDeviceInfoEnum = Field(sa_column=Column(Enum(UserDeviceInfoEnum)))
+    is_activated: bool = Field(default=False, sa_column=Column(Boolean))
+
     countries: Optional["Countries"] = Relationship(back_populates="users")
-    register_states: List["RegisterStates"] = Relationship(back_populates="users")
-    reset_pins: List["ResetPins"] = Relationship(back_populates="users")
-    blacklist_tokens: List["BlacklistTokens"] = Relationship(back_populates="users")
     user_tokens: List["UserTokens"] = Relationship(back_populates="users")
-    error_logs: List["ErrorLogs"] = Relationship(back_populates="users")
-    monthly_schemas: List["MonthlySchemas"] = Relationship(back_populates="users")
-    monthly_categories: List["MonthlyCategories"] = Relationship(back_populates="users")
+    user_login_histories: List["UserLoginHistories"] = Relationship(back_populates="users")
+    user_registration_states: List["UserRegistrationStates"] = Relationship(back_populates="users")
+    pin_resets: List["PinResets"] = Relationship(back_populates="users")
+    blacklisted_tokens: List["BlacklistedTokens"] = Relationship(back_populates="users")
+    monthly_budgets: List["MonthlyBudgets"] = Relationship(back_populates="users")
+    transactions: List["Transactions"] = Relationship(back_populates="users")

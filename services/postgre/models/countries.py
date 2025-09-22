@@ -1,14 +1,17 @@
-from typing import List
+from typing import ClassVar, Any, List
+from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
-from sqlalchemy.dialects.postgresql import BIGINT, VARCHAR
+from sqlalchemy import BigInteger, DateTime, String, Integer
+from utils.time_utils import local_time
 
 
 class Countries(SQLModel, table=True):
-    __tablename__ = "countries"
+    __tablename__: ClassVar[Any] = "countries"
 
-    id: int = Field(sa_column=Column(BIGINT, primary_key=True, autoincrement=True))
-    name: str = Field(sa_column=Column(VARCHAR(255)))
-    iso_code: str = Field(sa_column=Column(VARCHAR(255)))
-    dial_code: str = Field(sa_column=Column(VARCHAR(255)))
-    flag_url: str = Field(sa_column=Column(VARCHAR(255)))
+    id: int = Field(sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
+    created_at: datetime = Field(default_factory=local_time, sa_column=Column(DateTime, nullable=False))
+    name: str = Field(sa_column=Column(String(255), nullable=False))
+    iso_code: str = Field(sa_column=Column(String(10), nullable=False))
+    dial_code: int = Field(sa_column=Column(Integer, nullable=False))
+
     users: List["Users"] = Relationship(back_populates="countries")

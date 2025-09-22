@@ -1,7 +1,7 @@
 from typing import Annotated
 from utils.jwt import JWTHandler
 from utils.logger import logging
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.query import QueryDatabase
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
