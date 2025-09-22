@@ -50,7 +50,7 @@ class DatabaseQuery:
             case "not_equal":
                 return field != value
             case "like":
-                return field.like(f"%{value}%")
+                return field.like(value)
             case "gt":
                 return field > value
             case "gte":
