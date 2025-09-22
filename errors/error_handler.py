@@ -1,43 +1,56 @@
+from typing import Any
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from errors.custom_error import BaseError
-from utils.logger import logging
 
 
-def pydantic_payload_handler():
-    async def handler(_: Request, exception: RequestValidationError):
-        errors = {}
-        status_code = status.HTTP_400_BAD_REQUEST
+class CustomError:
+    def pydantic_handler(self):
+        async def handler(_: Request, exc: Exception) -> JSONResponse:
+            if not isinstance(exc, RequestValidationError):
+                return JSONResponse(
+                    status_code=500,
+                    content={"message": "Unexpected error", "error": str(exc)},
+                )
 
-        try:
-            for err in exception.errors():
-                loc = err.get("loc", [])
-                message = err.get("msg", "Invalid input")
+            error: dict[str, Any] = {}
+            status_code = status.HTTP_400_BAD_REQUEST
 
-                if isinstance(loc[-1], int):
-                    errors["body"] = f"Malformed JSON: {message}"
-                    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-                else:
-                    key = loc[-1]
-                    errors[key] = message
+            try:
+                for err in exc.errors():
+                    loc = err.get("loc", [])
+                    message = err.get("msg", "Invalid input")
 
-        except Exception as e:
-            errors["unknown"] = str(e)
+                    if isinstance(loc[-1], int):
+                        # malformed JSON
+                        error["body"] = f"Malformed JSON: {message}"
+                        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+                    else:
+                        key = loc[-1]
+                        error[key] = message
 
-        logging.error(f"Pydantic handler: {exception}")
+            except Exception as e:
+                error["unknown"] = str(e)
+
+            return JSONResponse(
+                status_code=status_code,
+                content={
+                    "message": "Invalid payload request.",
+                    "error": error,
+                },
+            )
+
+        return handler
+
+    def base_handler(self, _: Request, exc: Exception) -> JSONResponse:
+        if isinstance(exc, BaseError):
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"message": exc.message, "error": exc.error},
+            )
+
         return JSONResponse(
-            status_code=status_code,
-            content={"message": "Invalid payload request.", "errors": errors},
+            status_code=500,
+            content={"message": "Internal server error.", "error": str(exc)},
         )
-
-    return handler
-
-
-def base_error_handler(_: Request, exception: BaseError):
-    logging.error(f"Error message: {exception.message}")
-    logging.error(f"Error detail: {exception.errors}")
-    return JSONResponse(
-        status_code=exception.status_code,
-        content={"message": exception.message, "errors": exception.errors},
-    )

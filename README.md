@@ -38,7 +38,7 @@ pyproject.toml              # Stored of all library based on project requirement
 The database schema for this project is designed and maintained using **dbdiagram.io**.
 You can explore the full diagram here:
 
-[![View Database Architecture](https://img.shields.io/badge/DBDiagram-View%20Schema-blue?style=for-the-badge&logo=databricks)](https://dbdiagram.io/d/STASH-Database-Architecture-68ce608d960f6d821a030750)
+[![View Database Architecture](https://img.shields.io/badge/DBDiagram-View%20Schema-blue?style=for-the-badge&logo=databricks)](https://dbdocs.io/armanantabastian/STASH-Database-Architecture)
 
 This diagram provides a clear overview of the relationships between entities, including:
 - **User authentication & authorization** tables (users, roles, tokens, OTPs, etc.)

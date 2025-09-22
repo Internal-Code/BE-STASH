@@ -1,45 +1,19 @@
-from utils.helper import local_time
-from typing import Optional
+from typing import ClassVar, Any, Optional
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
-from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import (
-    BIGINT,
-    VARCHAR,
-    TIMESTAMP,
-    DOUBLE_PRECISION,
-    BOOLEAN,
-)
+from sqlalchemy import BigInteger, DateTime, String, Integer, ForeignKey
+from utils.time_utils import local_time
 
 
 class TransactionDetails(SQLModel, table=True):
-    __tablename__ = "transaction_details"
+    __tablename__: ClassVar[Any] = "transaction_details"
 
-    id: int = Field(sa_column=Column(BIGINT, primary_key=True, autoincrement=True))
-    created_at: datetime = Field(
-        default_factory=local_time, sa_column=Column(TIMESTAMP)
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, sa_column=Column(TIMESTAMP, nullable=True)
-    )
-    transaction_date_id: int = Field(
-        sa_column=Column(BIGINT, ForeignKey("transaction_dates.id"))
-    )
-    category_id: int = Field(
-        sa_column=Column(BIGINT, ForeignKey("monthly_categories.id"))
-    )
-    payment_method_id: int = Field(
-        sa_column=Column(BIGINT, ForeignKey("payment_methods.id"))
-    )
-    amount: float = Field(sa_column=Column(DOUBLE_PRECISION))
-    description: str = Field(sa_column=Column(VARCHAR(255)))
-    is_deleted: bool = Field(default=False, sa_column=Column(BOOLEAN))
-    transaction_dates: Optional["TransactionDates"] = Relationship(
-        back_populates="transaction_details"
-    )
-    monthly_categories: Optional["MonthlyCategories"] = Relationship(
-        back_populates="transaction_details"
-    )
-    payment_methods: Optional["PaymentMethods"] = Relationship(
-        back_populates="transaction_details"
-    )
+    id: int = Field(sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
+    created_at: datetime = Field(default_factory=local_time, sa_column=Column(DateTime, nullable=False))
+    transaction_id: int = Field(sa_column=Column(BigInteger, ForeignKey("transactions.id"), nullable=False))
+    item_name: str = Field(sa_column=Column(String(255), nullable=False))
+    quantity: int = Field(default=1, sa_column=Column(Integer, nullable=False))
+    unit_price: int = Field(sa_column=Column(BigInteger, nullable=False),)
+    total_price: int = Field(sa_column=Column(BigInteger, nullable=False))
+
+    transactions: Optional["Transactions"] = Relationship(back_populates="transaction_details")

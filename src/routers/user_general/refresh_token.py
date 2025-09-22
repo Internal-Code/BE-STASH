@@ -3,7 +3,7 @@ from jose import jwt, JWTError
 from datetime import timedelta
 from utils.jwt import JWTHandler
 from utils.logger import logging
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.query import QueryDatabase
 from src.schema.response import ResponseToken
 from fastapi import APIRouter, status, Depends

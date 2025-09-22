@@ -3,7 +3,7 @@ from src.secret import Config
 from datetime import timedelta
 from utils.logger import logging
 from utils.jwt import JWTHandler
-from utils.helper import local_time
+from utils.time_utils import local_time
 from utils.query import QueryDatabase
 from services.postgre.model import User
 from utils.whatsapp_api import send_whatsapp

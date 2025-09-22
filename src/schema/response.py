@@ -1,18 +1,13 @@
-from typing import Union
+from typing import Any, List, Dict, Union
 from pydantic import BaseModel
 
 
-class ResponseUser(BaseModel):
-    user_id: int = None
+class BaseResponse(BaseModel):
+    message: str
+    data: Union[Dict[str, Any], List[Any]] = []
 
 
-class ResponseDefault(BaseModel):
-    success: bool = True
-    message: str = None
-    data: Union[dict, list] = None
-
-
-class ResponseToken(BaseModel):
-    access_token: str = None
-    refresh_token: str = None
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
     token_type: str = "Bearer"

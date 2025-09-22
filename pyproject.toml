@@ -9,6 +9,7 @@ dependencies = [
     "authlib>=1.6.0",
     "bcrypt>=4.3.0",
     "coverage>=7.8.2",
+    "factory-boy>=3.3.3",
     "faker>=37.3.0",
     "fastapi>=0.115.12",
     "httpx>=0.28.1",
@@ -29,7 +30,4 @@ dependencies = [
 ]
 
 [tool.ruff]
-exclude = [
-    "services/postgre/models",
-    "src/main.py"
-]
+exclude = ["services/postgre/models/*"]

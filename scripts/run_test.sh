@@ -3,7 +3,7 @@
 show_help() {
   echo "Usage: sh scripts/run_test.sh [ --env <env> ] [ --test <test_type> ] [ --help ]"
   echo ""
-  echo "--env       Set environment: dev | stg | prod"
+  echo "--env       Set environment: dev | stg"
   echo "--test      Set test type: api | unit | feature"
   echo "--help, -h  Show this help message."
   exit 1
@@ -45,17 +45,11 @@ done
 
 # Validate env
 case "$ENV" in
-  test)
-    ENV_FILE="$PROJECT_DIR/env/.env.testing"
-    ;;
   dev)
     ENV_FILE="$PROJECT_DIR/env/.env.development"
     ;;
   stg)
     ENV_FILE="$PROJECT_DIR/env/.env.staging"
-    ;;
-  prod)
-    ENV_FILE="$PROJECT_DIR/env/.env.production"
     ;;
   *)
     echo "Error: Invalid or missing --env"
@@ -70,9 +64,6 @@ case "$TEST_TYPE" in
     ;;
   unit)
     TEST_DIR="$PROJECT_DIR/tests/unit"
-    ;;
-  feature)
-    TEST_DIR="$PROJECT_DIR/tests/feature"
     ;;
   *)
     echo "Error: Invalid or missing --test"
@@ -106,7 +97,7 @@ if ! coverage run --data-file="$COVERAGE_DIR/.coverage" --source="$TEST_DIR" -m 
 fi
 
 echo "Generating coverage report"
-coverage report -m --skip-empty --data-file="$COVERAGE_DIR/.coverage"
-coverage html -d "$COVERAGE_DIR" --data-file="$COVERAGE_DIR/.coverage"
+coverage report -m --skip-empty --data-file="$COVERAGE_DIR/.coverages"
+coverage html -d "$COVERAGE_DIR" --data-file="$COVERAGE_DIR/.coverages"
 
 echo "HTML coverage report generated at $COVERAGE_DIR/index.html"

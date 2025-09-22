@@ -1,7 +1,7 @@
 # from uuid import UUID
 # from datetime import timedelta
 # from utils.logger import logging
-# from utils.helper import local_time
+# from utils.time_utils import local_time
 # from utils.generator import Generator
 # from utils.query import QueryDatabase
 # from utils.whatsapp_api import send_whatsapp
