@@ -1,6 +1,7 @@
 from fastapi import Request
 from typing import Optional
 
+
 def get_client_ip(request: Request) -> Optional[str]:
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:

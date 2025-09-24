@@ -18,5 +18,5 @@ class ThirdPartyServiceHistories(SQLModel, table=True):
     ip_address: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=False))
     recipient: str = Field(sa_column=Column(String(255), nullable=False))
     response_message: dict[str,Any] = Field(default=None,sa_column=Column(JSON, nullable=False))
-    
+
     users: Optional["Users"] = Relationship(back_populates="third_party_service_histories")

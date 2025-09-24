@@ -19,7 +19,7 @@ from services.postgre.models import (
     Countries,
     Users,
     UserRegistrationStates,
-    OtpRequests
+    OtpRequests,
 )
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
@@ -35,7 +35,7 @@ async def register_user_endpoint(
     u = aliased(Users)
     o_req = aliased(OtpRequests)
     urs = aliased(UserRegistrationStates)
-    
+
     ip_address = get_client_ip(request)
     wa = WhatsAppService()
     session = DatabaseQuery(db)
@@ -121,12 +121,12 @@ async def register_user_endpoint(
             otp_code=otp_code,
             channel=SendOtpChannelEnum.whatsapp,
         )
-        
+
         # Insert all data in a single transaction
         await session.insert(table=u, data=user_data)
         await session.insert(table=urs, data=user_reg_state_data)
         await session.insert(table=o_req, data=otp_request_data)
-        
+
         # Send OTP via WhatsApp
         phone_number = f"{country['dial_code']}{schema.phone_number}"
         background_tasks.add_task(
@@ -141,7 +141,7 @@ async def register_user_endpoint(
             ),
             otp_code=otp_code,
         )
-        
+
         response.message = "Success register new user."
     except BaseError:
         raise

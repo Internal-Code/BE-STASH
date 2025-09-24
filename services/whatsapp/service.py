@@ -11,6 +11,7 @@ from services.postgre.attribute_type import (
     ThirdPartyServiceTypeEnum,
 )
 
+
 class WhatsAppService:
     async def send_whatsapp(
         self,
@@ -30,7 +31,7 @@ class WhatsAppService:
                 raise ValueError(
                     "Both `user` and `user_id` were provided. Please pass only one."
                 )
-        
+
         logging.info("Sending WhatsApp message.")
         message = message_template.format(**kwargs)
         payload = SendOTPPayload(
