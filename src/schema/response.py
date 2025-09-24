@@ -1,5 +1,6 @@
 from typing import Any, List, Dict, Union
 from pydantic import BaseModel, Field
+from services.postgre.attribute_type import UserRegistrationStateEnum
 
 
 class BaseResponse(BaseModel):
@@ -31,3 +32,15 @@ class TokenResponse(BaseModel):
     token_type: str = Field(
         default="Bearer", description="Type of the token, typically 'Bearer'"
     )
+
+
+class UserRegisterStateResponse(BaseModel):
+    status: UserRegistrationStateEnum = UserRegistrationStateEnum.pending
+    steps: "UserRegisterStateStepsResponse" = Field(
+        default_factory=lambda: UserRegisterStateStepsResponse()
+    )
+
+
+class UserRegisterStateStepsResponse(BaseModel):
+    phone_number_verified: bool = False
+    pin_created: bool = False

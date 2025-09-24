@@ -3,7 +3,7 @@ from typing import List, Optional, ClassVar, Any
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import ForeignKey
-from services.postgre.attribute_type import UserDeviceInfoEnum
+from services.postgre.attribute_type import UserDeviceInfoEnum, UserGenderEnum
 from sqlalchemy import (
     Enum,
     BigInteger,
@@ -21,7 +21,9 @@ class Users(SQLModel, table=True):
     created_at: datetime = Field(default_factory=local_time, sa_column=Column(DateTime))
     updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
     country_id: int = Field(sa_column=Column(BigInteger, ForeignKey("countries.id")))
+    uid: str = Field(sa_column=Column(String(255)))
     name: str = Field(sa_column=Column(String(255)))
+    gender: UserGenderEnum = Field(sa_column=Column(Enum(UserGenderEnum), nullable=False))
     email: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True))
     phone_number: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True))
     pin: Optional[str] = Field(default=None, sa_column=Column(CHAR(6), nullable=True))

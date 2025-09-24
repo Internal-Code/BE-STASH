@@ -13,6 +13,16 @@ class UserDeviceInfoEnum(StrEnum):
     other = auto()
 
 
+class UserGenderEnum(StrEnum):
+    male = auto()
+    female = auto()
+
+
+class UserRegistrationStateEnum(StrEnum):
+    pending = auto()
+    completed = auto()
+
+
 class SendOtpChannelEnum(StrEnum):
     whatsapp = auto()
     email = auto()

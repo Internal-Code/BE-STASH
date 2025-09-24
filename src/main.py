@@ -4,7 +4,7 @@ from src.secret import MIDDLEWARE_SECRET_KEY
 from errors.register_error import register_exception_handlers
 from starlette.middleware.sessions import SessionMiddleware
 from src.common.routers import health, search_countries
-from src.auth.routers.registration import register_user
+from src.auth.routers.registration import register_user, register_state
 
 app = FastAPI(
     root_path="/api/v1",
@@ -24,3 +24,4 @@ app.add_middleware(SessionMiddleware, secret_key=MIDDLEWARE_SECRET_KEY)
 app.include_router(health.router)
 app.include_router(search_countries.router)
 app.include_router(register_user.router)
+app.include_router(register_state.router)

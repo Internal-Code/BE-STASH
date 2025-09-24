@@ -1,4 +1,5 @@
 import traceback
+from uuid import uuid4
 from typing import Dict, Any, cast
 from fastapi import APIRouter, status, Depends, BackgroundTasks, HTTPException, Request
 from errors.custom_error import BaseError, NotFoundError, ConflictDataError
@@ -14,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
 from src.schema.response import BaseResponse
-from src.schema.request_format import RegisterUserPayload
+from src.schema.payload import RegisterUserPayload
 from services.postgre.models import (
     Countries,
     Users,
@@ -22,7 +23,7 @@ from services.postgre.models import (
     OtpRequests,
 )
 
-router = APIRouter(tags=["User Register"], prefix="/user/register")
+router = APIRouter(tags=["User Register"], prefix="/user")
 
 
 async def register_user_endpoint(
@@ -33,10 +34,11 @@ async def register_user_endpoint(
 ) -> BaseResponse:
     c = aliased(Countries)
     u = aliased(Users)
-    o_req = aliased(OtpRequests)
+    or2 = aliased(OtpRequests)
     urs = aliased(UserRegistrationStates)
 
     ip_address = get_client_ip(request)
+    user_uid = str(uuid4())
     wa = WhatsAppService()
     session = DatabaseQuery(db)
     response = BaseResponse()
@@ -102,6 +104,8 @@ async def register_user_endpoint(
         user_data = Users(
             country_id=schema.country_id,
             name=schema.name,
+            uid=user_uid,
+            gender=schema.gender,
             email=schema.email,
             phone_number=schema.phone_number,
             device_info=UserDeviceInfoEnum.android,
@@ -125,7 +129,7 @@ async def register_user_endpoint(
         # Insert all data in a single transaction
         await session.insert(table=u, data=user_data)
         await session.insert(table=urs, data=user_reg_state_data)
-        await session.insert(table=o_req, data=otp_request_data)
+        await session.insert(table=or2, data=otp_request_data)
 
         # Send OTP via WhatsApp
         phone_number = f"{country['dial_code']}{schema.phone_number}"
@@ -157,7 +161,7 @@ async def register_user_endpoint(
 
 router.add_api_route(
     methods=["POST"],
-    path="",
+    path="/register",
     response_model=BaseResponse,
     endpoint=register_user_endpoint,
     status_code=status.HTTP_201_CREATED,

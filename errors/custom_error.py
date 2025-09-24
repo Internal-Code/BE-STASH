@@ -1,16 +1,18 @@
 from fastapi import status
-from typing import Any
+from typing import Any, Optional
 
 
 class BaseError(Exception):
-    def __init__(self, status_code: int, message: str, error: dict[str, Any]):
+    def __init__(
+        self, status_code: int, message: str, error: Optional[dict[str, Any]] = None
+    ):
         self.status_code = status_code
         self.message = message
         self.error = error
 
 
 class QueryError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             message=message,
@@ -19,7 +21,7 @@ class QueryError(BaseError):
 
 
 class NotFoundError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             message=message,
@@ -28,7 +30,7 @@ class NotFoundError(BaseError):
 
 
 class AuthenticationError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             message=message,
@@ -37,16 +39,16 @@ class AuthenticationError(BaseError):
 
 
 class InvalidInputError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             message=message,
             error=error,
         )
 
 
 class ConflictDataError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
             message=message,
@@ -55,7 +57,7 @@ class ConflictDataError(BaseError):
 
 
 class MandatoryInputError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             message=message,
@@ -64,7 +66,7 @@ class MandatoryInputError(BaseError):
 
 
 class NotImplementedError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             message=message,
@@ -73,7 +75,7 @@ class NotImplementedError(BaseError):
 
 
 class ServiceError(BaseError):
-    def __init__(self, message: str, error: dict[str, Any]):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             message=message,

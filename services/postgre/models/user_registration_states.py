@@ -2,7 +2,8 @@ from utils.time import local_time
 from typing import Optional, ClassVar, Any, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
-from sqlalchemy import BigInteger, DateTime, SmallInteger, ForeignKey
+from sqlalchemy import BigInteger, DateTime, SmallInteger, ForeignKey, Enum
+from services.postgre.attribute_type import UserRegistrationStateEnum
 
 
 class UserRegistrationStates(SQLModel, table=True):
@@ -15,6 +16,7 @@ class UserRegistrationStates(SQLModel, table=True):
     email_verified: int = Field(default=0, sa_column=Column(SmallInteger, nullable=False))
     phone_number_verified: int = Field(default=0, sa_column=Column(SmallInteger, nullable=False))
     pin_created: int = Field(default=0, sa_column=Column(SmallInteger, nullable=False))
+    status: UserRegistrationStateEnum = Field(default=UserRegistrationStateEnum.pending, sa_column=Column(Enum(UserRegistrationStateEnum), nullable=False))
 
     users: Optional["Users"] = Relationship(back_populates="user_registration_states")
     otp_requests: List["OtpRequests"] = Relationship(back_populates="user_registration_states")

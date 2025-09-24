@@ -2,7 +2,7 @@ import httpx
 from typing import Any, Optional
 from utils.logger import logging
 from src.secret import WHATSAPP_API_HOST
-from src.schema.request_format import SendOTPPayload
+from src.schema.payload import SendOTPPayload
 from services.postgre.connection import async_session, engine
 from services.postgre.query import DatabaseQuery
 from services.postgre.models import ThirdPartyServiceHistories, Users
