@@ -79,6 +79,6 @@ router.add_api_route(
     path="/search",
     endpoint=search_countries_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Search countries by name.",
+    summary="Get country data filter by name.",
     response_model=BaseResponse,
 )

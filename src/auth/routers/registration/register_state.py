@@ -1,7 +1,7 @@
 import traceback
 from utils.logger import logging
 from typing import cast, Any
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException, Query
 from errors.custom_error import BaseError, NotFoundError
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
@@ -23,6 +23,7 @@ router = APIRouter(tags=["User Register"], prefix="/user")
 
 
 async def register_state_endpoint(
+    country_id: int = Query(ge=1),
     phone_number: str = Depends(validate_phone_number),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse:
@@ -40,6 +41,25 @@ async def register_state_endpoint(
     session = DatabaseQuery(db)
     logging.info(f"Fetching registration state for phone_number={phone_number}")
     try:
+        # Validate country
+        country: Any = await session.fetch(
+            field_names=SelectData(
+                entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
+            ),
+            master_table=c,
+            filters=Filters(
+                filters=[
+                    Filters(field_name=c.id, filter_type="equal", value=country_id)
+                ]
+            ),
+            fetch_type="one",
+        )
+        if not country:
+            raise NotFoundError(
+                message="Country not found.",
+                error={"country_id": "Country id not found."},
+            )
+
         pn_select = SelectData(
             entry=[
                 func.concat(c.dial_code, u.phone_number).label("phone_number"),
@@ -55,7 +75,7 @@ async def register_state_endpoint(
         pn_filter = Filters(
             filters=[
                 Filters(
-                    field_name=func.concat(c.dial_code, u.phone_number),
+                    field_name=u.phone_number,
                     filter_type="equal",
                     value=phone_number,
                 ),
@@ -112,6 +132,6 @@ router.add_api_route(
     path="/register-state",
     endpoint=register_state_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Search countries by name.",
+    summary="Get user registration state by phone number",
     response_model=BaseResponse,
 )
