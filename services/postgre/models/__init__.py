@@ -11,10 +11,12 @@ from services.postgre.models.transactions import Transactions
 from services.postgre.models.transaction_details import TransactionDetails
 from services.postgre.models.otp_requests import OtpRequests
 from services.postgre.models.roles import Roles
+from services.postgre.models.third_party_service_histories import ThirdPartyServiceHistories
 
 
 __all__ = [
     "Users",
+    "ThirdPartyServiceHistories",
     "UserRegistrationStates",
     "UserTokens",
     "UserLoginHistories",

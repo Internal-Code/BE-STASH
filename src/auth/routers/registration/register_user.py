@@ -1,29 +1,32 @@
 import traceback
 from typing import Dict, Any, cast
-from fastapi import APIRouter, status, Depends, BackgroundTasks, HTTPException
+from fastapi import APIRouter, status, Depends, BackgroundTasks, HTTPException, Request
 from errors.custom_error import BaseError, NotFoundError, ConflictDataError
 from utils.logger import logging
 from utils.generator import random_number
+from utils.network import get_client_ip
 from services.postgre.connection import get_db
 from services.postgre.attribute_type import UserDeviceInfoEnum, SendOtpChannelEnum
-from services.postgre.models import (
-    Countries,
-    Users,
-    UserRegistrationStates,
-    OtpRequests,
-)
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.query import DatabaseQuery
+from services.whatsapp.service import WhatsAppService
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
 from src.schema.response import BaseResponse
 from src.schema.request_format import RegisterUserPayload
+from services.postgre.models import (
+    Countries,
+    Users,
+    UserRegistrationStates,
+    OtpRequests
+)
 
 router = APIRouter(tags=["User Register"], prefix="/user/register")
 
 
 async def register_user_endpoint(
+    request: Request,
     schema: RegisterUserPayload,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -32,6 +35,9 @@ async def register_user_endpoint(
     u = aliased(Users)
     o_req = aliased(OtpRequests)
     urs = aliased(UserRegistrationStates)
+    
+    ip_address = get_client_ip(request)
+    wa = WhatsAppService()
     session = DatabaseQuery(db)
     response = BaseResponse()
     otp_code = random_number(6)
@@ -104,9 +110,9 @@ async def register_user_endpoint(
         # Build user register state data
         user_reg_state_data = UserRegistrationStates(
             users=user_data,
-            is_email_verified=False,
-            is_phone_number_verified=False,
-            is_pin_created=False,
+            email_verified=0,
+            phone_number_verified=0,
+            pin_created=0,
         )
 
         # Build OTP request data
@@ -115,12 +121,28 @@ async def register_user_endpoint(
             otp_code=otp_code,
             channel=SendOtpChannelEnum.whatsapp,
         )
-
+        
         # Insert all data in a single transaction
         await session.insert(table=u, data=user_data)
         await session.insert(table=urs, data=user_reg_state_data)
         await session.insert(table=o_req, data=otp_request_data)
-
+        
+        # Send OTP via WhatsApp
+        phone_number = f"{country['dial_code']}{schema.phone_number}"
+        background_tasks.add_task(
+            wa.send_whatsapp,
+            user=user_data,
+            ip_address=ip_address,
+            phone_number=phone_number,
+            message_template=(
+                "Your verification code is *{otp_code}*. "
+                "Please enter this code to complete your verification. "
+                "Kindly note that this code will *expire in 3 minutes*."
+            ),
+            otp_code=otp_code,
+        )
+        
+        response.message = "Success register new user."
     except BaseError:
         raise
     except Exception as e:

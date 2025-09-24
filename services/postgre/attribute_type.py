@@ -23,3 +23,13 @@ class TransactionPaymentMethodEnum(StrEnum):
     credit_card = auto()
     bank_transfer = auto()
     e_wallet = auto()
+
+
+class ThirdPartyServiceTypeEnum(StrEnum):
+    smtp = auto()
+    local_whatsapp_api = auto()
+
+
+class ThirdPartyServiceStatusEnum(StrEnum):
+    success = auto()
+    failed = auto()

@@ -70,3 +70,12 @@ class NotImplementedError(BaseError):
             message=message,
             error=error,
         )
+
+
+class ServiceError(BaseError):
+    def __init__(self, message: str, error: dict[str, Any]):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=message,
+            error=error,
+        )

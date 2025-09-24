@@ -36,3 +36,4 @@ class Users(SQLModel, table=True):
     blacklisted_tokens: List["BlacklistedTokens"] = Relationship(back_populates="users")
     monthly_budgets: List["MonthlyBudgets"] = Relationship(back_populates="users")
     transactions: List["Transactions"] = Relationship(back_populates="users")
+    third_party_service_histories: List["ThirdPartyServiceHistories"] = Relationship(back_populates="users")
