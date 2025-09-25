@@ -8,12 +8,10 @@ sys.path.append(str(Path(__file__).resolve().parents[3]))
 from utils.logger import logging
 from services.postgre.connection import engine, async_session
 from services.postgre.factories import CountriesFactory
-from helpers.formatter import CustomFormatter
 
 PROJECT_DIR = Path(__file__).resolve().parents[3]
 JSON_PATH = "json/countries.json"
 FILE_PATH = os.path.join(PROJECT_DIR, JSON_PATH)
-FORMATTER = CustomFormatter()
 
 
 async def main():

@@ -1,4 +1,4 @@
-from typing import Any, List, Dict, Union
+from typing import Any, List, Dict, Union, Optional
 from pydantic import BaseModel, Field
 from services.postgre.attribute_type import UserRegistrationStateEnum
 
@@ -44,3 +44,6 @@ class UserRegisterStateResponse(BaseModel):
 class UserRegisterStateStepsResponse(BaseModel):
     phone_number_verified: bool = False
     pin_created: bool = False
+    user_id: Optional[int] = None
+    register_state_id: Optional[int] = None
+    pin_reset_id: Optional[int] = None

@@ -35,10 +35,11 @@ async def register_state_endpoint(
     urs = aliased(UserRegistrationStates)
     c = aliased(Countries)
 
+    session = DatabaseQuery(db)
+
     response = BaseResponse()
     user_state = UserRegisterStateResponse()
     user_steps = UserRegisterStateStepsResponse()
-    session = DatabaseQuery(db)
     logging.info(f"Fetching registration state for phone_number={phone_number}")
     try:
         # Validate country
@@ -62,6 +63,8 @@ async def register_state_endpoint(
 
         pn_select = SelectData(
             entry=[
+                cast(ColumnElement[Any], urs.user_id).label("user_id"),
+                cast(ColumnElement[Any], urs.id).label("register_state_id"),
                 func.concat(c.dial_code, u.phone_number).label("phone_number"),
                 cast(ColumnElement[Any], urs.phone_number_verified).label(
                     "phone_number_verified"
@@ -93,22 +96,30 @@ async def register_state_endpoint(
 
         logging.info(f"Registration data fetched: {phone_number_data}")
 
+        user_id = phone_number_data["user_id"]
         phone_verified = phone_number_data["phone_number_verified"]
         pin_created = phone_number_data["pin_created"]
+        register_state_id = phone_number_data["register_state_id"]
 
         match (phone_verified, pin_created):
             case (1, 1):
                 user_state.status = UserRegistrationStateEnum.completed
                 user_steps.phone_number_verified = True
                 user_steps.pin_created = True
+                user_steps.register_state_id = register_state_id
+                user_steps.user_id = user_id
             case (1, 0):
                 user_state.status = UserRegistrationStateEnum.pending
                 user_steps.phone_number_verified = True
                 user_steps.pin_created = False
+                user_steps.register_state_id = register_state_id
+                user_steps.user_id = user_id
             case _:
                 user_state.status = UserRegistrationStateEnum.pending
                 user_steps.phone_number_verified = False
                 user_steps.pin_created = False
+                user_steps.register_state_id = register_state_id
+                user_steps.user_id = user_id
 
         user_state.steps = user_steps
         data = user_state.model_dump()

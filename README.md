@@ -4,37 +4,36 @@ This is Proof of Concept (POC) for Finance Tracker Management. Established using
 ##  What is tis repository for? ##
 This repository is for a personal full-stack development project.
 
+# Project Structure
 ```
-script\                     # Shell script folder.
-├──run_server.sh            # Shell script for starting fastapi server.
-├──run_test.sh              # Shell script for end2end endpoint unit testing.
-├──setup.sh                 # Shell script for installing project setup.
-src\                        # Root folder.
-├──auth\                    # Root of all endpoints folder.
-│   ├──routers\             # Stored of list API during development.
-│   │   ├──monthly_schemas\ # Stored of list monthly_shcema router.
-│   ├── ├──   ...           # Another list of routers folders.
-│   ├──schema\              # Stored of API responses schema serialized by pydantic.
-│   │   ├──response.py      # Pydantic response model.
-│   ├──exception.py         # Handling custom error for more convenient debug.
-│   ├──health_check.py      # Root endpoint.
-│   ├──utils\               # Stored of list utilites based on project needs.
-│   │   ├──databases\       # Stored of spesific utilities related to databases.
-│   ├── ├──  ...            # Another list of utilities folders.
-│   ├── generator.py        # Stored of utilities for generating data.
-│   ├── ...                 # Another of general utilities files.
-├──database\                # Stored of databases connection and table models.
-│   ├──connection.py        # Stored of global database connection.
-│   ├──models.py            # Stored for databases model mapped by SQLAlchemy.
-├──tests\                   # Unit testing root directory.
-│   ├──monthly_schema\      # Stored of list unit testing on montly_schema router.
-│   ├── ...                 # Another of unit testing folders.
-├──main.py                  # Stored of main backend application.
-├──secret.py                # Stored of all secret on .env
-pyproject.toml              # Stored of all library based on project requirement.
+├── docs\               # Contains design notes, architectural documentation, and additional project-related documents.
+├── errors\             # Custom error classes and exception handlers
+├── examples\           # Sample files or scripts showcasing how to use project features.
+├── helpers\            # Miscellaneous helper functions
+├── scripts\            # Shell script folder.
+├── services\           # External service integrations
+│    ├── postgre\       # PostgreSQL database integration (connections, migrations, queries)
+│    ├── smtp\          # Email service (SMTP client, templates, and utilities)
+│    ├── whatsapp\      # WhatsApp API integration (registration OTP, notifications, etc.)
+├── src\                # Main application source code
+│   ├── auth\           # Authentication & authorization logic
+|   |   ├── routers\    # FastAPI routers for login, registration, OTP, token management
+│   ├── common\         # Common utilities/endpoints shared across the app
+|   |   ├── routers\    # Shared routes (health check, system status, etc.)
+│   ├── schema\         # Pydantic/SQLModel schemas for request & response validation
+│   ├── users\          # User domain (business logic & routers)
+|   |   ├── routers\    # User-related API routes (profile, reset PIN, etc.)
+│   ├── main.py         # FastAPI application entrypoint
+│   ├── secret.py       # Environment secrets/config loader
+├── templates\          # Jinja2 or HTML templates (if needed for emails, frontend rendering, etc.).
+├── tests\              # Test suite
+│   ├── unit\           # Unit tests (smallest scope: functions, services, models)
+│   ├── api\            # API tests (FastAPI endpoints using TestClient/HTTPX)
+│   ├── e2e\            # End-to-end tests (full workflow: auth → DB → external services)
+├── utils\              # Cross-cutting utilities (logger, generator, network utils, etc.)
+├── pyproject.toml      # Python project configuration and dependency management.
 ```
 # Database Architecture
-
 The database schema for this project is designed and maintained using **dbdiagram.io**.
 You can explore the full diagram here:
 
@@ -49,18 +48,15 @@ The schema is continuously updated as the project evolves to reflect new feature
 
 
 # Project Setup Instructions
-This project is developed with Python v3.12.3. To get started, you'll need to install Docker and Poetry.
+This project is developed with Python v3.12. To get started, you'll need to install Docker and Poetry.
 
 ## Prerequisites
-
-- **Python v3.10.12**
+- **Python v3.12**
 - **Docker**
 - **Poetry**
-
 For Windows users, you'll also need to install either MinGW or Cygwin to run the shell scripts.
 
 ## Setup Steps
-
 1. **Run the setup script**
     ```
     sh scripts/setup.sh
@@ -90,4 +86,3 @@ For Windows users, you'll also need to install either MinGW or Cygwin to run the
 # Repo Owner? #
 * Bastian Armananta
 * Andika Dwi Santoso
-* Lizamuddin Al Hasan

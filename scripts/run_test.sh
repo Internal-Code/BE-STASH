@@ -4,7 +4,7 @@ show_help() {
   log "Usage: sh scripts/run_test.sh [ --env <env> ] [ --test <test_type> ] [ --help ]"
   log ""
   log "--env       Set environment: dev | stg"
-  log "--test      Set test type: api | unit | feature"
+  log "--test      Set test type: api | unit | e2e"
   log "--help, -h  Show this help message."
   exit 1
 }
@@ -73,6 +73,9 @@ case "$TEST_TYPE" in
     ;;
   unit)
     TEST_DIR="$PROJECT_DIR/tests/unit"
+    ;;
+  e2e)
+    TEST_DIR="$PROJECT_DIR/tests/e2e"
     ;;
   *)
     log "Error: Invalid or missing --test"

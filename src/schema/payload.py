@@ -15,7 +15,7 @@ class RegisterUserPayload(BaseModel):
 
     @field_validator("phone_number")
     def validate_phone_number(cls, phone_number: str) -> str:
-        return validator.phone_number(phone_number=phone_number)
+        return validator.number(data=phone_number, min_length=10, max_length=20)
 
     @field_validator("name")
     def validate_name(cls, name: str) -> str:
@@ -25,3 +25,13 @@ class RegisterUserPayload(BaseModel):
 class SendOTPPayload(BaseModel):
     phoneNumber: str
     message: str
+
+
+class VerificationOtpPayload(BaseModel):
+    otp_code: str
+    register_state_id: Optional[int] = None
+    pin_reset_id: Optional[int] = None
+
+    @field_validator("otp_code")
+    def validate_otp_code(cls, otp_code: str) -> str:
+        return validator.number(data=otp_code, exact_length=6)

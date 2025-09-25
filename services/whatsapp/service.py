@@ -1,8 +1,8 @@
 import httpx
 from typing import Any, Optional
 from utils.logger import logging
-from src.secret import WHATSAPP_API_HOST
 from src.schema.payload import SendOTPPayload
+from src.secret import WHATSAPP_API_HOST
 from services.postgre.connection import async_session, engine
 from services.postgre.query import DatabaseQuery
 from services.postgre.models import ThirdPartyServiceHistories, Users
@@ -22,15 +22,11 @@ class WhatsAppService:
         user_id: Optional[int] = None,
         **kwargs: Any,
     ):
-        if user and user_id:
-            if user.id != user_id:
-                raise ValueError(
-                    f"Conflicting user data: user.id={user.id} does not match user_id={user_id}"
-                )
-            else:
-                raise ValueError(
-                    "Both `user` and `user_id` were provided. Please pass only one."
-                )
+        if user is not None and user_id is not None:
+            raise ValueError(
+                "Invalid arguments: both `user` and `user_id` were provided. "
+                "Please specify only one to associate the WhatsApp message with a user."
+            )
 
         logging.info("Sending WhatsApp message.")
         message = message_template.format(**kwargs)

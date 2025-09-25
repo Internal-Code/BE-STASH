@@ -14,7 +14,11 @@ from services.whatsapp.service import WhatsAppService
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
-from src.schema.response import BaseResponse
+from src.schema.response import (
+    BaseResponse,
+    UserRegisterStateStepsResponse,
+    UserRegisterStateResponse,
+)
 from src.schema.payload import RegisterUserPayload
 from services.postgre.models import (
     Countries,
@@ -39,9 +43,14 @@ async def register_user_endpoint(
 
     ip_address = get_client_ip(request)
     user_uid = str(uuid4())
+
     wa = WhatsAppService()
     session = DatabaseQuery(db)
+
     response = BaseResponse()
+    user_state = UserRegisterStateResponse()
+    user_steps = UserRegisterStateStepsResponse()
+
     otp_code = random_number(6)
     error: Dict[str, Any] = {}
     try:
@@ -145,8 +154,12 @@ async def register_user_endpoint(
             ),
             otp_code=otp_code,
         )
-
+        user_steps.register_state_id = user_reg_state_data.id
+        user_steps.user_id = user_data.id
+        user_state.steps = user_steps
+        data = user_state.model_dump()
         response.message = "Success register new user."
+        response.data = data
     except BaseError:
         raise
     except Exception as e:
