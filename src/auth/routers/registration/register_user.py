@@ -157,9 +157,9 @@ async def register_user_endpoint(
         user_steps.register_state_id = user_reg_state_data.id
         user_steps.user_id = user_data.id
         user_state.steps = user_steps
-        data = user_state.model_dump()
+
         response.message = "Success register new user."
-        response.data = data
+        response.data = user_state.model_dump()
     except BaseError:
         raise
     except Exception as e:

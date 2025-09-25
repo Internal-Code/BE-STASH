@@ -44,6 +44,11 @@ class UserRegisterStateResponse(BaseModel):
 class UserRegisterStateStepsResponse(BaseModel):
     phone_number_verified: bool = False
     pin_created: bool = False
-    user_id: Optional[int] = None
-    register_state_id: Optional[int] = None
-    pin_reset_id: Optional[int] = None
+    user_id: Optional[int] = Field(default=None, ge=1)
+    register_state_id: Optional[int] = Field(default=None, ge=1)
+    pin_reset_id: Optional[int] = Field(default=None, ge=1)
+
+
+class SendOtpMethodResponse(BaseModel):
+    phone_number_verified: bool = False
+    email_verified: bool = False

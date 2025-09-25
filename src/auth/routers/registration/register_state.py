@@ -3,7 +3,6 @@ from utils.logger import logging
 from typing import cast, Any
 from fastapi import APIRouter, status, Depends, HTTPException, Query
 from errors.custom_error import BaseError, NotFoundError
-from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,7 +64,6 @@ async def register_state_endpoint(
             entry=[
                 cast(ColumnElement[Any], urs.user_id).label("user_id"),
                 cast(ColumnElement[Any], urs.id).label("register_state_id"),
-                func.concat(c.dial_code, u.phone_number).label("phone_number"),
                 cast(ColumnElement[Any], urs.phone_number_verified).label(
                     "phone_number_verified"
                 ),
@@ -122,9 +120,8 @@ async def register_state_endpoint(
                 user_steps.user_id = user_id
 
         user_state.steps = user_steps
-        data = user_state.model_dump()
         response.message = "Successfully fetched user registration state."
-        response.data = data
+        response.data = user_state.model_dump()
 
     except BaseError:
         raise

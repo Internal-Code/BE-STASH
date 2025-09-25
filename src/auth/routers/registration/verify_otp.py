@@ -143,11 +143,11 @@ async def verify_otp_endpoint(
         user_steps.user_id = user_id
         user_steps.register_state_id = schema.register_state_id
         user_steps.pin_reset_id = schema.pin_reset_id
+
         user_state.steps = user_steps
-        data = user_state.model_dump()
 
         response.message = "OTP verified successfully."
-        response.data = data
+        response.data = user_state.model_dump()
     except BaseError:
         raise
     except Exception as e:
