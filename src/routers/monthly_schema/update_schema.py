@@ -12,7 +12,7 @@ from services.postgre.model import MonthlySchema
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
     EntityAlreadyExistError,
     EntityForceInputSameDataError,
 )
@@ -45,7 +45,7 @@ async def update_schema_endpoint(
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")
-            raise DataNotFoundError(detail="Schema not found.")
+            raise NotFoundError(detail="Schema not found.")
 
         if schema.year == year and schema.month == month:
             logging.error("User force to update into same data.")

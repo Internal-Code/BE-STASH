@@ -13,7 +13,7 @@ from utils.error import (
     ServiceError,
     StashBaseApiError,
     EntityAlreadyVerifiedError,
-    DataNotFoundError,
+    NotFoundError,
     InvalidOperationError,
 )
 
@@ -37,7 +37,7 @@ async def verify_phone_number_endpoint(
     try:
         if not otp_record.otp_number:
             logging.error("OTP data not found.")
-            raise DataNotFoundError(
+            raise NotFoundError(
                 detail="OTP code not found. Please request a new OTP code."
             )
 

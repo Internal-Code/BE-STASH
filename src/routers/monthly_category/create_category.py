@@ -13,7 +13,7 @@ from utils.error import (
     EntityAlreadyExistError,
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
 )
 
 jwt_handler = JWTHandler()
@@ -40,7 +40,7 @@ async def create_category_endpoint(
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")
-            raise DataNotFoundError(detail="Schema not found.")
+            raise NotFoundError(detail="Schema not found.")
 
         month_id = monthly_schema_record.month_id
 

@@ -1,5 +1,6 @@
 import traceback
 from utils.logger import logging
+from uuid import UUID
 from typing import cast, Any
 from fastapi import APIRouter, status, Depends, HTTPException, Query
 from errors.custom_error import BaseError, NotFoundError
@@ -62,7 +63,7 @@ async def register_state_endpoint(
 
         pn_select = SelectData(
             entry=[
-                cast(ColumnElement[Any], urs.user_id).label("user_id"),
+                cast(ColumnElement[Any], u.uid).label("user_uid"),
                 cast(ColumnElement[Any], urs.id).label("register_state_id"),
                 cast(ColumnElement[Any], urs.phone_number_verified).label(
                     "phone_number_verified"
@@ -93,33 +94,30 @@ async def register_state_endpoint(
             raise NotFoundError(message="Phone number not found.")
 
         logging.info(f"Registration data fetched: {phone_number_data}")
-
-        user_id = phone_number_data["user_id"]
         phone_verified = phone_number_data["phone_number_verified"]
         pin_created = phone_number_data["pin_created"]
-        register_state_id = phone_number_data["register_state_id"]
+        user_uid = phone_number_data["user_uid"]
 
         match (phone_verified, pin_created):
             case (1, 1):
                 user_state.status = UserRegistrationStateEnum.completed
+                user_state.user_uid = UUID(user_uid)
                 user_steps.phone_number_verified = True
                 user_steps.pin_created = True
-                user_steps.register_state_id = register_state_id
-                user_steps.user_id = user_id
+                user_state.steps = user_steps
             case (1, 0):
                 user_state.status = UserRegistrationStateEnum.pending
+                user_state.user_uid = UUID(user_uid)
                 user_steps.phone_number_verified = True
                 user_steps.pin_created = False
-                user_steps.register_state_id = register_state_id
-                user_steps.user_id = user_id
+                user_state.steps = user_steps
             case _:
                 user_state.status = UserRegistrationStateEnum.pending
+                user_state.user_uid = UUID(user_uid)
                 user_steps.phone_number_verified = False
                 user_steps.pin_created = False
-                user_steps.register_state_id = register_state_id
-                user_steps.user_id = user_id
+                user_state.steps = user_steps
 
-        user_state.steps = user_steps
         response.message = "Successfully fetched user registration state."
         response.data = user_state.model_dump()
 

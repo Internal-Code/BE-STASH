@@ -16,7 +16,7 @@
 # #     EntityAlreadyExistError,
 # #     ServiceError,
 # #     StashBaseApiError,
-# #     DataNotFoundError,
+# #     NotFoundError,
 # #     EntityAlreadyFilledError,
 # #     InvalidOperationError,
 # # )
@@ -45,13 +45,13 @@
 #     try:
 #         if not otp_record:
 #             logging.error("OTP record not found")
-#             raise DataNotFoundError("OTP record not found.")
+#             raise NotFoundError("OTP record not found.")
 
 #         remaining_time = otp_record.save_to_hit_at.second - current_time.second
 
 #         if not current_user:
 #             logging.error("User not found.")
-#             raise DataNotFoundError(detail="User not found.")
+#             raise NotFoundError(detail="User not found.")
 
 #         if current_user.register_state:
 #             logging.error("User already set PIN.")

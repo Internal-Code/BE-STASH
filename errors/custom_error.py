@@ -20,6 +20,24 @@ class QueryError(BaseError):
         )
 
 
+class FeatureNotImplementedError(BaseError):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            message=message,
+            error=error,
+        )
+
+
+class ShouldWaitError(BaseError):
+    def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            message=message,
+            error=error,
+        )
+
+
 class NotFoundError(BaseError):
     def __init__(self, message: str, error: Optional[dict[str, Any]] = None):
         super().__init__(

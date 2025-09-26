@@ -13,7 +13,7 @@ from src.schema.request_format import UserLoginPayload
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
 )
 
 config = Config()
@@ -37,7 +37,7 @@ async def login_endpoint(
     try:
         if not account_record:
             logging.error("User not found.")
-            raise DataNotFoundError(detail="User not found.")
+            raise NotFoundError(detail="User not found.")
 
         logging.info("Generating access token.")
         access_token = jwt_handler.create_access_token(

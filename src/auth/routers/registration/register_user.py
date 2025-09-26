@@ -5,6 +5,7 @@ from fastapi import APIRouter, status, Depends, BackgroundTasks, HTTPException, 
 from errors.custom_error import BaseError, NotFoundError, ConflictDataError
 from utils.logger import logging
 from utils.generator import random_number
+from utils.time import local_time
 from utils.network import get_client_ip
 from services.postgre.connection import get_db
 from services.postgre.attribute_type import UserDeviceInfoEnum, SendOtpChannelEnum
@@ -14,11 +15,7 @@ from services.whatsapp.service import WhatsAppService
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
-from src.schema.response import (
-    BaseResponse,
-    UserRegisterStateStepsResponse,
-    UserRegisterStateResponse,
-)
+from src.schema.response import BaseResponse, UserRegisterStateResponse
 from src.schema.payload import RegisterUserPayload
 from services.postgre.models import (
     Countries,
@@ -42,14 +39,14 @@ async def register_user_endpoint(
     urs = aliased(UserRegistrationStates)
 
     ip_address = get_client_ip(request)
-    user_uid = str(uuid4())
+    user_uid = uuid4()
+    current_time = local_time()
 
     wa = WhatsAppService()
     session = DatabaseQuery(db)
 
     response = BaseResponse()
     user_state = UserRegisterStateResponse()
-    user_steps = UserRegisterStateStepsResponse()
 
     otp_code = random_number(6)
     error: Dict[str, Any] = {}
@@ -113,7 +110,7 @@ async def register_user_endpoint(
         user_data = Users(
             country_id=schema.country_id,
             name=schema.name,
-            uid=user_uid,
+            uid=str(user_uid),
             gender=schema.gender,
             email=schema.email,
             phone_number=schema.phone_number,
@@ -131,6 +128,7 @@ async def register_user_endpoint(
         # Build OTP request data
         otp_request_data = OtpRequests(
             user_registration_states=user_reg_state_data,
+            api_cooldown_at=current_time,
             otp_code=otp_code,
             channel=SendOtpChannelEnum.whatsapp,
         )
@@ -144,7 +142,7 @@ async def register_user_endpoint(
         phone_number = f"{country['dial_code']}{schema.phone_number}"
         background_tasks.add_task(
             wa.send_whatsapp,
-            user=user_data,
+            user_id=user_data.id,
             ip_address=ip_address,
             phone_number=phone_number,
             message_template=(
@@ -154,10 +152,7 @@ async def register_user_endpoint(
             ),
             otp_code=otp_code,
         )
-        user_steps.register_state_id = user_reg_state_data.id
-        user_steps.user_id = user_data.id
-        user_state.steps = user_steps
-
+        user_state.user_uid = user_uid
         response.message = "Success register new user."
         response.data = user_state.model_dump()
     except BaseError:

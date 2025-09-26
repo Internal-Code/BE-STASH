@@ -16,7 +16,7 @@ from utils.error import (
     ServiceError,
     StashBaseApiError,
     MandatoryInputError,
-    DataNotFoundError,
+    NotFoundError,
     EntityAlreadyFilledError,
 )
 
@@ -42,7 +42,7 @@ async def create_pin_endpoint(
     try:
         if not account_record:
             logging.error("User not found.")
-            raise DataNotFoundError(detail="User not found.")
+            raise NotFoundError(detail="User not found.")
 
         if account_record.register_state:
             logging.error("User already set PIN.")

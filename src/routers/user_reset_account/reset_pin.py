@@ -17,7 +17,7 @@ from fastapi import APIRouter, status, Depends, BackgroundTasks
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
     InvalidOperationError,
 )
 
@@ -50,7 +50,7 @@ async def reset_pin_endpoint(
     try:
         if not account_record:
             logging.error("User not found.")
-            raise DataNotFoundError(detail="User not found.")
+            raise NotFoundError(detail="User not found.")
 
         if current_time > reset_pin_record.blacklisted_at:
             logging.error("Reset PIN token already expired.")

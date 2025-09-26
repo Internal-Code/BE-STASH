@@ -1,27 +1,36 @@
 import traceback
+from uuid import UUID
 from typing import Any, cast
 from fastapi import APIRouter, status, Depends, HTTPException
-from errors.custom_error import BaseError, NotFoundError, InvalidInputError
+from errors.custom_error import (
+    BaseError,
+    NotFoundError,
+    InvalidInputError,
+    FeatureNotImplementedError,
+)
 from utils.logger import logging
 from utils.time import local_time
-from utils.generator import random_number
 from services.postgre.connection import get_db
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.query import DatabaseQuery
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
-from sqlalchemy.sql import ColumnElement
-from src.schema.response import (
-    BaseResponse,
-    UserRegisterStateResponse,
-    UserRegisterStateStepsResponse,
-)
-from src.schema.payload import VerificationOtpPayload
+from services.postgre.attribute_type import SendOtpChannelEnum
 from services.postgre.models import (
     Users,
     UserRegistrationStates,
     OtpRequests,
     PinResets,
+    Countries,
+)
+from sqlalchemy import func, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql import ColumnElement
+from src.schema.enum import OtpRequestTypeEnum
+from src.schema.payload import VerificationOtpPayload
+from src.schema.response import (
+    BaseResponse,
+    UserRegisterStateResponse,
+    UserRegisterStateStepsResponse,
 )
 
 router = APIRouter(tags=["User Register"], prefix="/user")
@@ -34,6 +43,7 @@ async def verify_otp_endpoint(
     or2 = aliased(OtpRequests)
     urs = aliased(UserRegistrationStates)
     pr = aliased(PinResets)
+    c = aliased(Countries)
 
     session = DatabaseQuery(db)
 
@@ -41,65 +51,74 @@ async def verify_otp_endpoint(
     user_state = UserRegisterStateResponse()
     user_steps = UserRegisterStateStepsResponse()
 
+    error: dict[str, Any] = {}
     current_time = local_time()
-    otp_code = random_number(6)
     try:
-        if schema.register_state_id is not None and schema.pin_reset_id is not None:
-            raise InvalidInputError(
-                message="Only one of register_state_id or pin_reset_id should be provided."
+        # Validate request type
+        if schema.channel != SendOtpChannelEnum.whatsapp:
+            error["channel"] = "Verify OTP via email is not implemented."
+
+        if schema.request_type != OtpRequestTypeEnum.register_user:
+            error["request_type"] = (
+                f"Verify OTP request {schema.request_type} not implemented."
             )
 
-        join_table = urs if schema.register_state_id is not None else pr
-        column_table = (
-            or2.registration_state_id
-            if schema.register_state_id is not None
-            else or2.pin_reset_id
-        )
+        if error:
+            raise FeatureNotImplementedError(
+                message="Feature not implemented", error=error
+            )
 
-        o_select = SelectData(
+        u_select = SelectData(
             entry=[
                 cast(ColumnElement[Any], u.id).label("user_id"),
+                cast(ColumnElement[Any], u.uid).label("user_uid"),
+                cast(ColumnElement[Any], u.email).label("user_email"),
+                func.concat(c.dial_code, u.phone_number).label("user_phone_numbear"),
+                cast(ColumnElement[Any], urs.id).label("user_register_state_id"),
+                cast(ColumnElement[Any], pr.id).label("pin_reset_id"),
                 cast(ColumnElement[Any], or2.otp_code).label("otp_code"),
                 cast(ColumnElement[Any], or2.expired_at).label("expired_at"),
             ]
         )
-        o_join = SelectData(
+        u_join = SelectData(
             entry=[
-                [join_table, join_table.id == column_table],
-                [u, u.id == join_table.user_id],
+                [c, c.id == u.country_id],
+                [pr, pr.user_id == u.id],
+                [urs, urs.user_id == u.id],
+                [
+                    or2,
+                    or_(or2.registration_state_id == urs.id, or2.pin_reset_id == pr.id),
+                ],
             ]
         )
-        o_filter = Filters(
+        u_filter = Filters(
             filters=[
                 Filters(
-                    field_name=or2.registration_state_id
-                    if schema.register_state_id is not None
-                    else or2.pin_reset_id,
-                    filter_type="equal",
-                    value=schema.register_state_id
-                    if schema.register_state_id is not None
-                    else schema.pin_reset_id,
+                    field_name=u.uid, filter_type="equal", value=str(schema.user_uid)
                 )
             ]
         )
-
-        otp_data: Any = await session.fetch(
-            field_names=o_select,
-            master_table=or2,
-            join_tables=o_join,
-            filters=o_filter,
+        user_data: Any = await session.fetch(
+            field_names=u_select,
+            master_table=u,
+            join_tables=u_join,
+            filters=u_filter,
             fetch_type="one",
         )
 
-        if not otp_data:
-            raise NotFoundError(message="OTP request not found.")
+        if not user_data:
+            raise NotFoundError(message=f"User {schema.user_uid} not found.")
 
-        user_id = otp_data["user_id"]
-        otp_code = otp_data["otp_code"]
-        expired_at = otp_data["expired_at"]
+        user_id = user_data["user_id"]
+        user_uid = user_data["user_uid"]
+        user_register_state_id = user_data["user_register_state_id"]
+        otp_code = user_data["otp_code"]
+        expired_at = user_data["expired_at"]
 
         if current_time > expired_at:
-            raise InvalidInputError(message="OTP code has expired.")
+            raise InvalidInputError(
+                message="OTP code has expired. Please request new OTP code."
+            )
 
         if schema.otp_code != otp_code:
             raise InvalidInputError(message="Invalid OTP code.")
@@ -114,11 +133,23 @@ async def verify_otp_endpoint(
             "used_at": current_time,
         }
 
+        # Map target field
+        match schema.request_type:
+            case OtpRequestTypeEnum.register_user:
+                target_field = or2.registration_state_id
+                target_value = user_register_state_id
+            case _:
+                raise FeatureNotImplementedError(
+                    message="This feature is not implemented."
+                )
+
         # Update entry
         await session.update(
             master_table=urs,
             filters=Filters(
-                filters=[Filters(field_name=u.id, filter_type="equal", value=user_id)]
+                filters=[
+                    Filters(field_name=urs.user_id, filter_type="equal", value=user_id)
+                ]
             ),
             values=user_state_data,
         )
@@ -127,23 +158,17 @@ async def verify_otp_endpoint(
             filters=Filters(
                 filters=[
                     Filters(
-                        field_name=or2.registration_state_id
-                        if schema.register_state_id is not None
-                        else or2.pin_reset_id,
+                        field_name=target_field,
                         filter_type="equal",
-                        value=schema.register_state_id
-                        if schema.register_state_id is not None
-                        else schema.pin_reset_id,
+                        value=target_value,
                     )
                 ]
             ),
             values=new_otp_data,
         )
-        user_steps.phone_number_verified = True
-        user_steps.user_id = user_id
-        user_steps.register_state_id = schema.register_state_id
-        user_steps.pin_reset_id = schema.pin_reset_id
 
+        user_steps.phone_number_verified = True
+        user_state.user_uid = UUID(user_uid)
         user_state.steps = user_steps
 
         response.message = "OTP verified successfully."
@@ -161,7 +186,7 @@ async def verify_otp_endpoint(
 
 
 router.add_api_route(
-    methods=["POST"],
+    methods=["PATCH"],
     path="/verify-otp",
     response_model=BaseResponse,
     endpoint=verify_otp_endpoint,

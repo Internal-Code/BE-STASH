@@ -13,7 +13,7 @@ from fastapi.security import OAuth2PasswordBearer
 from services.postgre.connection import get_db
 from src.schema.validator import SecurityCodeValidator
 from services.postgre.model import User, BlacklistToken
-from utils.error import AuthenticationFailed, DataNotFoundError
+from utils.error import AuthenticationFailed, NotFoundError
 
 
 class JWTHandler:
@@ -37,7 +37,7 @@ class JWTHandler:
             account_record = await query.find(table=User, unique_id=unique_id)
 
             if not account_record:
-                raise DataNotFoundError(detail="User not found.")
+                raise NotFoundError(detail="User not found.")
             if not account_record.pin:
                 raise AuthenticationFailed(detail="User has not set pin.")
             if not self.verify_pin(pin=validated_pin, hashed_pin=account_record.pin):

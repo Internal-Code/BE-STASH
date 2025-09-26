@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Any, List, Dict, Union, Optional
 from pydantic import BaseModel, Field
 from services.postgre.attribute_type import UserRegistrationStateEnum
@@ -36,6 +37,7 @@ class TokenResponse(BaseModel):
 
 class UserRegisterStateResponse(BaseModel):
     status: UserRegistrationStateEnum = UserRegistrationStateEnum.pending
+    user_uid: Optional[UUID] = None
     steps: "UserRegisterStateStepsResponse" = Field(
         default_factory=lambda: UserRegisterStateStepsResponse()
     )
@@ -44,9 +46,6 @@ class UserRegisterStateResponse(BaseModel):
 class UserRegisterStateStepsResponse(BaseModel):
     phone_number_verified: bool = False
     pin_created: bool = False
-    user_id: Optional[int] = Field(default=None, ge=1)
-    register_state_id: Optional[int] = Field(default=None, ge=1)
-    pin_reset_id: Optional[int] = Field(default=None, ge=1)
 
 
 class SendOtpMethodResponse(BaseModel):

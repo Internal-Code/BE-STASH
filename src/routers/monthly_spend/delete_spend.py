@@ -9,7 +9,7 @@ from fastapi import APIRouter, status, Depends
 from services.postgre.connection import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgre.model import MoneySpend
-from utils.error import ServiceError, StashBaseApiError, DataNotFoundError
+from utils.error import ServiceError, StashBaseApiError, NotFoundError
 
 jwt_handler = JWTHandler()
 router = APIRouter(tags=["Monthly Spend"], prefix="/spend")
@@ -31,7 +31,7 @@ async def delete_spend_endpoint(
 
         if not money_spend_record:
             logging.error("Spend id not found.")
-            raise DataNotFoundError(detail="Data not found.")
+            raise NotFoundError(detail="Data not found.")
 
         await query.update(
             table=MoneySpend,

@@ -13,7 +13,7 @@ from utils.error import (
     ServiceError,
     StashBaseApiError,
     EntityForceInputSameDataError,
-    DataNotFoundError,
+    NotFoundError,
 )
 
 jwt_handler = JWTHandler()
@@ -40,7 +40,7 @@ async def update_budget_endpoint(
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")
-            raise DataNotFoundError(detail="Schema not found.")
+            raise NotFoundError(detail="Schema not found.")
 
         category_record = await query.find(
             table=CategorySchema,
@@ -51,7 +51,7 @@ async def update_budget_endpoint(
 
         if not category_record:
             logging.error(f"Category {schema.category} not found.")
-            raise DataNotFoundError(detail="Category not found.")
+            raise NotFoundError(detail="Category not found.")
 
         category_id = category_record.category_id
 

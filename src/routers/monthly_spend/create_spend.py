@@ -13,7 +13,7 @@ from services.postgre.model import MonthlySchema, CategorySchema, MoneySpend
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
     EntityDoesNotMatchedError,
 )
 
@@ -46,7 +46,7 @@ async def create_spend_endpoint(
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")
-            raise DataNotFoundError(detail="Schema not found.")
+            raise NotFoundError(detail="Schema not found.")
 
         month_id = monthly_schema_record.month_id
 
@@ -59,7 +59,7 @@ async def create_spend_endpoint(
 
         if not category_record:
             logging.error(f"Category {schema.category} not found.")
-            raise DataNotFoundError(detail="Category not found.")
+            raise NotFoundError(detail="Category not found.")
 
         category_id = category_record.category_id
 

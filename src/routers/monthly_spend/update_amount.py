@@ -13,7 +13,7 @@ from src.schema.response import ResponseDefault
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
     EntityForceInputSameDataError,
 )
 
@@ -38,7 +38,7 @@ async def update_amount_endpoint(
 
         if not money_spend_record:
             logging.error("Spend id not found.")
-            raise DataNotFoundError(detail="Data not found.")
+            raise NotFoundError(detail="Data not found.")
 
         if money_spend_record.amount == schema.amount:
             logging.error("Cannot update into same amount data.")

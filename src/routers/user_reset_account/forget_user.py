@@ -10,7 +10,7 @@ from services.postgre.connection import get_db
 from src.schema.response import ResponseDefault, UserInfoResponse
 from src.schema.validator import PhoneNumberValidatorMixin
 from utils.error import (
-    DataNotFoundError,
+    NotFoundError,
     ServiceError,
     StashBaseApiError,
     InvalidOperationError,
@@ -54,7 +54,7 @@ async def forget_user_endpoint(
 
         if not account_record:
             logging.error("User not found.")
-            raise DataNotFoundError(detail="User not found.")
+            raise NotFoundError(detail="User not found.")
 
         await query.insert(
             table=ResetPin,

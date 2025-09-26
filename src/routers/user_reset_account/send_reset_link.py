@@ -17,7 +17,7 @@ from utils.error import (
     ServiceError,
     StashBaseApiError,
     MandatoryInputError,
-    DataNotFoundError,
+    NotFoundError,
     InvalidOperationError,
 )
 
@@ -47,7 +47,7 @@ async def send_reset_link_endpoint(
 
         if not account_record:
             logging.error("User not found.")
-            raise DataNotFoundError(detail="User not found.")
+            raise NotFoundError(detail="User not found.")
 
         if not account_record.pin:
             logging.error("User is not created pin.")
@@ -58,7 +58,7 @@ async def send_reset_link_endpoint(
         )
         if not reset_pin_record:
             logging.error("Reset pin not found.")
-            raise DataNotFoundError(detail="Reset pin data not found.")
+            raise NotFoundError(detail="Reset pin data not found.")
 
         remaining_time = reset_pin_record.save_to_hit_at.second - current_time.second
 

@@ -8,7 +8,7 @@ from services.postgre.connection import get_db
 from src.schema.response import ResponseDefault, UserInfoResponse
 from src.schema.validator import PhoneNumberValidatorMixin
 from utils.error import (
-    DataNotFoundError,
+    NotFoundError,
     ServiceError,
     StashBaseApiError,
     InvalidOperationError,
@@ -48,7 +48,7 @@ async def get_user_endpoint(
 
         if not account_record:
             logging.error("User not found.")
-            raise DataNotFoundError(detail="User not found.")
+            raise NotFoundError(detail="User not found.")
 
         user_info_response.unique_id = account_record.unique_id
         user_info_response.register_state = account_record.register_state

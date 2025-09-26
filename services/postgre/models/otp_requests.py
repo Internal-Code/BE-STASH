@@ -12,6 +12,7 @@ class OtpRequests(SQLModel, table=True):
     id: Optional[int] = Field(default=None, sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
     created_at: datetime = Field(default_factory=local_time, sa_column=Column(DateTime, nullable=False))
     updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    api_cooldown_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
     used_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
     expired_at: datetime = Field(default_factory=lambda: local_time() + timedelta(minutes=3),sa_column=Column(DateTime, nullable=False))
     registration_state_id: Optional[int] = Field(default=None, sa_column=Column(BigInteger, ForeignKey("user_registration_states.id"), nullable=True))

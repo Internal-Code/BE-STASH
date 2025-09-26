@@ -11,7 +11,7 @@ from services.postgre.model import MonthlySchema
 from utils.error import (
     ServiceError,
     StashBaseApiError,
-    DataNotFoundError,
+    NotFoundError,
 )
 
 jwt_handler = JWTHandler()
@@ -41,7 +41,7 @@ async def delete_schema_endpoint(
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")
-            raise DataNotFoundError(detail="Schema not found.")
+            raise NotFoundError(detail="Schema not found.")
 
         await query.update(
             table=MonthlySchema,

@@ -16,7 +16,7 @@ from utils.error import (
     StashBaseApiError,
     MandatoryInputError,
     InvalidOperationError,
-    DataNotFoundError,
+    NotFoundError,
 )
 
 config = Config()
@@ -42,13 +42,13 @@ async def send_otp_phone_number_endpoint(
 
         if not otp_record:
             logging.error("OTP record not found")
-            raise DataNotFoundError("OTP record not found.")
+            raise NotFoundError("OTP record not found.")
 
         remaining_time = otp_record.save_to_hit_at.second - current_time.second
 
         if not account_record:
             logging.info("OTP data initialization not found.")
-            raise DataNotFoundError(detail="Data not found.")
+            raise NotFoundError(detail="Data not found.")
 
         if not account_record.phone_number:
             logging.info("User is not add phone number.")

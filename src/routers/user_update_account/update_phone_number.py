@@ -19,7 +19,7 @@ from utils.error import (
     ServiceError,
     StashBaseApiError,
     InvalidOperationError,
-    DataNotFoundError,
+    NotFoundError,
 )
 
 jwt_handler = JWTHandler()
@@ -43,7 +43,7 @@ async def update_phone_number_endpoint(
     try:
         if not otp_record:
             logging.error("OTP record not found")
-            raise DataNotFoundError("OTP record not found.")
+            raise NotFoundError("OTP record not found.")
 
         remaining_time = otp_record.save_to_hit_at.second - current_time.second
 

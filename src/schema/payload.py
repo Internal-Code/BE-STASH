@@ -1,7 +1,9 @@
+from uuid import UUID
 from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator, Field
 from src.schema.validator import Validator
-from services.postgre.attribute_type import UserGenderEnum
+from src.schema.enum import OtpRequestTypeEnum
+from services.postgre.attribute_type import UserGenderEnum, SendOtpChannelEnum
 
 validator = Validator()
 
@@ -29,9 +31,16 @@ class SendOTPPayload(BaseModel):
 
 class VerificationOtpPayload(BaseModel):
     otp_code: str
-    register_state_id: Optional[int] = None
-    pin_reset_id: Optional[int] = None
+    user_uid: UUID
+    channel: SendOtpChannelEnum = SendOtpChannelEnum.whatsapp
+    request_type: OtpRequestTypeEnum = OtpRequestTypeEnum.register_user
 
     @field_validator("otp_code")
     def validate_otp_code(cls, otp_code: str) -> str:
         return validator.number(data=otp_code, exact_length=6)
+
+
+class RequestNewOtpPayload(BaseModel):
+    user_uid: UUID
+    channel: SendOtpChannelEnum = SendOtpChannelEnum.whatsapp
+    request_type: OtpRequestTypeEnum = OtpRequestTypeEnum.register_user
