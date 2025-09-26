@@ -56,3 +56,12 @@ class WrongAccountPayload(BaseModel):
     @field_validator("phone_number")
     def validate_phone_number(cls, phone_number: str) -> str:
         return validator.number(data=phone_number, min_length=10, max_length=20)
+
+
+class CreatePinPayload(BaseModel):
+    user_uid: UUID
+    pin: str
+
+    @field_validator("pin")
+    def validate_pin(cls, pin: str) -> str:
+        return validator.number(data=pin, exact_length=6)

@@ -10,6 +10,7 @@ from src.auth.routers.registration import (
     verify_otp,
     request_new_otp,
     wrong_account,
+    create_pin,
 )
 
 app = FastAPI(
@@ -34,3 +35,4 @@ app.include_router(register_state.router)
 app.include_router(verify_otp.router)
 app.include_router(request_new_otp.router)
 app.include_router(wrong_account.router)
+app.include_router(create_pin.router)
