@@ -173,5 +173,6 @@ router.add_api_route(
     response_model=BaseResponse,
     endpoint=register_user_endpoint,
     status_code=status.HTTP_201_CREATED,
-    summary="User registration.",
+    summary="Register new user",
+    description="Creates a user with phone and optional email, validates uniqueness, sets registration state, and sends OTP via WhatsApp.",
 )

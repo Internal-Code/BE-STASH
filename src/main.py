@@ -9,6 +9,7 @@ from src.auth.routers.registration import (
     register_state,
     verify_otp,
     request_new_otp,
+    wrong_account,
 )
 
 app = FastAPI(
@@ -32,3 +33,4 @@ app.include_router(register_user.router)
 app.include_router(register_state.router)
 app.include_router(verify_otp.router)
 app.include_router(request_new_otp.router)
+app.include_router(wrong_account.router)

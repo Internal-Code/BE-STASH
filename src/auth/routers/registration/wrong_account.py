@@ -8,6 +8,7 @@ from errors.custom_error import (
     NotFoundError,
     FeatureNotImplementedError,
     ShouldWaitError,
+    MandatoryInputError,
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
@@ -28,18 +29,17 @@ from services.postgre.models import (
     OtpRequests,
     Countries,
 )
-from services.postgre.attribute_type import SendOtpChannelEnum
 from src.schema.enum import OtpRequestTypeEnum
-from src.schema.payload import RequestNewOtpPayload
+from src.schema.payload import WrongAccountPayload
 from src.schema.response import BaseResponse, UserRegisterStateResponse
 
 router = APIRouter(tags=["User Register"], prefix="/user")
 
 
-async def request_new_otp_endpoint(
+async def wrong_account_endpoint(
     request: Request,
     bg_task: BackgroundTasks,
-    schema: RequestNewOtpPayload,
+    schema: WrongAccountPayload,
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse:
     urs = aliased(UserRegistrationStates)
@@ -59,23 +59,49 @@ async def request_new_otp_endpoint(
     ip_address = get_client_ip(request)
     otp_code = random_number(6)
 
-    error: dict[str, Any] = {}
     current_time = local_time()
-
     try:
-        # Validate request type
-        if schema.channel != SendOtpChannelEnum.whatsapp:
-            error["channel"] = "Verify OTP via email is not implemented."
+        data = None
+        match schema.channel.value:
+            case "whatsapp":
+                if not schema.country_id:
+                    raise MandatoryInputError(
+                        message="User should pass country_id data."
+                    )
 
-        if schema.request_type != OtpRequestTypeEnum.register_user:
-            error["request_type"] = (
-                f"Verify OTP request {schema.request_type} not implemented."
-            )
+                # Validate country
+                country: Any = await session.fetch(
+                    field_names=SelectData(
+                        entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
+                    ),
+                    master_table=c,
+                    filters=Filters(
+                        filters=[
+                            Filters(
+                                field_name=c.id,
+                                filter_type="equal",
+                                value=schema.country_id,
+                            )
+                        ]
+                    ),
+                    fetch_type="one",
+                )
+                if not country:
+                    raise NotFoundError(
+                        message="Country not found.",
+                        error={"country_id": "Country id not found."},
+                    )
 
-        if error:
-            raise FeatureNotImplementedError(
-                message="Feature not implemented", error=error
-            )
+                data = schema.phone_number
+                logging.info(
+                    f"User {schema.user_uid} requested phone number correction. "
+                    f"New phone={country['dial_code']}{schema.phone_number}"
+                )
+            case _:
+                # TODO: will be developed after smtp service refactored
+                raise FeatureNotImplementedError(
+                    message="Verify OTP via email is not implemented."
+                )
 
         u_select = SelectData(
             entry=[
@@ -125,7 +151,7 @@ async def request_new_otp_endpoint(
 
         user_id = user_data["user_id"]
         user_uid = user_data["user_uid"]
-        phone_number = user_data["user_phone_numbear"]
+        phone_number = f"{country['dial_code']}{schema.phone_number}"
         user_register_state_id = user_data["user_register_state_id"]
         api_cooldown_at = user_data["api_cooldown_at"]
         phone_number_verified = user_data["phone_number_verified"]
@@ -136,7 +162,6 @@ async def request_new_otp_endpoint(
             return response
 
         if OtpRequestTypeEnum.verify_account and email_verified == 1:
-            # TODO: will be activated when smtp service already refactored
             response.message = f"User {schema.user_uid} email already verified."
             return response
 
@@ -159,16 +184,6 @@ async def request_new_otp_endpoint(
             otp_code=otp_code,
         )
 
-        # Map target field
-        match schema.request_type.value:
-            case "register_user":
-                target_field = or2.registration_state_id
-                target_value = user_register_state_id
-            case _:
-                raise FeatureNotImplementedError(
-                    message="This feature is not implemented."
-                )
-
         # Data preparation
         new_otp_data: dict[str, Any] = {
             "updated_at": current_time,
@@ -178,19 +193,44 @@ async def request_new_otp_endpoint(
             "otp_code": otp_code,
         }
 
+        new_user_data: dict[str, Any] = {
+            "updated_at": current_time,
+        }
+
+        match schema.channel.value:
+            case "whatsapp":
+                new_user_data["phone_number"] = data
+            case _:
+                # TODO: will be developed after smtp fixed
+                new_user_data["email"] = data
+                pass
+
         # Update entry
         await session.update(
             master_table=or2,
             filters=Filters(
                 filters=[
                     Filters(
-                        field_name=target_field,
+                        field_name=or2.registration_state_id,
                         filter_type="equal",
-                        value=target_value,
+                        value=user_register_state_id,
                     )
                 ]
             ),
             values=new_otp_data,
+        )
+        await session.update(
+            master_table=u,
+            filters=Filters(
+                filters=[
+                    Filters(
+                        field_name=u.uid,
+                        filter_type="equal",
+                        value=user_uid,
+                    )
+                ]
+            ),
+            values=new_user_data,
         )
 
         user_state.user_uid = UUID(user_uid)
@@ -214,10 +254,10 @@ async def request_new_otp_endpoint(
 
 router.add_api_route(
     methods=["PATCH"],
-    path="/request-new-otp",
-    endpoint=request_new_otp_endpoint,
+    path="/wrong-account",
+    endpoint=wrong_account_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Request new OTP",
-    description="Sends a new OTP via WhatsApp with cooldown and expiry checks, returning wait time if still active.",
+    summary="Update wrong account & resend OTP",
+    description="Resends OTP via WhatsApp when a user corrects their account details, with cooldown and expiry checks.",
     response_model=BaseResponse,
 )

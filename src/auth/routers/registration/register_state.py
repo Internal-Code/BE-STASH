@@ -27,10 +27,6 @@ async def register_state_endpoint(
     phone_number: str = Depends(validate_phone_number),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse:
-    """
-    Get the current registration state of a user based on their phone number.
-    Returns which steps are completed (phone verification, PIN creation) and overall status.
-    """
     u = aliased(Users)
     urs = aliased(UserRegistrationStates)
     c = aliased(Countries)
@@ -138,6 +134,7 @@ router.add_api_route(
     path="/register-state",
     endpoint=register_state_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="Get user registration state by phone number",
+    summary="Get registration state",
+    description="Fetches a user’s registration progress, including phone verification, PIN setup, and overall status.",
     response_model=BaseResponse,
 )

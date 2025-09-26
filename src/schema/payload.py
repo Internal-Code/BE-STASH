@@ -44,3 +44,15 @@ class RequestNewOtpPayload(BaseModel):
     user_uid: UUID
     channel: SendOtpChannelEnum = SendOtpChannelEnum.whatsapp
     request_type: OtpRequestTypeEnum = OtpRequestTypeEnum.register_user
+
+
+class WrongAccountPayload(BaseModel):
+    user_uid: UUID
+    channel: SendOtpChannelEnum
+    phone_number: Optional[str] = None
+    email: Optional[EmailStr] = None
+    country_id: Optional[int] = Field(default=None, ge=1)
+
+    @field_validator("phone_number")
+    def validate_phone_number(cls, phone_number: str) -> str:
+        return validator.number(data=phone_number, min_length=10, max_length=20)

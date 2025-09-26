@@ -191,5 +191,6 @@ router.add_api_route(
     response_model=BaseResponse,
     endpoint=verify_otp_endpoint,
     status_code=status.HTTP_200_OK,
-    summary="User OTP verification.",
+    summary="Verify user OTP",
+    description="Validates a user’s OTP during registration, ensuring correct type, channel, and expiry before marking verification.",
 )
