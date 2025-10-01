@@ -14,8 +14,7 @@ from sqlalchemy import or_, func
 from utils.network import get_client_ip
 from utils.logger import logging
 from utils.time import local_time
-
-# from utils.generator import random_number
+from utils.jwt import JwtConfig
 from services.whatsapp.service import WhatsAppService
 from services.postgre.query import DatabaseQuery
 from services.postgre.query_schema import Filters, SelectData
@@ -31,6 +30,7 @@ from src.schema.payload import CreatePinPayload
 from src.schema.response import BaseResponse, UserRegisterStateResponse
 
 router = APIRouter(tags=["User Register"], prefix="/user")
+jwt = JwtConfig()
 
 
 async def create_pin_endpoint(
@@ -102,16 +102,13 @@ async def create_pin_endpoint(
             filters=u_filter,
             fetch_type="one",
         )
-
         if not user_data:
             raise NotFoundError(message=f"User {schema.user_uid} not found.")
 
         user_id = user_data["user_id"]
         user_uid = user_data["user_uid"]
         user_name = user_data["user_name"]
-        # user_pin = user_data["user_pin"]
         phone_number = user_data["user_phone_numbear"]
-        # user_register_state_id = user_data["user_register_state_id"]
 
         bg_task.add_task(
             wa.send_whatsapp,
@@ -133,9 +130,10 @@ async def create_pin_endpoint(
         )
 
         # Data preparation
+        hashed_pin = jwt.to_hashed(pin=schema.pin)
         new_user_data: dict[str, Any] = {
             "updated_at": current_time,
-            "pin": schema.pin,  # TODO: should be revised using jwt auth
+            "pin": hashed_pin,
         }
 
         # Update entry

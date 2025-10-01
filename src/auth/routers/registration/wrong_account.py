@@ -201,7 +201,7 @@ async def wrong_account_endpoint(
             case "whatsapp":
                 new_user_data["phone_number"] = data
             case _:
-                # TODO: will be developed after smtp fixed
+                # TODO: will be developed after smtp service refactored
                 new_user_data["email"] = data
                 pass
 
