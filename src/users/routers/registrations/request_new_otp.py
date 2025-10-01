@@ -62,6 +62,11 @@ async def request_new_otp_endpoint(
     error: dict[str, Any] = {}
     current_time = local_time()
 
+    logging.info(
+        f"[REQUEST_NEW_OTP] Incoming request from ip={ip_address}, "
+        f"user_uid={schema.user_uid}, channel={schema.channel}, request_type={schema.request_type}"
+    )
+
     try:
         # Validate request type
         if schema.channel != SendOtpChannelEnum.whatsapp:
@@ -73,16 +78,21 @@ async def request_new_otp_endpoint(
             )
 
         if error:
+            logging.warning(
+                f"[REQUEST_NEW_OTP] Feature not implemented for user_uid={schema.user_uid} | error={error}"
+            )
             raise FeatureNotImplementedError(
                 message="Feature not implemented", error=error
             )
+
+        logging.debug(f"[REQUEST_NEW_OTP] Fetching user data for uid={schema.user_uid}")
 
         u_select = SelectData(
             entry=[
                 cast(ColumnElement[Any], u.id).label("user_id"),
                 cast(ColumnElement[Any], u.uid).label("user_uid"),
                 cast(ColumnElement[Any], u.email).label("user_email"),
-                func.concat(c.dial_code, u.phone_number).label("user_phone_numbear"),
+                func.concat(c.dial_code, u.phone_number).label("user_phone_number"),
                 cast(ColumnElement[Any], urs.id).label("user_register_state_id"),
                 cast(ColumnElement[Any], urs.phone_number_verified).label(
                     "phone_number_verified"
@@ -112,6 +122,7 @@ async def request_new_otp_endpoint(
                 )
             ]
         )
+
         user_data: Any = await session.fetch(
             field_names=u_select,
             master_table=u,
@@ -121,30 +132,46 @@ async def request_new_otp_endpoint(
         )
 
         if not user_data:
+            logging.warning(f"[REQUEST_NEW_OTP] User not found: uid={schema.user_uid}")
             raise NotFoundError(message=f"User {schema.user_uid} not found.")
 
         user_id = user_data["user_id"]
-        user_uid = user_data["user_uid"]
-        phone_number = user_data["user_phone_numbear"]
-        user_register_state_id = user_data["user_register_state_id"]
+        phone_number = user_data["user_phone_number"]
         api_cooldown_at = user_data["api_cooldown_at"]
         phone_number_verified = user_data["phone_number_verified"]
         email_verified = user_data["email_verified"]
+        user_register_state_id = user_data["user_register_state_id"]
+
+        logging.info(
+            f"[REQUEST_NEW_OTP] User found uid={schema.user_uid}, phone={phone_number}"
+        )
 
         if OtpRequestTypeEnum.register_user and phone_number_verified == 1:
+            logging.info(
+                f"[REQUEST_NEW_OTP] Phone already verified for uid={schema.user_uid}"
+            )
             response.message = f"User {schema.user_uid} phone number already verified."
             return response
 
         if OtpRequestTypeEnum.verify_account and email_verified == 1:
-            # TODO: will be activated when smtp service already refactored
+            logging.info(
+                f"[REQUEST_NEW_OTP] Email already verified for uid={schema.user_uid}"
+            )
             response.message = f"User {schema.user_uid} email already verified."
             return response
 
         if current_time < api_cooldown_at:
             wait_seconds = int((api_cooldown_at - current_time).total_seconds())
+            logging.warning(
+                f"[REQUEST_NEW_OTP] Cooldown active for uid={schema.user_uid}, wait={wait_seconds}s"
+            )
             raise ShouldWaitError(
                 message=f"User should wait {wait_seconds}s before requesting new OTP."
             )
+
+        logging.debug(
+            f"[REQUEST_NEW_OTP] Sending OTP via WhatsApp uid={schema.user_uid}, phone={phone_number}"
+        )
 
         bg_task.add_task(
             wa.send_whatsapp,
@@ -165,11 +192,13 @@ async def request_new_otp_endpoint(
                 target_field = or2.registration_state_id
                 target_value = user_register_state_id
             case _:
+                logging.error(
+                    f"[REQUEST_NEW_OTP] Unsupported request_type={schema.request_type}"
+                )
                 raise FeatureNotImplementedError(
                     message="This feature is not implemented."
                 )
 
-        # Data preparation
         new_otp_data: dict[str, Any] = {
             "updated_at": current_time,
             "used_at": None,
@@ -178,30 +207,31 @@ async def request_new_otp_endpoint(
             "otp_code": otp_code,
         }
 
-        # Update entry
         await session.update(
             master_table=or2,
             filters=Filters(
                 filters=[
                     Filters(
-                        field_name=target_field,
-                        filter_type="equal",
-                        value=target_value,
+                        field_name=target_field, filter_type="equal", value=target_value
                     )
                 ]
             ),
             values=new_otp_data,
         )
 
-        user_state.user_uid = UUID(user_uid)
-        response.message = "Successfully fetched user registration state."
+        user_state.user_uid = UUID(user_data["user_uid"])
+        response.message = "Registration state successfully fetched."
         response.data = user_state.model_dump()
+
+        logging.info(
+            f"[REQUEST_NEW_OTP] OTP generated successfully for uid={schema.user_uid}"
+        )
 
     except BaseError:
         raise
     except Exception as e:
         logging.error(
-            f"Unhandled exception while fetching registration state for user_id={schema.user_uid}: {e}\n"
+            f"[REQUEST_NEW_OTP] Unhandled exception | error={e}\n"
             f"{traceback.format_exc()}"
         )
         raise HTTPException(

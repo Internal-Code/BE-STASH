@@ -50,8 +50,17 @@ async def register_user_endpoint(
 
     otp_code = random_number(6)
     error: Dict[str, Any] = {}
+
+    logging.info(
+        "[REGISTER_USER] Starting registration", extra={"user_uid": str(user_uid)}
+    )
+
     try:
         # Validate country
+        logging.debug(
+            "[REGISTER_USER] Validating country",
+            extra={"country_id": schema.country_id},
+        )
         country: Any = await session.fetch(
             field_names=SelectData(
                 entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
@@ -67,12 +76,17 @@ async def register_user_endpoint(
             fetch_type="one",
         )
         if not country:
-            raise NotFoundError(
-                message="Country not found.",
-                error={"country_id": "Country id not found."},
+            logging.warning(
+                "[REGISTER_USER] Country not found",
+                extra={"country_id": schema.country_id},
             )
+            raise NotFoundError("Country not found.")
 
         # Validate phone number uniqueness
+        logging.debug(
+            "[REGISTER_USER] Checking phone number uniqueness",
+            extra={"phone_number": schema.phone_number},
+        )
         pn_data = await session.fetch(
             master_table=u,
             filters=Filters(
@@ -86,10 +100,18 @@ async def register_user_endpoint(
             ),
         )
         if pn_data:
+            logging.warning(
+                "[REGISTER_USER] Phone number already registered",
+                extra={"phone_number": schema.phone_number},
+            )
             error["phone_number"] = "Phone number already registered."
 
         # Validate email uniqueness
         if schema.email:
+            logging.debug(
+                "[REGISTER_USER] Checking email uniqueness",
+                extra={"email": schema.email},
+            )
             e_data = await session.fetch(
                 master_table=u,
                 filters=Filters(
@@ -101,12 +123,22 @@ async def register_user_endpoint(
                 ),
             )
             if e_data:
+                logging.warning(
+                    "[REGISTER_USER] Email already registered",
+                    extra={"email": schema.email},
+                )
                 error["email"] = "Email already registered."
 
         if error:
+            logging.error(
+                "[REGISTER_USER] Conflict data found", extra={"conflicts": error}
+            )
             raise ConflictDataError(message="Conflict data found.", error=error)
 
         # Build user data
+        logging.debug(
+            "[REGISTER_USER] Building user data", extra={"user_uid": str(user_uid)}
+        )
         user_data = Users(
             country_id=schema.country_id,
             name=schema.name,
@@ -117,7 +149,11 @@ async def register_user_endpoint(
             device_info=UserDeviceInfoEnum.android,
         )
 
-        # Build user register state data
+        # Build user registration state data
+        logging.debug(
+            "[REGISTER_USER] Preparing registration state",
+            extra={"user_uid": str(user_uid)},
+        )
         user_reg_state_data = UserRegistrationStates(
             users=user_data,
             email_verified=0,
@@ -126,6 +162,10 @@ async def register_user_endpoint(
         )
 
         # Build OTP request data
+        logging.debug(
+            "[REGISTER_USER] Generating OTP request",
+            extra={"user_uid": str(user_uid), "otp_code": otp_code},
+        )
         otp_request_data = OtpRequests(
             user_registration_states=user_reg_state_data,
             api_cooldown_at=current_time,
@@ -134,12 +174,20 @@ async def register_user_endpoint(
         )
 
         # Insert all data in a single transaction
+        logging.info(
+            "[REGISTER_USER] Inserting user, registration state, and OTP request into DB",
+            extra={"user_uid": str(user_uid)},
+        )
         await session.insert(table=u, data=user_data)
         await session.insert(table=urs, data=user_reg_state_data)
         await session.insert(table=or2, data=otp_request_data)
 
         # Send OTP via WhatsApp
         phone_number = f"{country['dial_code']}{schema.phone_number}"
+        logging.info(
+            "[REGISTER_USER] Scheduling WhatsApp OTP send",
+            extra={"phone_number": phone_number, "otp_code": otp_code},
+        )
         background_tasks.add_task(
             wa.send_whatsapp,
             user_id=user_data.id,
@@ -152,13 +200,27 @@ async def register_user_endpoint(
             ),
             otp_code=otp_code,
         )
+
+        # Build response
         user_state.user_uid = user_uid
-        response.message = "Success register new user."
+        response.message = "User successfully registered."
         response.data = user_state.model_dump()
+
+        logging.info(
+            "[REGISTER_USER] Completed successfully", extra={"user_uid": str(user_uid)}
+        )
+
     except BaseError:
+        logging.error(
+            "[REGISTER_USER] Known application error",
+            extra={"user_uid": str(user_uid)},
+            exc_info=True,
+        )
         raise
     except Exception as e:
-        logging.error(f"Unhandled exception: {e}\n{traceback.format_exc()}")
+        logging.error(
+            f"[REGISTER_USER] Unhandled exception | error={e}\n{traceback.format_exc()}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal Server Error",
@@ -174,5 +236,5 @@ router.add_api_route(
     endpoint=register_user_endpoint,
     status_code=status.HTTP_201_CREATED,
     summary="Register new user",
-    description="Creates a user with phone and optional email, validates uniqueness, sets registration state, and sends OTP via WhatsApp.",
+    description="Registers a new user, validates uniqueness, sets registration state, and sends OTP via WhatsApp.",
 )

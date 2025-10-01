@@ -35,7 +35,7 @@ validator = Validator()
 class JwtConfig:
     def __init__(self):
         self.password_content = CryptContext(schemes=["bcrypt"])
-        self.fernet = Fernet(ACCESS_TOKEN_FERNET_SECRET_KEY)
+        self.fernet = Fernet(key=ACCESS_TOKEN_FERNET_SECRET_KEY)
         self.u = aliased(Users)
         self.bt = aliased(BlacklistedTokens)
         self.c = aliased(Countries)

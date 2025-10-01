@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from utils.logger import logging
 from src.schema.response import BaseResponse
 
-router = APIRouter(tags=["Health Check"])
+router = APIRouter(tags=["Common"])
 
 
 async def health_endpoint() -> BaseResponse:

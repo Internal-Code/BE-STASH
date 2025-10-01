@@ -4,7 +4,7 @@ from src.secret import MIDDLEWARE_SECRET_KEY
 from errors.register_error import register_exception_handlers
 from starlette.middleware.sessions import SessionMiddleware
 from src.common.routers import health, search_countries
-from src.auth.routers.registration import (
+from src.users.routers.registrations import (
     register_user,
     register_state,
     verify_otp,

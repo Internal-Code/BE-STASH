@@ -14,7 +14,7 @@ from services.postgre.connection import get_db
 from services.postgre.models import Countries
 
 
-router = APIRouter(tags=["Countries"], prefix="/countries")
+router = APIRouter(tags=["Common"], prefix="/countries")
 
 
 async def search_countries_endpoint(

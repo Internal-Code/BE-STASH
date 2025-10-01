@@ -8,9 +8,7 @@ from sqlalchemy import (
     Enum,
     BigInteger,
     DateTime,
-    String,
-    CHAR,
-    SmallInteger,
+    String
 )
 
 
@@ -26,9 +24,8 @@ class Users(SQLModel, table=True):
     gender: UserGenderEnum = Field(sa_column=Column(Enum(UserGenderEnum), nullable=False))
     email: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True))
     phone_number: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True))
-    pin: Optional[str] = Field(default=None, sa_column=Column(CHAR(6), nullable=True))
+    pin: Optional[str] = Field(default=None, sa_column=Column(String(255), nullable=True))
     device_info: UserDeviceInfoEnum = Field(sa_column=Column(Enum(UserDeviceInfoEnum)))
-    user_activated: int = Field(default=0, sa_column=Column(SmallInteger, nullable=False))
 
     countries: Optional["Countries"] = Relationship(back_populates="users")
     user_tokens: List["UserTokens"] = Relationship(back_populates="users")

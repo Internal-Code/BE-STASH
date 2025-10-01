@@ -53,6 +53,12 @@ async def verify_otp_endpoint(
 
     error: dict[str, Any] = {}
     current_time = local_time()
+
+    logging.info(
+        f"[VERIFY_OTP] Incoming request | user_uid={schema.user_uid}, "
+        f"channel={schema.channel}, request_type={schema.request_type}"
+    )
+
     try:
         # Validate request type
         if schema.channel != SendOtpChannelEnum.whatsapp:
@@ -64,16 +70,21 @@ async def verify_otp_endpoint(
             )
 
         if error:
+            logging.warning(
+                f"[VERIFY_OTP] Unsupported operation | user_uid={schema.user_uid}, errors={error}"
+            )
             raise FeatureNotImplementedError(
                 message="Feature not implemented", error=error
             )
+
+        logging.debug(f"[VERIFY_OTP] Fetching user record | user_uid={schema.user_uid}")
 
         u_select = SelectData(
             entry=[
                 cast(ColumnElement[Any], u.id).label("user_id"),
                 cast(ColumnElement[Any], u.uid).label("user_uid"),
                 cast(ColumnElement[Any], u.email).label("user_email"),
-                func.concat(c.dial_code, u.phone_number).label("user_phone_numbear"),
+                func.concat(c.dial_code, u.phone_number).label("user_phone_number"),
                 cast(ColumnElement[Any], urs.id).label("user_register_state_id"),
                 cast(ColumnElement[Any], pr.id).label("pin_reset_id"),
                 cast(ColumnElement[Any], or2.otp_code).label("otp_code"),
@@ -98,6 +109,7 @@ async def verify_otp_endpoint(
                 )
             ]
         )
+
         user_data: Any = await session.fetch(
             field_names=u_select,
             master_table=u,
@@ -107,6 +119,7 @@ async def verify_otp_endpoint(
         )
 
         if not user_data:
+            logging.warning(f"[VERIFY_OTP] User not found | user_uid={schema.user_uid}")
             raise NotFoundError(message=f"User {schema.user_uid} not found.")
 
         user_id = user_data["user_id"]
@@ -115,15 +128,23 @@ async def verify_otp_endpoint(
         otp_code = user_data["otp_code"]
         expired_at = user_data["expired_at"]
 
+        logging.debug(
+            f"[VERIFY_OTP] Validating OTP | user_uid={schema.user_uid}, expired_at={expired_at}, provided_code={schema.otp_code}"
+        )
+
         if current_time > expired_at:
+            logging.warning(f"[VERIFY_OTP] OTP expired | user_uid={schema.user_uid}")
             raise InvalidInputError(
                 message="OTP code has expired. Please request new OTP code."
             )
 
         if schema.otp_code != otp_code:
+            logging.warning(
+                f"[VERIFY_OTP] Invalid OTP code | user_uid={schema.user_uid}"
+            )
             raise InvalidInputError(message="Invalid OTP code.")
 
-        # Data preparation
+        # Prepare updates
         user_state_data: dict[str, Any] = {
             "updated_at": current_time,
             "phone_number_verified": 1,
@@ -139,11 +160,14 @@ async def verify_otp_endpoint(
                 target_field = or2.registration_state_id
                 target_value = user_register_state_id
             case _:
+                logging.error(
+                    f"[VERIFY_OTP] Unsupported request_type | {schema.request_type}"
+                )
                 raise FeatureNotImplementedError(
                     message="This feature is not implemented."
                 )
 
-        # Update entry
+        # Update DB
         await session.update(
             master_table=urs,
             filters=Filters(
@@ -158,9 +182,7 @@ async def verify_otp_endpoint(
             filters=Filters(
                 filters=[
                     Filters(
-                        field_name=target_field,
-                        filter_type="equal",
-                        value=target_value,
+                        field_name=target_field, filter_type="equal", value=target_value
                     )
                 ]
             ),
@@ -171,12 +193,23 @@ async def verify_otp_endpoint(
         user_state.user_uid = UUID(user_uid)
         user_state.steps = user_steps
 
-        response.message = "OTP verified successfully."
+        response.message = "OTP successfully verified."
         response.data = user_state.model_dump()
+
+        logging.info(
+            f"[VERIFY_OTP] Success | user_uid={schema.user_uid}, phone_verified=True"
+        )
+
     except BaseError:
+        logging.error(
+            f"[VERIFY_OTP] Known application error | user_uid={schema.user_uid}",
+            exc_info=True,
+        )
         raise
     except Exception as e:
-        logging.error(f"Unhandled exception: {e}\n{traceback.format_exc()}")
+        logging.error(
+            f"[VERIFY_OTP] Unhandled exception | error={e}\n{traceback.format_exc()}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal Server Error",
