@@ -34,21 +34,15 @@ async def generate_refresh_token_endpoint(
     current_time = local_time()
 
     try:
-        user_token_record = await query.find(
-            table=UserToken, unique_id=current_user.unique_id
-        )
+        user_token_record = await query.find(table=UserToken, unique_id=current_user.unique_id)
 
-        blacklist_access_token = await query.find(
-            table=BlacklistToken, access_token=user_token_record.access_token
-        )
+        blacklist_access_token = await query.find(table=BlacklistToken, access_token=user_token_record.access_token)
 
         if blacklist_access_token:
             logging.error("Access token already blacklisted.")
             raise InvalidTokenError(detail="Access token already blacklisted.")
 
-        blacklist_refresh_token = await query.find(
-            table=BlacklistToken, refresh_token=user_token_record.refresh_token
-        )
+        blacklist_refresh_token = await query.find(table=BlacklistToken, refresh_token=user_token_record.refresh_token)
 
         if blacklist_refresh_token:
             logging.error("Refresh token already blacklisted.")

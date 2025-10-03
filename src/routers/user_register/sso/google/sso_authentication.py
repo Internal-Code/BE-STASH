@@ -104,9 +104,7 @@ async def sso_authentication_endpoint(
 
             access_token = jwt_handler.create_access_token(
                 data={"sub": unique_id},
-                access_token_expires=timedelta(
-                    minutes=int(config.ACCESS_TOKEN_EXPIRED)
-                ),
+                access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
             )
             refresh_token = jwt_handler.create_refresh_token(
                 data={"sub": unique_id},
@@ -120,9 +118,7 @@ async def sso_authentication_endpoint(
         else:
             access_token = jwt_handler.create_access_token(
                 data={"sub": account_record.unique_id},
-                access_token_expires=timedelta(
-                    minutes=int(config.ACCESS_TOKEN_EXPIRED)
-                ),
+                access_token_expires=timedelta(minutes=int(config.ACCESS_TOKEN_EXPIRED)),
             )
             refresh_token = jwt_handler.create_refresh_token(
                 data={"sub": account_record.unique_id},
@@ -137,9 +133,7 @@ async def sso_authentication_endpoint(
 
     except OAuthError as OauthErr:
         logging.error(f"Oauth error in google_sso_auth: {OauthErr}.")
-        raise ServiceError(
-            detail="SSO error, please perform re-login.", name="Google SSO"
-        )
+        raise ServiceError(detail="SSO error, please perform re-login.", name="Google SSO")
 
     except Exception:
         raise ServiceError(detail="Internal Server Error.", name="STASH")

@@ -1,4 +1,3 @@
-# TODO: should be revised
 import traceback
 from uuid import UUID
 from typing import Any, cast
@@ -16,14 +15,8 @@ from services.whatsapp.service import WhatsAppService
 from services.postgre.query import DatabaseQuery
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.connection import get_db
-from services.postgre.attribute_type import UserRegistrationStateEnum
-from services.postgre.models import (
-    UserRegistrationStates,
-    Users,
-    PinResets,
-    OtpRequests,
-    Countries,
-)
+from services.postgre.attribute_type import UserRegistrationStateEnum, ErrorLogTypeEnum
+from services.postgre.models import UserRegistrationStates, Users, PinResets, OtpRequests, Countries, ErrorLogs
 from src.schema.payload import CreatePinPayload
 from src.schema.response import (
     BaseResponse,
@@ -46,19 +39,20 @@ async def create_pin_endpoint(
     or2 = aliased(OtpRequests)
     c = aliased(Countries)
     u = aliased(Users)
+    el = aliased(ErrorLogs)
 
     session = DatabaseQuery(db)
     wa = WhatsAppService()
+
     current_time = local_time()
+    ip_address = get_client_ip(request)
+    endpoint = str(request.url)
 
     response = BaseResponse()
     user_state = UserRegisterStateResponse()
     user_steps = UserRegisterStateStepsResponse()
-    ip_address = get_client_ip(request)
 
-    logging.info(
-        f"[CREATE_PIN] Request received | user_uid={schema.user_uid} | ip={ip_address}"
-    )
+    logging.info(f"[CREATE_PIN] Request received | user_uid={schema.user_uid} | ip={ip_address}")
 
     try:
         # Fetch user data
@@ -72,9 +66,7 @@ async def create_pin_endpoint(
                 cast(ColumnElement[Any], u.email).label("user_email"),
                 func.concat(c.dial_code, u.phone_number).label("user_phone_number"),
                 cast(ColumnElement[Any], urs.id).label("user_register_state_id"),
-                cast(ColumnElement[Any], urs.phone_number_verified).label(
-                    "phone_number_verified"
-                ),
+                cast(ColumnElement[Any], urs.phone_number_verified).label("phone_number_verified"),
                 cast(ColumnElement[Any], urs.email_verified).label("email_verified"),
                 cast(ColumnElement[Any], pr.id).label("pin_reset_id"),
                 cast(ColumnElement[Any], or2.otp_code).label("otp_code"),
@@ -93,13 +85,7 @@ async def create_pin_endpoint(
                 ],
             ]
         )
-        u_filter = Filters(
-            filters=[
-                Filters(
-                    field_name=u.uid, filter_type="equal", value=str(schema.user_uid)
-                )
-            ]
-        )
+        u_filter = Filters(filters=[Filters(field_name=u.uid, filter_type="equal", value=str(schema.user_uid))])
 
         user_data: Any = await session.fetch(
             field_names=u_select,
@@ -112,9 +98,7 @@ async def create_pin_endpoint(
             logging.warning(f"[CREATE_PIN] User not found | user_uid={schema.user_uid}")
             raise NotFoundError(message=f"User {schema.user_uid} not found.")
 
-        logging.info(
-            f"[CREATE_PIN] User found | id={user_data['user_id']} | phone={user_data['user_phone_number']}"
-        )
+        logging.info(f"[CREATE_PIN] User found | id={user_data['user_id']} | phone={user_data['user_phone_number']}")
 
         user_id = user_data["user_id"]
         user_uid = user_data["user_uid"]
@@ -124,12 +108,8 @@ async def create_pin_endpoint(
         phone_number_verified = user_data["phone_number_verified"]
 
         if not phone_number_verified:
-            logging.warning(
-                f"[CREATE_PIN] Phone not verified | user_id={user_id} | uid={user_uid}"
-            )
-            raise MandatoryInputError(
-                "Phone number must be verified before creating PIN."
-            )
+            logging.warning(f"[CREATE_PIN] Phone not verified | user_id={user_id} | uid={user_uid}")
+            raise MandatoryInputError("Phone number must be verified before creating PIN.")
 
         # WhatsApp background notification
         bg_task.add_task(
@@ -175,9 +155,7 @@ async def create_pin_endpoint(
         logging.debug(f"[CREATE_PIN] Updating user record | user_id={user_id}")
         await session.update(
             master_table=u,
-            filters=Filters(
-                filters=[Filters(field_name=u.uid, filter_type="equal", value=user_uid)]
-            ),
+            filters=Filters(filters=[Filters(field_name=u.uid, filter_type="equal", value=user_uid)]),
             values=new_user_data,
         )
 
@@ -192,15 +170,29 @@ async def create_pin_endpoint(
 
         logging.info(f"[CREATE_PIN] Completed | user_id={user_id} | uid={user_uid}")
 
-    except BaseError as e:
-        logging.error(
-            f"[CREATE_PIN] Known error | user_uid={schema.user_uid} | error={e}"
+    except BaseError as be:
+        logging.error(f"[CREATE_PIN] Known error | user_uid={schema.user_uid} | error={be}")
+        error_data = ErrorLogs(
+            ip_address=ip_address,
+            type=ErrorLogTypeEnum.known_error,
+            status_code=be.status_code,
+            trace=traceback.format_exc(),
+            endpoint=endpoint,
+            payload=schema.model_dump(mode="json"),
         )
+        await session.insert(table=el, data=error_data)
         raise
-    except Exception as e:
-        logging.error(
-            f"[CREATE_PIN] Unhandled exception | error={e}\n{traceback.format_exc()}"
+    except Exception as exc:
+        logging.error(f"[CREATE_PIN] Unhandled exception | error={exc}\n{traceback.format_exc()}")
+        error_data = ErrorLogs(
+            ip_address=ip_address,
+            type=ErrorLogTypeEnum.unknown_error,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            trace=traceback.format_exc(),
+            endpoint=endpoint,
+            payload=schema.model_dump(mode="json"),
         )
+        await session.insert(table=el, data=error_data)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal Server Error",

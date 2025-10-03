@@ -36,9 +36,7 @@ async def add_email_endpoint(
             registered_email = await query.find(table=User, email=schema.email)
             if registered_email:
                 logging.error("Email already exist.")
-                raise EntityAlreadyExistError(
-                    detail="Email already taken. Please use another email."
-                )
+                raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
 
         if current_user.email:
             logging.error("Email already registered by user.")

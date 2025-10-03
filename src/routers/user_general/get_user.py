@@ -17,9 +17,7 @@ from utils.error import (
 router = APIRouter(tags=["User General"], prefix="/user/general")
 
 
-async def get_user_endpoint(
-    identifier: str, db: AsyncSession = Depends(get_db)
-) -> ResponseDefault:
+async def get_user_endpoint(identifier: str, db: AsyncSession = Depends(get_db)) -> ResponseDefault:
     logging.info("Get user endpoint.")
     response = ResponseDefault()
     query = QueryDatabase(db)
@@ -28,9 +26,7 @@ async def get_user_endpoint(
     try:
         if identifier.isdigit():
             logging.info("Phone number detected.")
-            validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(
-                phone_number=identifier
-            )
+            validated_phone_number = PhoneNumberValidatorMixin.validate_phone_number(phone_number=identifier)
             filter["phone_number"] = validated_phone_number
         elif "@" in identifier:
             logging.info("Email detected.")
@@ -54,9 +50,7 @@ async def get_user_endpoint(
         user_info_response.register_state = account_record.register_state
         user_info_response.otp_state = account_record.otp_state
         user_info_response.is_email_verified = account_record.verified_email
-        user_info_response.is_phone_number_verified = (
-            account_record.verified_phone_number
-        )
+        user_info_response.is_phone_number_verified = account_record.verified_phone_number
 
         response.message = "User info successfully fetched."
         response.data = user_info_response.model_dump()

@@ -20,15 +20,10 @@ from utils.time import local_time
 from utils.generator import random_number
 from services.whatsapp.service import WhatsAppService
 from services.postgre.query import DatabaseQuery
+from services.postgre.attribute_type import ErrorLogTypeEnum
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.connection import get_db
-from services.postgre.models import (
-    UserRegistrationStates,
-    Users,
-    PinResets,
-    OtpRequests,
-    Countries,
-)
+from services.postgre.models import UserRegistrationStates, Users, PinResets, OtpRequests, Countries, ErrorLogs
 from src.schema.enum import OtpRequestTypeEnum
 from src.schema.payload import WrongAccountPayload
 from src.schema.response import BaseResponse, UserRegisterStateResponse
@@ -47,40 +42,33 @@ async def wrong_account_endpoint(
     or2 = aliased(OtpRequests)
     c = aliased(Countries)
     u = aliased(Users)
+    el = aliased(ErrorLogs)
 
     session = DatabaseQuery(db)
     wa = WhatsAppService()
 
-    current_time = local_time()
-
-    response = BaseResponse()
-    user_state = UserRegisterStateResponse()
-
     ip_address = get_client_ip(request)
+    endpoint = str(request.url)
+
+    user_state = UserRegisterStateResponse()
+    response = BaseResponse()
+
+    current_time = local_time()
     otp_code = random_number(6)
 
-    logging.info(
-        f"[WRONG_ACCOUNT] Incoming request | user_uid={schema.user_uid}, "
-        f"channel={schema.channel}, country_id={schema.country_id}, ip={ip_address}"
-    )
+    logging.info(f"[WRONG_ACCOUNT] Incoming request | user_uid={schema.user_uid}, channel={schema.channel}, country_id={schema.country_id}, ip={ip_address}")
 
     try:
         data = None
         match schema.channel.value:
             case "whatsapp":
                 if not schema.country_id:
-                    logging.warning(
-                        f"[WRONG_ACCOUNT] Missing country_id | user_uid={schema.user_uid}"
-                    )
-                    raise MandatoryInputError(
-                        message="User should pass country_id data."
-                    )
+                    logging.warning(f"[WRONG_ACCOUNT] Missing country_id | user_uid={schema.user_uid}")
+                    raise MandatoryInputError(message="User should pass country_id data.")
 
                 # Validate country
                 country: Any = await session.fetch(
-                    field_names=SelectData(
-                        entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
-                    ),
+                    field_names=SelectData(entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]),
                     master_table=c,
                     filters=Filters(
                         filters=[
@@ -94,31 +82,17 @@ async def wrong_account_endpoint(
                     fetch_type="one",
                 )
                 if not country:
-                    logging.warning(
-                        f"[WRONG_ACCOUNT] Country not found | user_uid={schema.user_uid}, country_id={schema.country_id}"
-                    )
-                    raise NotFoundError(
-                        message="Country not found.",
-                        error={"country_id": "Country id not found."},
-                    )
+                    logging.warning(f"[WRONG_ACCOUNT] Country not found | user_uid={schema.user_uid}, country_id={schema.country_id}")
+                    raise NotFoundError(message="Country not found.")
 
                 data = schema.phone_number
-                logging.info(
-                    f"[WRONG_ACCOUNT] Phone correction request | user_uid={schema.user_uid}, "
-                    f"new_phone={country['dial_code']}{schema.phone_number}"
-                )
+                logging.info(f"[WRONG_ACCOUNT] Phone correction request | user_uid={schema.user_uid}, new_phone={country['dial_code']}{schema.phone_number}")
             case _:
-                logging.warning(
-                    f"[WRONG_ACCOUNT] Unsupported channel | user_uid={schema.user_uid}, channel={schema.channel}"
-                )
-                raise FeatureNotImplementedError(
-                    message="Verify OTP via email is not implemented."
-                )
+                logging.warning(f"[WRONG_ACCOUNT] Unsupported channel | user_uid={schema.user_uid}, channel={schema.channel}")
+                raise FeatureNotImplementedError(message="Verify OTP via email is not implemented.")
 
         # Fetch user data
-        logging.debug(
-            f"[WRONG_ACCOUNT] Fetching user record | user_uid={schema.user_uid}"
-        )
+        logging.debug(f"[WRONG_ACCOUNT] Fetching user record | user_uid={schema.user_uid}")
         u_select = SelectData(
             entry=[
                 cast(ColumnElement[Any], u.id).label("user_id"),
@@ -126,9 +100,7 @@ async def wrong_account_endpoint(
                 cast(ColumnElement[Any], u.email).label("user_email"),
                 func.concat(c.dial_code, u.phone_number).label("user_phone_number"),
                 cast(ColumnElement[Any], urs.id).label("user_register_state_id"),
-                cast(ColumnElement[Any], urs.phone_number_verified).label(
-                    "phone_number_verified"
-                ),
+                cast(ColumnElement[Any], urs.phone_number_verified).label("phone_number_verified"),
                 cast(ColumnElement[Any], urs.email_verified).label("email_verified"),
                 cast(ColumnElement[Any], pr.id).label("pin_reset_id"),
                 cast(ColumnElement[Any], or2.otp_code).label("otp_code"),
@@ -147,13 +119,7 @@ async def wrong_account_endpoint(
                 ],
             ]
         )
-        u_filter = Filters(
-            filters=[
-                Filters(
-                    field_name=u.uid, filter_type="equal", value=str(schema.user_uid)
-                )
-            ]
-        )
+        u_filter = Filters(filters=[Filters(field_name=u.uid, filter_type="equal", value=str(schema.user_uid))])
 
         user_data: Any = await session.fetch(
             field_names=u_select,
@@ -164,9 +130,7 @@ async def wrong_account_endpoint(
         )
 
         if not user_data:
-            logging.warning(
-                f"[WRONG_ACCOUNT] User not found | user_uid={schema.user_uid}"
-            )
+            logging.warning(f"[WRONG_ACCOUNT] User not found | user_uid={schema.user_uid}")
             raise NotFoundError(message=f"User {schema.user_uid} not found.")
 
         user_id = user_data["user_id"]
@@ -177,45 +141,31 @@ async def wrong_account_endpoint(
         phone_number_verified = user_data["phone_number_verified"]
         email_verified = user_data["email_verified"]
 
-        logging.debug(
-            f"[WRONG_ACCOUNT] Validating cooldown | user_uid={schema.user_uid}, cooldown_until={api_cooldown_at}"
-        )
+        logging.debug(f"[WRONG_ACCOUNT] Validating cooldown | user_uid={schema.user_uid}, cooldown_until={api_cooldown_at}")
 
         if OtpRequestTypeEnum.register_user and phone_number_verified == 1:
-            logging.info(
-                f"[WRONG_ACCOUNT] Phone already verified | user_uid={schema.user_uid}"
-            )
+            logging.info(f"[WRONG_ACCOUNT] Phone already verified | user_uid={schema.user_uid}")
             response.message = f"User {schema.user_uid} phone number already verified."
             return response
 
         if OtpRequestTypeEnum.verify_account and email_verified == 1:
-            logging.info(
-                f"[WRONG_ACCOUNT] Email already verified | user_uid={schema.user_uid}"
-            )
+            logging.info(f"[WRONG_ACCOUNT] Email already verified | user_uid={schema.user_uid}")
             response.message = f"User {schema.user_uid} email already verified."
             return response
 
         if current_time < api_cooldown_at:
             wait_seconds = int((api_cooldown_at - current_time).total_seconds())
-            logging.warning(
-                f"[WRONG_ACCOUNT] Cooldown active | user_uid={schema.user_uid}, wait_seconds={wait_seconds}"
-            )
-            raise ShouldWaitError(
-                message=f"User should wait {wait_seconds}s before requesting new OTP."
-            )
+            logging.warning(f"[WRONG_ACCOUNT] Cooldown active | user_uid={schema.user_uid}, wait_seconds={wait_seconds}")
+            raise ShouldWaitError(message=f"User should wait {wait_seconds}s before requesting new OTP.")
 
-        logging.info(
-            f"[WRONG_ACCOUNT] Sending OTP | user_uid={schema.user_uid}, phone={phone_number}"
-        )
+        logging.info(f"[WRONG_ACCOUNT] Sending OTP | user_uid={schema.user_uid}, phone={phone_number}")
         bg_task.add_task(
             wa.send_whatsapp,
             user_id=user_id,
             ip_address=ip_address,
             phone_number=phone_number,
             message_template=(
-                "Your verification code is *{otp_code}*. "
-                "Please enter this code to complete your verification. "
-                "Kindly note that this code will *expire in 3 minutes*."
+                "Your verification code is *{otp_code}*. Please enter this code to complete your verification. Kindly note that this code will *expire in 3 minutes*."
             ),
             otp_code=otp_code,
         )
@@ -253,9 +203,7 @@ async def wrong_account_endpoint(
         )
         await session.update(
             master_table=u,
-            filters=Filters(
-                filters=[Filters(field_name=u.uid, filter_type="equal", value=user_uid)]
-            ),
+            filters=Filters(filters=[Filters(field_name=u.uid, filter_type="equal", value=user_uid)]),
             values=new_user_data,
         )
 
@@ -263,20 +211,31 @@ async def wrong_account_endpoint(
         response.message = "User account successfully modifiied."
         response.data = user_state.model_dump()
 
-        logging.info(
-            f"[WRONG_ACCOUNT] Success | user_uid={schema.user_uid}, new_phone={phone_number}"
-        )
+        logging.info(f"[WRONG_ACCOUNT] Success | user_uid={schema.user_uid}, new_phone={phone_number}")
 
-    except BaseError:
-        logging.error(
-            f"[WRONG_ACCOUNT] Known application error | user_uid={schema.user_uid}",
-            exc_info=True,
+    except BaseError as be:
+        logging.error(f"[WRONG_ACCOUNT] Known application error | user_uid={schema.user_uid}", exc_info=True)
+        error_data = ErrorLogs(
+            ip_address=ip_address,
+            type=ErrorLogTypeEnum.known_error,
+            status_code=be.status_code,
+            trace=traceback.format_exc(),
+            endpoint=endpoint,
+            payload=schema.model_dump(mode="json"),
         )
+        await session.insert(table=el, data=error_data)
         raise
     except Exception as e:
-        logging.error(
-            f"[WRONG_ACCOUNT] Unhandled exception | error={e}\n{traceback.format_exc()}"
+        logging.error(f"[WRONG_ACCOUNT] Unhandled exception | error={e}\n{traceback.format_exc()}")
+        error_data = ErrorLogs(
+            ip_address=ip_address,
+            type=ErrorLogTypeEnum.unknown_error,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            trace=traceback.format_exc(),
+            endpoint=endpoint,
+            payload=schema.model_dump(mode="json"),
         )
+        await session.insert(table=el, data=error_data)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal Server Error",

@@ -42,9 +42,7 @@ async def update_amount_endpoint(
 
         if money_spend_record.amount == schema.amount:
             logging.error("Cannot update into same amount data.")
-            raise EntityForceInputSameDataError(
-                detail="Should update into different amount."
-            )
+            raise EntityForceInputSameDataError(detail="Should update into different amount.")
 
         await query.update(
             table=MoneySpend,

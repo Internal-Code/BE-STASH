@@ -43,3 +43,8 @@ class ThirdPartyServiceTypeEnum(StrEnum):
 class ThirdPartyServiceStatusEnum(StrEnum):
     success = auto()
     failed = auto()
+
+
+class ErrorLogTypeEnum(StrEnum):
+    known_error = auto()
+    unknown_error = auto()

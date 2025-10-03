@@ -25,9 +25,7 @@ class QueryDatabase:
             for col, value in kwargs.items():
                 col_attr = getattr(table, col, None)
                 if not col_attr:
-                    raise ValueError(
-                        f"Column {col} not found in {table.__tablename__} table!"
-                    )
+                    raise ValueError(f"Column {col} not found in {table.__tablename__} table!")
                 condition.append(col_attr == value)
         try:
             filter_condition = or_(*condition) if filter == "or" else and_(*condition)
@@ -37,11 +35,7 @@ class QueryDatabase:
 
             if fetch == "all":
                 rows = result.fetchall()
-                return (
-                    [dict(record) for entry in rows for record in entry]
-                    if rows
-                    else None
-                )
+                return [dict(record) for entry in rows for record in entry] if rows else None
             else:
                 return result.fetchone()
         except Exception as e:
@@ -52,9 +46,7 @@ class QueryDatabase:
     async def insert(self, table: type[SQLModel], data: dict) -> None:
         for column in data.keys():
             if not hasattr(table, column):
-                raise ValueError(
-                    f"Column '{column}' not found in {table.__tablename__} table!"
-                )
+                raise ValueError(f"Column '{column}' not found in {table.__tablename__} table!")
 
         try:
             query = insert(table).values(**data)
@@ -81,26 +73,13 @@ class QueryDatabase:
 
             for column in data.keys():
                 if not hasattr(table, column):
-                    raise ValueError(
-                        f"Column {column} not found in {table.__tablename__} table!"
-                    )
+                    raise ValueError(f"Column {column} not found in {table.__tablename__} table!")
 
             for column in condition.keys():
                 if not hasattr(table, column):
-                    raise ValueError(
-                        f"Column {column} not found in {table.__tablename__} table!"
-                    )
+                    raise ValueError(f"Column {column} not found in {table.__tablename__} table!")
 
-            query = (
-                update(table)
-                .where(
-                    *(
-                        getattr(table, column) == value
-                        for column, value in condition.items()
-                    )
-                )
-                .values(**data)
-            )
+            query = update(table).where(*(getattr(table, column) == value for column, value in condition.items())).values(**data)
             await self._session.execute(query)
             await self._session.commit()
             logging.info(f"Updated record in table {table.__name__}.")
@@ -110,9 +89,7 @@ class QueryDatabase:
         except NotFoundError:
             raise
         except Exception as e:
-            logging.error(
-                f"Failed to update record in table {table.__name__} with conditions {condition}: {e}"
-            )
+            logging.error(f"Failed to update record in table {table.__name__} with conditions {condition}: {e}")
             raise QueryError(detail="Database query error.")
 
     async def delete(self, table: type[SQLModel]) -> None:
@@ -122,8 +99,6 @@ class QueryDatabase:
             await self._session.commit()
             logging.info(f"Successfully deleted all records in table {table.__name__}.")
         except Exception as e:
-            logging.error(
-                f"Failed to delete all records in table {table.__name__}: {e}"
-            )
+            logging.error(f"Failed to delete all records in table {table.__name__}: {e}")
             await self._session.rollback()
             raise QueryError(detail="Database query error.")

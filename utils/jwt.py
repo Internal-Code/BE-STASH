@@ -43,9 +43,7 @@ class JwtConfig:
 
     def to_verify(self, pin: str, hashed_pin: str) -> bool:
         validated_pin = validator.number(data=pin, exact_length=6)
-        validated_pin = self.password_content.verify(
-            secret=validated_pin, hash=hashed_pin
-        )
+        validated_pin = self.password_content.verify(secret=validated_pin, hash=hashed_pin)
         return validated_pin
 
     def to_hashed(self, pin: str) -> str:
@@ -64,20 +62,12 @@ class JwtConfig:
                     cast(ColumnElement[Any], self.u.uid).label("uid"),
                     cast(ColumnElement[Any], self.u.name).label("name"),
                     cast(ColumnElement[Any], self.u.email).label("email"),
-                    func.concat(self.c.dial_code, self.u.phone_number).label(
-                        "phone_numbear"
-                    ),
+                    func.concat(self.c.dial_code, self.u.phone_number).label("phone_numbear"),
                     cast(ColumnElement[Any], self.u.gender).label("gender"),
                 ]
             )
             u_join = SelectData(entry=[[self.c, self.c.id == self.u.country_id]])
-            u_filter = Filters(
-                filters=[
-                    Filters(
-                        field_name=self.u.uid, filter_type="equal", value=str(user_uid)
-                    )
-                ]
-            )
+            u_filter = Filters(filters=[Filters(field_name=self.u.uid, filter_type="equal", value=str(user_uid))])
             user_data: Any = await db.fetch(
                 field_names=u_select,
                 master_table=self.u,
@@ -102,9 +92,7 @@ class JwtConfig:
                 )
                 raise MandatoryInputError(f"User {username} has not set up a PIN yet.")
 
-            verified_pin = self.to_verify(
-                pin=validated_pin, hashed_pin=user_data["pin"]
-            )
+            verified_pin = self.to_verify(pin=validated_pin, hashed_pin=user_data["pin"])
             if not verified_pin:
                 logging.warning(
                     "Invalid PIN attempt.",
@@ -112,26 +100,18 @@ class JwtConfig:
                 )
                 raise AuthenticationError("Invalid pin.")
 
-            logging.info(
-                "User authenticated successfully.", extra={"user_uid": str(user_uid)}
-            )
+            logging.info("User authenticated successfully.", extra={"user_uid": str(user_uid)})
             return user_data
 
         return None
 
-    def create_token(
-        self, data: dict[str, Any], token_type: Literal["access", "refresh"]
-    ) -> str:
+    def create_token(self, data: dict[str, Any], token_type: Literal["access", "refresh"]) -> str:
         # Decide expiration based on token type
         match token_type:
             case "access":
-                expire_at = local_time() + timedelta(
-                    minutes=int(ACCESS_TOKEN_JWT_EXPIRED)
-                )
+                expire_at = local_time() + timedelta(minutes=int(ACCESS_TOKEN_JWT_EXPIRED))
             case "refresh":
-                expire_at = local_time() + timedelta(
-                    minutes=int(REFRESH_TOKEN_JWT_EXPIRED)
-                )
+                expire_at = local_time() + timedelta(minutes=int(REFRESH_TOKEN_JWT_EXPIRED))
             case _:
                 raise ValueError(f"Unsupported token_type: {token_type}")
 
@@ -168,20 +148,14 @@ class JwtConfig:
                     "Token missing 'encrypted' field.",
                     extra={"token": token[:10] + "..."},
                 )
-                raise NotFoundError(
-                    "Missing encrypted key.", {"encrypted": "Key not found"}
-                )
+                raise NotFoundError("Missing encrypted key.", {"encrypted": "Key not found"})
 
             # Decrypt payload
             try:
                 decrypted = self.fernet.decrypt(encrypted_data.encode())
             except Exception as exc:
-                logging.error(
-                    "Token decryption failed.", extra={"token": token[:10] + "..."}
-                )
-                raise AuthenticationError(
-                    "Invalid token.", {"token": "Decryption failed.", "error": exc}
-                )
+                logging.error("Token decryption failed.", extra={"token": token[:10] + "..."})
+                raise AuthenticationError("Invalid token.", {"token": "Decryption failed.", "error": exc})
 
             # Parse decrypted JSON
             try:
@@ -191,9 +165,7 @@ class JwtConfig:
                     "Decrypted payload is not valid JSON.",
                     extra={"decrypted": decrypted[:50]},
                 )
-                raise AuthenticationError(
-                    "Invalid token payload.", {"payload": "Invalid JSON", "error": je}
-                )
+                raise AuthenticationError("Invalid token payload.", {"payload": "Invalid JSON", "error": je})
 
             # Expiration check
             exp = data.get("exp")
@@ -215,9 +187,7 @@ class JwtConfig:
 
     async def get_user(
         self,
-        token: str = Depends(
-            OAuth2PasswordBearer(tokenUrl="/api/v1/auth/access-token")
-        ),
+        token: str = Depends(OAuth2PasswordBearer(tokenUrl="/api/v1/auth/access-token")),
     ) -> dict[str, Any]:
         try:
             payload = self.decode_token(token)
@@ -237,9 +207,7 @@ class JwtConfig:
                     value=token,
                 )
 
-                user_token = await db.fetch(
-                    master_table=self.ut, filters=ut_filter, fetch_type="one"
-                )
+                user_token = await db.fetch(master_table=self.ut, filters=ut_filter, fetch_type="one")
 
                 if not user_token:
                     raise AuthenticationError(
@@ -254,9 +222,7 @@ class JwtConfig:
                         cast(ColumnElement[Any], self.u.uid).label("uid"),
                         cast(ColumnElement[Any], self.u.name).label("name"),
                         cast(ColumnElement[Any], self.u.email).label("email"),
-                        func.concat(self.c.dial_code, self.u.phone_number).label(
-                            "phone_numbear"
-                        ),
+                        func.concat(self.c.dial_code, self.u.phone_number).label("phone_numbear"),
                         cast(ColumnElement[Any], self.u.gender).label("gender"),
                     ]
                 )

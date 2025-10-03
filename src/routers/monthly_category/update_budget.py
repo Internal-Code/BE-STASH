@@ -34,9 +34,7 @@ async def update_budget_endpoint(
     current_time = local_time()
 
     try:
-        monthly_schema_record = await query.find(
-            table=MonthlySchema, month=month, year=year, deleted_at=None
-        )
+        monthly_schema_record = await query.find(table=MonthlySchema, month=month, year=year, deleted_at=None)
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")
@@ -57,9 +55,7 @@ async def update_budget_endpoint(
 
         if category_record.budget == schema.changed_budget_into:
             logging.error("Cannot updated into same budget.")
-            raise EntityForceInputSameDataError(
-                detail="Should update into different budget."
-            )
+            raise EntityForceInputSameDataError(detail="Should update into different budget.")
 
         await query.update(
             table=CategorySchema,

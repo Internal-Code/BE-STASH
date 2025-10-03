@@ -49,26 +49,18 @@ async def update_phone_number_endpoint(
 
         if current_user.phone_number != schema.phone_number:
             logging.info("User input different phone number.")
-            registered_phone_number = await query.find(
-                table=User, phone_number=schema.phone_number
-            )
+            registered_phone_number = await query.find(table=User, phone_number=schema.phone_number)
             if registered_phone_number:
                 logging.error("Phone number already taken.")
-                raise EntityAlreadyExistError(
-                    detail="Phone number already taken. Please use another phone number."
-                )
+                raise EntityAlreadyExistError(detail="Phone number already taken. Please use another phone number.")
 
         if schema.phone_number == current_user.phone_number:
             logging.error("Cannot update into same phone number.")
-            raise EntityForceInputSameDataError(
-                detail="Should update into different phone number."
-            )
+            raise EntityForceInputSameDataError(detail="Should update into different phone number.")
 
         if not current_user.register_state:
             logging.error("User should be validated first.")
-            raise UserNotVerifiedError(
-                detail="User should be validated, before changing phone number."
-            )
+            raise UserNotVerifiedError(detail="User should be validated, before changing phone number.")
 
         if current_time < otp_record.save_to_hit_at:
             logging.info(f"Should wait for API cooldown {remaining_time}s.")
@@ -93,9 +85,7 @@ async def update_phone_number_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1
-                    if otp_record.current_api_hit
-                    else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },

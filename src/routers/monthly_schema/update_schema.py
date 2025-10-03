@@ -49,9 +49,7 @@ async def update_schema_endpoint(
 
         if schema.year == year and schema.month == month:
             logging.error("User force to update into same data.")
-            raise EntityForceInputSameDataError(
-                detail="Should update into different schema."
-            )
+            raise EntityForceInputSameDataError(detail="Should update into different schema.")
 
         existing_schema_record = await query.find(
             table=MonthlySchema,
@@ -63,9 +61,7 @@ async def update_schema_endpoint(
 
         if existing_schema_record:
             logging.error(f"Schema {schema.month}/{schema.year} already exist.")
-            raise EntityAlreadyExistError(
-                detail=f"Schema {schema.month}/{schema.year} already exist."
-            )
+            raise EntityAlreadyExistError(detail=f"Schema {schema.month}/{schema.year} already exist.")
 
         await query.update(
             table=MonthlySchema,

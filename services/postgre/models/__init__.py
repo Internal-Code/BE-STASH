@@ -12,6 +12,7 @@ from services.postgre.models.transaction_details import TransactionDetails
 from services.postgre.models.otp_requests import OtpRequests
 from services.postgre.models.roles import Roles
 from services.postgre.models.third_party_service_histories import ThirdPartyServiceHistories
+from services.postgre.models.error_logs import ErrorLogs
 
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "TransactionDetails",
     "OtpRequests",
     "Roles",
+    "ErrorLogs",
 ]

@@ -37,9 +37,7 @@ async def verify_phone_number_endpoint(
     try:
         if not otp_record.otp_number:
             logging.error("OTP data not found.")
-            raise NotFoundError(
-                detail="OTP code not found. Please request a new OTP code."
-            )
+            raise NotFoundError(detail="OTP code not found. Please request a new OTP code.")
 
         if account_record.verified_phone_number:
             logging.error("User phone number already verified.")
@@ -53,10 +51,7 @@ async def verify_phone_number_endpoint(
             logging.error("Invalid OTP.")
             raise InvalidOperationError(detail="Invalid OTP code.")
 
-        if (
-            current_time < otp_record.blacklisted_at
-            and otp_record.otp_number == schema.otp
-        ):
+        if current_time < otp_record.blacklisted_at and otp_record.otp_number == schema.otp:
             logging.info("Updating verify phone number state.")
             await query.update(
                 table=User,
@@ -67,9 +62,7 @@ async def verify_phone_number_endpoint(
                 },
             )
 
-            logging.info(
-                f"Send updated user information to {current_time.phone_number}"
-            )
+            logging.info(f"Send updated user information to {current_time.phone_number}")
             background_tasks.add_task(
                 send_whatsapp,
                 message_template=(

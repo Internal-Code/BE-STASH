@@ -1,17 +1,18 @@
 import traceback
-from utils.logger import logging
 from uuid import UUID
 from typing import cast, Any
-from fastapi import APIRouter, status, Depends, HTTPException, Query
+from fastapi import APIRouter, status, Depends, HTTPException, Query, Request
 from errors.custom_error import BaseError, NotFoundError
+from utils.logger import logging
+from utils.network import get_client_ip
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.postgre.query import DatabaseQuery
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.connection import get_db
-from services.postgre.attribute_type import UserRegistrationStateEnum
-from services.postgre.models import Users, UserRegistrationStates, Countries
+from services.postgre.attribute_type import UserRegistrationStateEnum, ErrorLogTypeEnum
+from services.postgre.models import Users, UserRegistrationStates, Countries, ErrorLogs
 from src.schema.dependencies import validate_phone_number
 from src.schema.response import (
     BaseResponse,
@@ -23,6 +24,7 @@ router = APIRouter(tags=["User Register"], prefix="/user")
 
 
 async def register_state_endpoint(
+    request: Request,
     country_id: int = Query(ge=1),
     phone_number: str = Depends(validate_phone_number),
     db: AsyncSession = Depends(get_db),
@@ -30,69 +32,46 @@ async def register_state_endpoint(
     u = aliased(Users)
     urs = aliased(UserRegistrationStates)
     c = aliased(Countries)
+    el = aliased(ErrorLogs)
 
     session = DatabaseQuery(db)
+    ip_address = get_client_ip(request)
+
+    endpoint = str(request.url)
+    body = dict(request.query_params)
 
     response = BaseResponse()
     user_state = UserRegisterStateResponse()
     user_steps = UserRegisterStateStepsResponse()
 
-    logging.info(
-        f"[REGISTER_STATE] Request received | country_id={country_id}, phone_number={phone_number}"
-    )
-
+    logging.info("[REGISTER_STATE] Check user state received")
     try:
         # Validate country
         logging.debug(f"[REGISTER_STATE] Validating country_id={country_id}")
         country: Any = await session.fetch(
-            field_names=SelectData(
-                entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
-            ),
+            field_names=SelectData(entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]),
             master_table=c,
-            filters=Filters(
-                filters=[
-                    Filters(field_name=c.id, filter_type="equal", value=country_id)
-                ]
-            ),
+            filters=Filters(filters=[Filters(field_name=c.id, filter_type="equal", value=country_id)]),
             fetch_type="one",
         )
         if not country:
-            logging.warning(
-                f"[REGISTER_STATE] Country not found | country_id={country_id}"
-            )
-            raise NotFoundError(
-                message="Country not found.",
-                error={"country_id": "Country id not found."},
-            )
+            logging.warning(f"[REGISTER_STATE] Country not found | country_id={country_id}")
+            raise NotFoundError(message="Country not found.")
 
-        logging.debug(
-            f"[REGISTER_STATE] Country validated | dial_code={country['dial_code']}"
-        )
+        logging.debug(f"[REGISTER_STATE] Country validated | dial_code={country['dial_code']}")
 
         # Fetch registration state
-        logging.debug(
-            f"[REGISTER_STATE] Fetching registration state | phone_number={phone_number}"
-        )
+        logging.debug(f"[REGISTER_STATE] Fetching registration state | phone_number={phone_number}")
         pn_select = SelectData(
             entry=[
                 cast(ColumnElement[Any], u.uid).label("user_uid"),
                 cast(ColumnElement[Any], urs.id).label("register_state_id"),
-                cast(ColumnElement[Any], urs.phone_number_verified).label(
-                    "phone_number_verified"
-                ),
+                cast(ColumnElement[Any], urs.phone_number_verified).label("phone_number_verified"),
                 cast(ColumnElement[Any], urs.pin_created).label("pin_created"),
             ]
         )
-        pn_join = SelectData(
-            entry=[[urs, urs.user_id == u.id], [c, c.id == u.country_id]]
-        )
-        pn_filter = Filters(
-            filters=[
-                Filters(
-                    field_name=u.phone_number, filter_type="equal", value=phone_number
-                )
-            ]
-        )
+        pn_join = SelectData(entry=[[urs, urs.user_id == u.id], [c, c.id == u.country_id]])
+        pn_filter = Filters(filters=[Filters(field_name=u.phone_number, filter_type="equal", value=phone_number)])
 
         phone_number_data: Any = await session.fetch(
             field_names=pn_select,
@@ -102,14 +81,10 @@ async def register_state_endpoint(
             fetch_type="one",
         )
         if not phone_number_data:
-            logging.warning(
-                f"[REGISTER_STATE] Phone number not found | phone_number={phone_number}"
-            )
+            logging.warning(f"[REGISTER_STATE] Phone number not found | phone_number={phone_number}")
             raise NotFoundError(message="Phone number not found.")
 
-        logging.info(
-            f"[REGISTER_STATE] User data fetched | user_uid={phone_number_data['user_uid']}"
-        )
+        logging.info(f"[REGISTER_STATE] User data fetched | user_uid={phone_number_data['user_uid']}")
 
         phone_verified = phone_number_data["phone_number_verified"]
         pin_created = phone_number_data["pin_created"]
@@ -128,9 +103,7 @@ async def register_state_endpoint(
                 user_steps.phone_number_verified = True
                 user_steps.pin_created = False
             case _:
-                logging.debug(
-                    "[REGISTER_STATE] User pending phone verification and PIN."
-                )
+                logging.debug("[REGISTER_STATE] User pending phone verification and PIN.")
                 user_state.status = UserRegistrationStateEnum.pending
                 user_steps.phone_number_verified = False
                 user_steps.pin_created = False
@@ -141,23 +114,31 @@ async def register_state_endpoint(
         response.message = "Registration state successfully retrieved."
         response.data = user_state.model_dump()
 
-        logging.info(
-            f"[REGISTER_STATE] Completed | phone_number={phone_number}, "
-            f"user_uid={user_uid}, status={user_state.status}"
-        )
+        logging.info(f"[REGISTER_STATE] Completed | phone_number={phone_number}, user_uid={user_uid}, status={user_state.status}")
 
-    except BaseError as e:
-        logging.error(f"[REGISTER_STATE] Known application error | {e}", exc_info=True)
+    except BaseError as be:
+        logging.error(f"[REGISTER_STATE] Known application error | {be}", exc_info=True)
+        error_data = ErrorLogs(
+            ip_address=ip_address,
+            type=ErrorLogTypeEnum.known_error,
+            status_code=be.status_code,
+            trace=traceback.format_exc(),
+            endpoint=endpoint,
+            payload=body,
+        )
+        await session.insert(table=el, data=error_data)
         raise
-    except Exception as e:
-        logging.error(
-            f"[REGISTER_STATE] Unhandled exception | error={e}\n"
-            f"{traceback.format_exc()}"
-        )
-        raise HTTPException(
+    except Exception as exc:
+        logging.error(f"[REGISTER_STATE] Unhandled exception | error={exc}\n{traceback.format_exc()}")
+        error_data = ErrorLogs(
+            ip_address=ip_address,
+            type=ErrorLogTypeEnum.unknown_error,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal Server Error",
+            trace=traceback.format_exc(),
+            endpoint=endpoint,
+            payload=body,
         )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
     return response
 

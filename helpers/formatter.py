@@ -22,7 +22,5 @@ class CustomFormatter:
                         pass
         return converted
 
-    def to_int(
-        self, data: Optional[List[dict[str, Any]]], *fields: str
-    ) -> Optional[List[dict[str, Any]]]:
+    def to_int(self, data: Optional[List[dict[str, Any]]], *fields: str) -> Optional[List[dict[str, Any]]]:
         return self._convert_field(data, fields, lambda v: int(v))
