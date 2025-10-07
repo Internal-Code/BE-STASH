@@ -23,7 +23,9 @@ class Validator:
 
         # General min/max length check
         if not (min_length <= len(data) <= max_length):
-            raise InvalidInputError(f"Number must be between {min_length} and {max_length} digits.")
+            raise InvalidInputError(
+                f"Number must be between {min_length} and {max_length} digits."
+            )
 
         # Leading zero check (e.g., for some IDs, not for phone numbers)
         if not allow_leading_zero and data.startswith("0"):

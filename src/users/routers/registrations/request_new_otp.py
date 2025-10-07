@@ -22,7 +22,14 @@ from services.postgre.query import DatabaseQuery
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.connection import get_db
 from services.postgre.attribute_type import ErrorLogTypeEnum
-from services.postgre.models import UserRegistrationStates, Users, PinResets, OtpRequests, Countries, ErrorLogs
+from services.postgre.models import (
+    UserRegistrationStates,
+    Users,
+    PinResets,
+    OtpRequests,
+    Countries,
+    ErrorLogs,
+)
 from services.postgre.attribute_type import SendOtpChannelEnum
 from src.schema.enum import OtpRequestTypeEnum
 from src.schema.payload import RequestNewOtpPayload
@@ -59,7 +66,9 @@ async def request_new_otp_endpoint(
     error: dict[str, Any] = {}
     current_time = local_time()
 
-    logging.info(f"[REQUEST_NEW_OTP] Incoming request from ip={ip_address}, user_uid={schema.user_uid}, channel={schema.channel}, request_type={schema.request_type}")
+    logging.info(
+        f"[REQUEST_NEW_OTP] Incoming request from ip={ip_address}, user_uid={schema.user_uid}, channel={schema.channel}, request_type={schema.request_type}"
+    )
 
     try:
         # Validate request type
@@ -67,11 +76,17 @@ async def request_new_otp_endpoint(
             error["channel"] = "Verify OTP via email is not implemented."
 
         if schema.request_type != OtpRequestTypeEnum.register_user:
-            error["request_type"] = f"Verify OTP request {schema.request_type} not implemented."
+            error["request_type"] = (
+                f"Verify OTP request {schema.request_type} not implemented."
+            )
 
         if error:
-            logging.warning(f"[REQUEST_NEW_OTP] Feature not implemented for user_uid={schema.user_uid} | error={error}")
-            raise FeatureNotImplementedError(message="Feature not implemented", error=error)
+            logging.warning(
+                f"[REQUEST_NEW_OTP] Feature not implemented for user_uid={schema.user_uid} | error={error}"
+            )
+            raise FeatureNotImplementedError(
+                message="Feature not implemented", error=error
+            )
 
         logging.debug(f"[REQUEST_NEW_OTP] Fetching user data for uid={schema.user_uid}")
 
@@ -82,7 +97,9 @@ async def request_new_otp_endpoint(
                 cast(ColumnElement[Any], u.email).label("user_email"),
                 func.concat(c.dial_code, u.phone_number).label("user_phone_number"),
                 cast(ColumnElement[Any], urs.id).label("user_register_state_id"),
-                cast(ColumnElement[Any], urs.phone_number_verified).label("phone_number_verified"),
+                cast(ColumnElement[Any], urs.phone_number_verified).label(
+                    "phone_number_verified"
+                ),
                 cast(ColumnElement[Any], urs.email_verified).label("email_verified"),
                 cast(ColumnElement[Any], pr.id).label("pin_reset_id"),
                 cast(ColumnElement[Any], or2.otp_code).label("otp_code"),
@@ -101,7 +118,13 @@ async def request_new_otp_endpoint(
                 ],
             ]
         )
-        u_filter = Filters(filters=[Filters(field_name=u.uid, filter_type="equal", value=str(schema.user_uid))])
+        u_filter = Filters(
+            filters=[
+                Filters(
+                    field_name=u.uid, filter_type="equal", value=str(schema.user_uid)
+                )
+            ]
+        )
 
         user_data: Any = await session.fetch(
             field_names=u_select,
@@ -122,24 +145,36 @@ async def request_new_otp_endpoint(
         email_verified = user_data["email_verified"]
         user_register_state_id = user_data["user_register_state_id"]
 
-        logging.info(f"[REQUEST_NEW_OTP] User found uid={schema.user_uid}, phone={phone_number}")
+        logging.info(
+            f"[REQUEST_NEW_OTP] User found uid={schema.user_uid}, phone={phone_number}"
+        )
 
         if OtpRequestTypeEnum.register_user and phone_number_verified == 1:
-            logging.info(f"[REQUEST_NEW_OTP] Phone already verified for uid={schema.user_uid}")
+            logging.info(
+                f"[REQUEST_NEW_OTP] Phone already verified for uid={schema.user_uid}"
+            )
             response.message = f"User {schema.user_uid} phone number already verified."
             return response
 
         if OtpRequestTypeEnum.verify_account and email_verified == 1:
-            logging.info(f"[REQUEST_NEW_OTP] Email already verified for uid={schema.user_uid}")
+            logging.info(
+                f"[REQUEST_NEW_OTP] Email already verified for uid={schema.user_uid}"
+            )
             response.message = f"User {schema.user_uid} email already verified."
             return response
 
         if current_time < api_cooldown_at:
             wait_seconds = int((api_cooldown_at - current_time).total_seconds())
-            logging.warning(f"[REQUEST_NEW_OTP] Cooldown active for uid={schema.user_uid}, wait={wait_seconds}s")
-            raise ShouldWaitError(message=f"User should wait {wait_seconds}s before requesting new OTP.")
+            logging.warning(
+                f"[REQUEST_NEW_OTP] Cooldown active for uid={schema.user_uid}, wait={wait_seconds}s"
+            )
+            raise ShouldWaitError(
+                message=f"User should wait {wait_seconds}s before requesting new OTP."
+            )
 
-        logging.debug(f"[REQUEST_NEW_OTP] Sending OTP via WhatsApp uid={schema.user_uid}, phone={phone_number}")
+        logging.debug(
+            f"[REQUEST_NEW_OTP] Sending OTP via WhatsApp uid={schema.user_uid}, phone={phone_number}"
+        )
 
         bg_task.add_task(
             wa.send_whatsapp,
@@ -158,8 +193,12 @@ async def request_new_otp_endpoint(
                 target_field = or2.registration_state_id
                 target_value = user_register_state_id
             case _:
-                logging.error(f"[REQUEST_NEW_OTP] Unsupported request_type={schema.request_type}")
-                raise FeatureNotImplementedError(message="This feature is not implemented.")
+                logging.error(
+                    f"[REQUEST_NEW_OTP] Unsupported request_type={schema.request_type}"
+                )
+                raise FeatureNotImplementedError(
+                    message="This feature is not implemented."
+                )
 
         new_otp_data: dict[str, Any] = {
             "updated_at": current_time,
@@ -171,7 +210,13 @@ async def request_new_otp_endpoint(
 
         await session.update(
             master_table=or2,
-            filters=Filters(filters=[Filters(field_name=target_field, filter_type="equal", value=target_value)]),
+            filters=Filters(
+                filters=[
+                    Filters(
+                        field_name=target_field, filter_type="equal", value=target_value
+                    )
+                ]
+            ),
             values=new_otp_data,
         )
 
@@ -179,10 +224,14 @@ async def request_new_otp_endpoint(
         response.message = "Registration state successfully fetched."
         response.data = user_state.model_dump()
 
-        logging.info(f"[REQUEST_NEW_OTP] OTP generated successfully for uid={schema.user_uid}")
+        logging.info(
+            f"[REQUEST_NEW_OTP] OTP generated successfully for uid={schema.user_uid}"
+        )
 
     except BaseError as be:
-        logging.error(f"[REQUEST_NEW_OTP] Known application error | {be}", exc_info=True)
+        logging.error(
+            f"[REQUEST_NEW_OTP] Known application error | {be}", exc_info=True
+        )
         error_data = ErrorLogs(
             ip_address=ip_address,
             type=ErrorLogTypeEnum.known_error,
@@ -194,7 +243,9 @@ async def request_new_otp_endpoint(
         await session.insert(table=el, data=error_data)
         raise
     except Exception as e:
-        logging.error(f"[REQUEST_NEW_OTP] Unhandled exception | error={e}\n{traceback.format_exc()}")
+        logging.error(
+            f"[REQUEST_NEW_OTP] Unhandled exception | error={e}\n{traceback.format_exc()}"
+        )
         error_data = ErrorLogs(
             ip_address=ip_address,
             type=ErrorLogTypeEnum.unknown_error,

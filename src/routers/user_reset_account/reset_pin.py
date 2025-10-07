@@ -41,7 +41,9 @@ async def reset_pin_endpoint(
     templates = Jinja2Templates(directory="templates")
     unique_id = str(unique_id)
     account_record = await query.find(table=User, unique_id=unique_id)
-    reset_pin_record = await query.find(table=ResetPin, unique_id=account_record.unique_id)
+    reset_pin_record = await query.find(
+        table=ResetPin, unique_id=account_record.unique_id
+    )
 
     save_to_update = account_record.created_pin_at + timedelta(days=1)
 
@@ -56,13 +58,17 @@ async def reset_pin_endpoint(
 
         if schema.pin != schema.confirm_new_pin:
             logging.error("New PIN and confirm PIN not equal.")
-            raise InvalidOperationError(detail="New PIN and confirmed PIN should be equal.")
+            raise InvalidOperationError(
+                detail="New PIN and confirmed PIN should be equal."
+            )
 
         if current_time < save_to_update:
             time_difference = save_to_update - current_time
             formatted_time = f"{time_difference.seconds // 3600} hr {time_difference.seconds % 3600 // 60} minutes"
             logging.error(f"Reset PIN disabled for {formatted_time}")
-            raise InvalidOperationError(detail=f"Cannot reset PIN, please wait for {formatted_time}.")
+            raise InvalidOperationError(
+                detail=f"Cannot reset PIN, please wait for {formatted_time}."
+            )
 
         if account_record.verified_email and account_record.verified_phone_number:
             logging.info("Sending reset link into phone number and email.")

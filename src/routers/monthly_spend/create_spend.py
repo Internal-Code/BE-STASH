@@ -70,14 +70,20 @@ async def create_spend_endpoint(
             logging.warning("Validating process on month February.")
             if is_leap_year and day > 29:
                 logging.error(f"Invalid day {day} in February of a leap year.")
-                raise EntityDoesNotMatchedError(detail="Day should be 29 or less in February of a leap year.")
+                raise EntityDoesNotMatchedError(
+                    detail="Day should be 29 or less in February of a leap year."
+                )
             if not is_leap_year and day > 28:
                 logging.error(f"Invalid day {day} in February of a non-leap year.")
-                raise EntityDoesNotMatchedError(detail="Day should be 28 or less in February of a non-leap year.")
+                raise EntityDoesNotMatchedError(
+                    detail="Day should be 28 or less in February of a non-leap year."
+                )
 
         if month in fixed_day and day > 30:
             logging.error(f"Invalid day {day} for month {month}.")
-            raise EntityDoesNotMatchedError(detail="Day should be 30 or less for this month.")
+            raise EntityDoesNotMatchedError(
+                detail="Day should be 30 or less for this month."
+            )
 
         await query.insert(
             table=MoneySpend,

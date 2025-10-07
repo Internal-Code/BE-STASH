@@ -31,4 +31,3 @@ dependencies = [
 
 [tool.ruff]
 exclude = ["services/postgre/models/*"]
-line-length = 170

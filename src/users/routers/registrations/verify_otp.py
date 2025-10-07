@@ -15,7 +15,14 @@ from services.postgre.connection import get_db
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.query import DatabaseQuery
 from services.postgre.attribute_type import SendOtpChannelEnum, ErrorLogTypeEnum
-from services.postgre.models import Users, UserRegistrationStates, OtpRequests, PinResets, Countries, ErrorLogs
+from services.postgre.models import (
+    Users,
+    UserRegistrationStates,
+    OtpRequests,
+    PinResets,
+    Countries,
+    ErrorLogs,
+)
 from sqlalchemy import func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -31,7 +38,9 @@ from src.schema.response import (
 router = APIRouter(tags=["User Register"], prefix="/user")
 
 
-async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, db: AsyncSession = Depends(get_db)) -> BaseResponse:
+async def verify_otp_endpoint(
+    request: Request, schema: VerificationOtpPayload, db: AsyncSession = Depends(get_db)
+) -> BaseResponse:
     u = aliased(Users)
     or2 = aliased(OtpRequests)
     urs = aliased(UserRegistrationStates)
@@ -50,7 +59,9 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
     error: dict[str, Any] = {}
     current_time = local_time()
 
-    logging.info(f"[VERIFY_OTP] Incoming request | user_uid={schema.user_uid}, channel={schema.channel}, request_type={schema.request_type}")
+    logging.info(
+        f"[VERIFY_OTP] Incoming request | user_uid={schema.user_uid}, channel={schema.channel}, request_type={schema.request_type}"
+    )
 
     try:
         # Validate request type
@@ -58,11 +69,17 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
             error["channel"] = "Verify OTP via email is not implemented."
 
         if schema.request_type != OtpRequestTypeEnum.register_user:
-            error["request_type"] = f"Verify OTP request {schema.request_type} not implemented."
+            error["request_type"] = (
+                f"Verify OTP request {schema.request_type} not implemented."
+            )
 
         if error:
-            logging.warning(f"[VERIFY_OTP] Unsupported operation | user_uid={schema.user_uid}, errors={error}")
-            raise FeatureNotImplementedError(message="Feature not implemented", error=error)
+            logging.warning(
+                f"[VERIFY_OTP] Unsupported operation | user_uid={schema.user_uid}, errors={error}"
+            )
+            raise FeatureNotImplementedError(
+                message="Feature not implemented", error=error
+            )
 
         logging.debug(f"[VERIFY_OTP] Fetching user record | user_uid={schema.user_uid}")
 
@@ -89,7 +106,13 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
                 ],
             ]
         )
-        u_filter = Filters(filters=[Filters(field_name=u.uid, filter_type="equal", value=str(schema.user_uid))])
+        u_filter = Filters(
+            filters=[
+                Filters(
+                    field_name=u.uid, filter_type="equal", value=str(schema.user_uid)
+                )
+            ]
+        )
 
         user_data: Any = await session.fetch(
             field_names=u_select,
@@ -109,14 +132,20 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
         otp_code = user_data["otp_code"]
         expired_at = user_data["expired_at"]
 
-        logging.debug(f"[VERIFY_OTP] Validating OTP | user_uid={schema.user_uid}, expired_at={expired_at}, provided_code={schema.otp_code}")
+        logging.debug(
+            f"[VERIFY_OTP] Validating OTP | user_uid={schema.user_uid}, expired_at={expired_at}, provided_code={schema.otp_code}"
+        )
 
         if current_time > expired_at:
             logging.warning(f"[VERIFY_OTP] OTP expired | user_uid={schema.user_uid}")
-            raise InvalidInputError(message="OTP code has expired. Please request new OTP code.")
+            raise InvalidInputError(
+                message="OTP code has expired. Please request new OTP code."
+            )
 
         if schema.otp_code != otp_code:
-            logging.warning(f"[VERIFY_OTP] Invalid OTP code | user_uid={schema.user_uid}")
+            logging.warning(
+                f"[VERIFY_OTP] Invalid OTP code | user_uid={schema.user_uid}"
+            )
             raise InvalidInputError(message="Invalid OTP code.")
 
         # Prepare updates
@@ -135,18 +164,32 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
                 target_field = or2.registration_state_id
                 target_value = user_register_state_id
             case _:
-                logging.error(f"[VERIFY_OTP] Unsupported request_type | {schema.request_type}")
-                raise FeatureNotImplementedError(message="This feature is not implemented.")
+                logging.error(
+                    f"[VERIFY_OTP] Unsupported request_type | {schema.request_type}"
+                )
+                raise FeatureNotImplementedError(
+                    message="This feature is not implemented."
+                )
 
         # Update DB
         await session.update(
             master_table=urs,
-            filters=Filters(filters=[Filters(field_name=urs.user_id, filter_type="equal", value=user_id)]),
+            filters=Filters(
+                filters=[
+                    Filters(field_name=urs.user_id, filter_type="equal", value=user_id)
+                ]
+            ),
             values=user_state_data,
         )
         await session.update(
             master_table=or2,
-            filters=Filters(filters=[Filters(field_name=target_field, filter_type="equal", value=target_value)]),
+            filters=Filters(
+                filters=[
+                    Filters(
+                        field_name=target_field, filter_type="equal", value=target_value
+                    )
+                ]
+            ),
             values=new_otp_data,
         )
 
@@ -157,10 +200,15 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
         response.message = "OTP successfully verified."
         response.data = user_state.model_dump()
 
-        logging.info(f"[VERIFY_OTP] Success | user_uid={schema.user_uid}, phone_verified=True")
+        logging.info(
+            f"[VERIFY_OTP] Success | user_uid={schema.user_uid}, phone_verified=True"
+        )
 
     except BaseError as be:
-        logging.error(f"[VERIFY_OTP] Known application error | user_uid={schema.user_uid}", exc_info=True)
+        logging.error(
+            f"[VERIFY_OTP] Known application error | user_uid={schema.user_uid}",
+            exc_info=True,
+        )
         error_data = ErrorLogs(
             ip_address=ip_address,
             type=ErrorLogTypeEnum.known_error,
@@ -172,7 +220,9 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
         await session.insert(table=el, data=error_data)
         raise
     except Exception as e:
-        logging.error(f"[VERIFY_OTP] Unhandled exception | error={e}\n{traceback.format_exc()}")
+        logging.error(
+            f"[VERIFY_OTP] Unhandled exception | error={e}\n{traceback.format_exc()}"
+        )
         error_data = ErrorLogs(
             ip_address=ip_address,
             type=ErrorLogTypeEnum.unknown_error,
@@ -182,7 +232,10 @@ async def verify_otp_endpoint(request: Request, schema: VerificationOtpPayload, 
             payload=schema.model_dump(mode="json"),
         )
         await session.insert(table=el, data=error_data)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
 
     return response
 

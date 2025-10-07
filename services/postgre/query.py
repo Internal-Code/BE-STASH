@@ -21,7 +21,9 @@ class DatabaseQuery:
 
     def build_condition(self, filter_block: Filters):
         if filter_block.filters:
-            conditions = [self.build_condition(sub_filter) for sub_filter in filter_block.filters]
+            conditions = [
+                self.build_condition(sub_filter) for sub_filter in filter_block.filters
+            ]
             operator = filter_block.operator
 
             match operator:
@@ -34,7 +36,9 @@ class DatabaseQuery:
                         raise ValueError("NOT operator must have exactly one condition")
                     return not_(conditions[0])
                 case _:
-                    raise NotImplementedError(f"Unsupported logical operator: {operator}")
+                    raise NotImplementedError(
+                        f"Unsupported logical operator: {operator}"
+                    )
 
         field = filter_block.field_name
         value = filter_block.value
@@ -60,7 +64,9 @@ class DatabaseQuery:
                     if isinstance(value, tuple) and len(value) == 2:
                         return field.between(value[0], value[1])
                     else:
-                        raise ValueError("Value for 'between' must be a tuple of two elements. Example: (10, 20)")
+                        raise ValueError(
+                            "Value for 'between' must be a tuple of two elements. Example: (10, 20)"
+                        )
                 except Exception as e:
                     raise QueryError("Query error", {"errors": str(e)})
             case "in":
@@ -91,8 +97,12 @@ class DatabaseQuery:
         try:
             if field_names == "*":
                 statement = select(master_table)
-                table_columns = [c.key for c in inspect(master_table).mapper.column_attrs]
-                aliases = [f"{master_table.__tablename__}.{col}" for col in table_columns]
+                table_columns = [
+                    c.key for c in inspect(master_table).mapper.column_attrs
+                ]
+                aliases = [
+                    f"{master_table.__tablename__}.{col}" for col in table_columns
+                ]
             else:
                 fields = field_names.entry
                 statement = select(*fields)
@@ -120,12 +130,18 @@ class DatabaseQuery:
                         case 3:
                             join_table, join_condition, join_type = entry
                         case _:
-                            raise ValueError("Each join entry must be on this format [table, field, join_type]. (Default: left join.)")
+                            raise ValueError(
+                                "Each join entry must be on this format [table, field, join_type]. (Default: left join.)"
+                            )
 
                     if join_type == "left":
-                        statement = statement.select_from(master_table).join(join_table, join_condition, isouter=True)
+                        statement = statement.select_from(master_table).join(
+                            join_table, join_condition, isouter=True
+                        )
                     elif join_type == "inner":
-                        statement = statement.select_from(master_table).join(join_table, join_condition, isouter=False)
+                        statement = statement.select_from(master_table).join(
+                            join_table, join_condition, isouter=False
+                        )
                     else:
                         raise ValueError("join_type must be 'inner' or 'left'")
 
@@ -146,7 +162,9 @@ class DatabaseQuery:
             # ORDER BY clause
             if order_by:
                 if not isinstance(order_by.entry, list):
-                    raise ValueError("Order by must be a list of column and order_type (column, direction). Example: [Users.id, 'asc']")
+                    raise ValueError(
+                        "Order by must be a list of column and order_type (column, direction). Example: [Users.id, 'asc']"
+                    )
 
                 for column, direction in order_by.entry:
                     if direction.lower() == "asc":
@@ -166,8 +184,16 @@ class DatabaseQuery:
                 try:
                     subq = statement.subquery()
                     result = await self.session.execute(statement)
-                    rows = result.scalars().all() if field_names == "*" else result.fetchall()
-                    data = [row.model_dump() for row in rows] if field_names == "*" else [dict(zip(aliases, row)) for row in rows]
+                    rows = (
+                        result.scalars().all()
+                        if field_names == "*"
+                        else result.fetchall()
+                    )
+                    data = (
+                        [row.model_dump() for row in rows]
+                        if field_names == "*"
+                        else [dict(zip(aliases, row)) for row in rows]
+                    )
                     if not data:
                         data = None
                     return subq, data
@@ -178,16 +204,30 @@ class DatabaseQuery:
 
             # Return results
             if fetch_type == "all":
-                rows = result.scalars().all() if field_names == "*" else result.fetchall()
-                return [row.model_dump() for row in rows] if field_names == "*" else [dict(zip(aliases, row)) for row in rows]
+                rows = (
+                    result.scalars().all() if field_names == "*" else result.fetchall()
+                )
+                return (
+                    [row.model_dump() for row in rows]
+                    if field_names == "*"
+                    else [dict(zip(aliases, row)) for row in rows]
+                )
             else:
                 row = result.scalars().first() if field_names == "*" else result.first()
-                return row.model_dump() if field_names == "*" and row else dict(zip(aliases, row)) if row else None
+                return (
+                    row.model_dump()
+                    if field_names == "*" and row
+                    else dict(zip(aliases, row))
+                    if row
+                    else None
+                )
 
         except Exception as e:
             raise QueryError("Query error", {"errors": str(e)})
 
-    async def insert(self, table: Type[SQLModel], data: Union[dict[str, Any], list[Any], SQLModel]) -> None:
+    async def insert(
+        self, table: Type[SQLModel], data: Union[dict[str, Any], list[Any], SQLModel]
+    ) -> None:
         try:
             if isinstance(data, dict):
                 query = insert(table).values(**data)
@@ -236,10 +276,14 @@ class DatabaseQuery:
             await self.session.commit()
 
             rowcount = result.rowcount or 0
-            logging.info(f"Updated {rowcount} record(s) in {master_table.__tablename__} with values={values} and filters={filters.model_dump() if filters else None}")
+            logging.info(
+                f"Updated {rowcount} record(s) in {master_table.__tablename__} with values={values} and filters={filters.model_dump() if filters else None}"
+            )
             return rowcount
 
         except Exception as e:
-            logging.error(f"Failed to update record(s) in table {master_table.__name__}: {e}")
+            logging.error(
+                f"Failed to update record(s) in table {master_table.__name__}: {e}"
+            )
             await self.session.rollback()
             raise QueryError("Database query error.", {"errors": str(e)})

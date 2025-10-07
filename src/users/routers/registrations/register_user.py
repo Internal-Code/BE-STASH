@@ -8,7 +8,11 @@ from utils.generator import random_number
 from utils.time import local_time
 from utils.network import get_client_ip
 from services.postgre.connection import get_db
-from services.postgre.attribute_type import UserDeviceInfoEnum, SendOtpChannelEnum, ErrorLogTypeEnum
+from services.postgre.attribute_type import (
+    UserDeviceInfoEnum,
+    SendOtpChannelEnum,
+    ErrorLogTypeEnum,
+)
 from services.postgre.query_schema import Filters, SelectData
 from services.postgre.query import DatabaseQuery
 from services.whatsapp.service import WhatsAppService
@@ -17,7 +21,13 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
 from src.schema.response import BaseResponse, UserRegisterStateResponse
 from src.schema.payload import RegisterUserPayload
-from services.postgre.models import Countries, Users, UserRegistrationStates, OtpRequests, ErrorLogs
+from services.postgre.models import (
+    Countries,
+    Users,
+    UserRegistrationStates,
+    OtpRequests,
+    ErrorLogs,
+)
 
 router = APIRouter(tags=["User Register"], prefix="/user")
 
@@ -54,9 +64,17 @@ async def register_user_endpoint(
         # Validate country
         logging.debug("[REGISTER_USER] Validating country")
         country: Any = await session.fetch(
-            field_names=SelectData(entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]),
+            field_names=SelectData(
+                entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
+            ),
             master_table=c,
-            filters=Filters(filters=[Filters(field_name=c.id, filter_type="equal", value=schema.country_id)]),
+            filters=Filters(
+                filters=[
+                    Filters(
+                        field_name=c.id, filter_type="equal", value=schema.country_id
+                    )
+                ]
+            ),
             fetch_type="one",
         )
         if not country:
@@ -76,8 +94,14 @@ async def register_user_endpoint(
             filters=Filters(
                 operator="or",
                 filters=[
-                    Filters(field_name=u.phone_number, filter_type="equal", value=schema.phone_number),
-                    Filters(field_name=u.email, filter_type="equal", value=schema.email),
+                    Filters(
+                        field_name=u.phone_number,
+                        filter_type="equal",
+                        value=schema.phone_number,
+                    ),
+                    Filters(
+                        field_name=u.email, filter_type="equal", value=schema.email
+                    ),
                 ],
             ),
         )
@@ -130,7 +154,9 @@ async def register_user_endpoint(
         )
 
         # Insert all data in a single transaction
-        logging.info("[REGISTER_USER] Inserting user, registration state, and OTP request into DB")
+        logging.info(
+            "[REGISTER_USER] Inserting user, registration state, and OTP request into DB"
+        )
         await session.insert(table=u, data=user_data)
         await session.insert(table=urs, data=user_reg_state_data)
         await session.insert(table=or2, data=otp_request_data)
@@ -169,7 +195,9 @@ async def register_user_endpoint(
         await session.insert(table=el, data=error_data)
         raise
     except Exception as exc:
-        logging.error(f"[REGISTER_USER] Unhandled exception | error={exc}\n{traceback.format_exc()}")
+        logging.error(
+            f"[REGISTER_USER] Unhandled exception | error={exc}\n{traceback.format_exc()}"
+        )
         error_data = ErrorLogs(
             ip_address=ip_address,
             type=ErrorLogTypeEnum.unknown_error,
@@ -179,7 +207,10 @@ async def register_user_endpoint(
             payload=schema.model_dump(),
         )
         await session.insert(table=el, data=error_data)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
 
     return response
 

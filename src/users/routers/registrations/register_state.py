@@ -49,29 +49,51 @@ async def register_state_endpoint(
         # Validate country
         logging.debug(f"[REGISTER_STATE] Validating country_id={country_id}")
         country: Any = await session.fetch(
-            field_names=SelectData(entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]),
+            field_names=SelectData(
+                entry=[cast(ColumnElement[Any], c.dial_code).label("dial_code")]
+            ),
             master_table=c,
-            filters=Filters(filters=[Filters(field_name=c.id, filter_type="equal", value=country_id)]),
+            filters=Filters(
+                filters=[
+                    Filters(field_name=c.id, filter_type="equal", value=country_id)
+                ]
+            ),
             fetch_type="one",
         )
         if not country:
-            logging.warning(f"[REGISTER_STATE] Country not found | country_id={country_id}")
+            logging.warning(
+                f"[REGISTER_STATE] Country not found | country_id={country_id}"
+            )
             raise NotFoundError(message="Country not found.")
 
-        logging.debug(f"[REGISTER_STATE] Country validated | dial_code={country['dial_code']}")
+        logging.debug(
+            f"[REGISTER_STATE] Country validated | dial_code={country['dial_code']}"
+        )
 
         # Fetch registration state
-        logging.debug(f"[REGISTER_STATE] Fetching registration state | phone_number={phone_number}")
+        logging.debug(
+            f"[REGISTER_STATE] Fetching registration state | phone_number={phone_number}"
+        )
         pn_select = SelectData(
             entry=[
                 cast(ColumnElement[Any], u.uid).label("user_uid"),
                 cast(ColumnElement[Any], urs.id).label("register_state_id"),
-                cast(ColumnElement[Any], urs.phone_number_verified).label("phone_number_verified"),
+                cast(ColumnElement[Any], urs.phone_number_verified).label(
+                    "phone_number_verified"
+                ),
                 cast(ColumnElement[Any], urs.pin_created).label("pin_created"),
             ]
         )
-        pn_join = SelectData(entry=[[urs, urs.user_id == u.id], [c, c.id == u.country_id]])
-        pn_filter = Filters(filters=[Filters(field_name=u.phone_number, filter_type="equal", value=phone_number)])
+        pn_join = SelectData(
+            entry=[[urs, urs.user_id == u.id], [c, c.id == u.country_id]]
+        )
+        pn_filter = Filters(
+            filters=[
+                Filters(
+                    field_name=u.phone_number, filter_type="equal", value=phone_number
+                )
+            ]
+        )
 
         phone_number_data: Any = await session.fetch(
             field_names=pn_select,
@@ -81,10 +103,14 @@ async def register_state_endpoint(
             fetch_type="one",
         )
         if not phone_number_data:
-            logging.warning(f"[REGISTER_STATE] Phone number not found | phone_number={phone_number}")
+            logging.warning(
+                f"[REGISTER_STATE] Phone number not found | phone_number={phone_number}"
+            )
             raise NotFoundError(message="Phone number not found.")
 
-        logging.info(f"[REGISTER_STATE] User data fetched | user_uid={phone_number_data['user_uid']}")
+        logging.info(
+            f"[REGISTER_STATE] User data fetched | user_uid={phone_number_data['user_uid']}"
+        )
 
         phone_verified = phone_number_data["phone_number_verified"]
         pin_created = phone_number_data["pin_created"]
@@ -103,7 +129,9 @@ async def register_state_endpoint(
                 user_steps.phone_number_verified = True
                 user_steps.pin_created = False
             case _:
-                logging.debug("[REGISTER_STATE] User pending phone verification and PIN.")
+                logging.debug(
+                    "[REGISTER_STATE] User pending phone verification and PIN."
+                )
                 user_state.status = UserRegistrationStateEnum.pending
                 user_steps.phone_number_verified = False
                 user_steps.pin_created = False
@@ -114,7 +142,9 @@ async def register_state_endpoint(
         response.message = "Registration state successfully retrieved."
         response.data = user_state.model_dump()
 
-        logging.info(f"[REGISTER_STATE] Completed | phone_number={phone_number}, user_uid={user_uid}, status={user_state.status}")
+        logging.info(
+            f"[REGISTER_STATE] Completed | phone_number={phone_number}, user_uid={user_uid}, status={user_state.status}"
+        )
 
     except BaseError as be:
         logging.error(f"[REGISTER_STATE] Known application error | {be}", exc_info=True)
@@ -129,7 +159,9 @@ async def register_state_endpoint(
         await session.insert(table=el, data=error_data)
         raise
     except Exception as exc:
-        logging.error(f"[REGISTER_STATE] Unhandled exception | error={exc}\n{traceback.format_exc()}")
+        logging.error(
+            f"[REGISTER_STATE] Unhandled exception | error={exc}\n{traceback.format_exc()}"
+        )
         error_data = ErrorLogs(
             ip_address=ip_address,
             type=ErrorLogTypeEnum.unknown_error,
@@ -138,7 +170,10 @@ async def register_state_endpoint(
             endpoint=endpoint,
             payload=body,
         )
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
 
     return response
 

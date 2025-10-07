@@ -42,7 +42,9 @@ async def update_description_endpoint(
 
         if money_spend_record.description == schema.description:
             logging.error("Cannot update into same description data.")
-            raise EntityForceInputSameDataError(detail="Should update into different description.")
+            raise EntityForceInputSameDataError(
+                detail="Should update into different description."
+            )
 
         await query.update(
             table=MoneySpend,

@@ -49,7 +49,10 @@ async def verify_email_endpoint(
             logging.error("Invalid OTP.")
             raise InvalidOperationError(detail="Invalid OTP code.")
 
-        if current_time < otp_record.blacklisted_at and otp_record.otp_number == schema.otp:
+        if (
+            current_time < otp_record.blacklisted_at
+            and otp_record.otp_number == schema.otp
+        ):
             logging.info("Updating verify email state.")
             await query.update(
                 table=User,

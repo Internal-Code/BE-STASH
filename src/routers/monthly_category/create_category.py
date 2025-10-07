@@ -34,7 +34,9 @@ async def create_category_endpoint(
     year = int(year)
 
     try:
-        monthly_schema_record = await query.find(table=MonthlySchema, month=month, year=year, deleted_at=None)
+        monthly_schema_record = await query.find(
+            table=MonthlySchema, month=month, year=year, deleted_at=None
+        )
 
         if not monthly_schema_record:
             logging.error(f"Schema {month}/{year} not found.")

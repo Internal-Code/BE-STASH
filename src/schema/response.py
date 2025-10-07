@@ -24,15 +24,23 @@ class TokenResponse(BaseModel):
     Response model for authentication tokens.
     """
 
-    access_token: str = Field(..., description="JWT access token used for authenticated requests")
-    refresh_token: str = Field(..., description="JWT refresh token used to obtain new access tokens")
-    token_type: str = Field(default="Bearer", description="Type of the token, typically 'Bearer'")
+    access_token: Optional[str] = Field(
+        default=None, description="JWT access token used for authenticated requests"
+    )
+    refresh_token: Optional[str] = Field(
+        default=None, description="JWT refresh token used to obtain new access tokens"
+    )
+    token_type: Optional[str] = Field(
+        default="Bearer", description="Type of the token, typically 'Bearer'"
+    )
 
 
 class UserRegisterStateResponse(BaseModel):
     status: UserRegistrationStateEnum = UserRegistrationStateEnum.pending
     user_uid: Optional[UUID] = None
-    steps: "UserRegisterStateStepsResponse" = Field(default_factory=lambda: UserRegisterStateStepsResponse())
+    steps: "UserRegisterStateStepsResponse" = Field(
+        default_factory=lambda: UserRegisterStateStepsResponse()
+    )
 
 
 class UserRegisterStateStepsResponse(BaseModel):

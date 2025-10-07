@@ -28,7 +28,9 @@ async def logout_endpoint(
     current_time = local_time()
 
     try:
-        user_token_record = await query.find(table=UserToken, unique_id=current_user.unique_id, order_by="desc")
+        user_token_record = await query.find(
+            table=UserToken, unique_id=current_user.unique_id, order_by="desc"
+        )
         blacklist_access_token = await query.find(
             table=BlacklistToken,
             access_token=user_token_record.access_token,

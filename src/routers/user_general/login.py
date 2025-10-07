@@ -30,7 +30,9 @@ async def login_endpoint(
     response = ResponseToken()
     query = QueryDatabase(db)
     unique_id = str(unique_id)
-    account_record = await jwt_handler.authenticate_user(unique_id=unique_id, pin=schema.pin)
+    account_record = await jwt_handler.authenticate_user(
+        unique_id=unique_id, pin=schema.pin
+    )
 
     try:
         if not account_record:

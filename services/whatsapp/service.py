@@ -38,7 +38,11 @@ class WhatsAppService:
                     user_id=user_id,
                     status_code=response.status_code,
                     type=ThirdPartyServiceTypeEnum.local_whatsapp_api,
-                    status=(ThirdPartyServiceStatusEnum.success if response.status_code == 200 else ThirdPartyServiceStatusEnum.failed),
+                    status=(
+                        ThirdPartyServiceStatusEnum.success
+                        if response.status_code == 200
+                        else ThirdPartyServiceStatusEnum.failed
+                    ),
                     ip_address=ip_address,
                     recipient=phone_number,
                     response_message=body,

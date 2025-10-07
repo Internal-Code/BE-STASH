@@ -21,7 +21,9 @@ class CountriesFactory(Factory[Countries]):
     dial_code = LazyFunction(lambda: faker.random_int(min=1, max=999))
 
     @classmethod
-    async def create_country(cls, session: AsyncSession, **kwargs: dict[str, Any]) -> dict[str, Any]:
+    async def create_country(
+        cls, session: AsyncSession, **kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
         db = DatabaseQuery(session)
         country_instance = cls.build(**kwargs)
         country_dict = country_instance.model_dump()

@@ -47,7 +47,9 @@ async def update_email_endpoint(
         if current_user.email != schema.email:
             registered_email = await query.find(table=User, email=schema.email)
             if registered_email:
-                raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
+                raise EntityAlreadyExistError(
+                    detail="Email already taken. Please use another email."
+                )
 
         if not current_user.verified_email:
             logging.error("User email is not verified.")
@@ -55,7 +57,9 @@ async def update_email_endpoint(
 
         if current_user.email == schema.email:
             logging.error("Cannot update into same email.")
-            raise EntityForceInputSameDataError(detail="Should update into different email.")
+            raise EntityForceInputSameDataError(
+                detail="Should update into different email."
+            )
 
         email_body = templates.TemplateResponse(
             "otp_email.html",

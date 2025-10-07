@@ -54,7 +54,9 @@ async def wrong_email_endpoint(
             registered_email = await query.find(table=User, email=schema.email)
             if registered_email:
                 logging.error("Email already takeb.")
-                raise EntityAlreadyExistError(detail="Email already taken. Please use another email.")
+                raise EntityAlreadyExistError(
+                    detail="Email already taken. Please use another email."
+                )
 
         if not current_user.email:
             logging.error("User is not add an email.")
@@ -66,7 +68,9 @@ async def wrong_email_endpoint(
 
         if current_user.email == schema.email:
             logging.error("Cannot update into same email.")
-            raise EntityForceInputSameDataError(detail="Should updated into different email.")
+            raise EntityForceInputSameDataError(
+                detail="Should updated into different email."
+            )
 
         if current_time < otp_record.save_to_hit_at:
             logging.info(f"Should wait for API cooldown {remaining_time}s.")
@@ -105,7 +109,9 @@ async def wrong_email_endpoint(
                 data={
                     "updated_at": current_time,
                     "otp_number": generated_otp,
-                    "current_api_hit": otp_record.current_api_hit + 1 if otp_record.current_api_hit else 1,
+                    "current_api_hit": otp_record.current_api_hit + 1
+                    if otp_record.current_api_hit
+                    else 1,
                     "save_to_hit_at": current_time + timedelta(minutes=1),
                     "blacklisted_at": current_time + timedelta(minutes=3),
                 },
